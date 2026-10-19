@@ -158,7 +158,10 @@ export function Screen({
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <Image
             source={require("../../assets/brand/monogram.svg")}
-            style={{ width: 32, height: 28 }}
+            contentFit="contain"
+            contentPosition="center"
+            accessibilityLabel="VHH"
+            style={{ width: 34, height: 30, flexShrink: 0 }}
           />
           <Text style={[styles.text, { fontFamily: "Montserrat_600SemiBold" }]}>
             VHH FLEET

@@ -19,6 +19,7 @@
     "test:admin": "node scripts/test-admin-stack.mjs",
     "test:fleet": "node scripts/test-fleet-stack.mjs",
     "test:mobile": "node scripts/test-mobile-stack.mjs",
+    "test:tracking-queue": "pnpm --filter api exec tsx ../../scripts/test-tracking-queue.mjs",
     "mobile:start": "pnpm --filter mobile start",
     "mobile:android": "pnpm --filter mobile android",
     "mobile:ios": "pnpm --filter mobile ios",

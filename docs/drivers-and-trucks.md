@@ -44,3 +44,5 @@ PATCH inputs are complete editable form payloads. Unknown fields are rejected. U
 ## Verification
 
 Run from the repository root: `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm test:e2e`, `pnpm test:admin`, `pnpm infra:test`, and `pnpm test:fleet`. Live checks require the migrated local stack and gateway. Fleet tests create random disposable data, use runtime-generated passwords, and remove their own application records, identities and mail. They cover account/profile atomicity, validation, duplicates, CSRF, concurrent assignment conflicts, device transfers, history, role-based write protection, and server-rendered routes.
+
+Confirmed drivers can explicitly start native [background location sharing](background-location.md), with a durable offline log and map-ready backend history. Device setup chooses trucks by registration/fleet search and retains the installation identity automatically.

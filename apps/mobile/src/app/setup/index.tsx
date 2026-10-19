@@ -16,8 +16,8 @@ import { useFleet } from "@/state/fleet";
 export default function ChooseTruck() {
   const fleet = useFleet(),
     action = useAction();
-  const [identifier, setIdentifier] = useState(fleet.deviceName),
-    [query, setQuery] = useState(""),
+  const identifier = fleet.deviceName;
+  const [query, setQuery] = useState(""),
     [page, setPage] = useState(1),
     [result, setResult] = useState<TruckList | null>(null),
     [selected, setSelected] = useState<Truck | null>(null),
@@ -87,20 +87,6 @@ export default function ChooseTruck() {
           detail="Select the truck for this device."
         />
         <Field
-          label="Device identifier"
-          value={identifier}
-          onChangeText={setIdentifier}
-          autoCapitalize="characters"
-          autoCorrect={false}
-          maxLength={80}
-          hint="Letters, numbers, hyphens and underscores."
-          error={
-            identifier && !valid
-              ? "Enter a valid device identifier."
-              : undefined
-          }
-        />
-        <Field
           label="Search trucks"
           value={query}
           onChangeText={(value) => {
@@ -108,7 +94,7 @@ export default function ChooseTruck() {
             setPage(1);
             setSelected(null);
           }}
-          placeholder="Registration or truck ID"
+          placeholder="Registration or fleet number"
           autoCorrect={false}
           returnKeyType="search"
         />
@@ -123,7 +109,7 @@ export default function ChooseTruck() {
               onPress={() => setSelected(truck)}
               meta={
                 truck.device
-                  ? `Device: ${truck.device.identifier}`
+                  ? 'Device attached'
                   : "No device attached"
               }
             />

@@ -7,6 +7,7 @@ const env = existsSync(path) ? parseEnv(readFileSync(path, "utf8")) : {};
 const serial = process.argv[2];
 const args = serial ? ["-s", serial] : [];
 const defaults = {
+  MQTT_WS_PORT: 1884,
   GATEWAY_PORT: 3042,
   KRATOS_PORT: 14433,
   KRATOS_ADMIN_PORT: 14434,

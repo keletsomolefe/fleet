@@ -50,7 +50,9 @@ export class ApiError extends Error {
 }
 const configured = Constants.expoConfig?.extra?.apiUrl as
   string | null | undefined;
-const apiUrl = (configured ?? "http://127.0.0.1:3042/api").replace(/\/$/, "");
+const apiUrl = (
+  typeof configured === "string" ? configured : "http://127.0.0.1:3042/api"
+).replace(/\/$/, "");
 export async function request<T>(
   path: string,
   options: {

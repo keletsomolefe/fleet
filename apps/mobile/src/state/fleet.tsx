@@ -19,6 +19,7 @@ import {
   type Truck,
 } from "@/lib/api";
 import { keys, read, remove, write } from "@/lib/storage";
+import { stopTracking, reconcileDriverContext } from "@/tracking/service";
 
 type FleetState = {
   ready: boolean;
@@ -75,6 +76,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
             ? ["driver.access"]
             : ["admin.access", "trucks.read", "trucks.write"];
         if (required.some((p) => !access.permissions.includes(p))) {
+          await stopTracking("access_changed");
           await remove(keys.session);
           sessionRef.current = null;
           setSession(null);
@@ -89,13 +91,17 @@ export function FleetProvider({ children }: { children: ReactNode }) {
             });
           } catch (cause) {
             if (cause instanceof ApiError && cause.status === 403) {
+              await stopTracking("driver_access_ended");
               await remove(keys.session);
               sessionRef.current = null;
               setSession(null);
             }
             throw cause;
           }
-          if (ticket === generation.current) setDriver(profile);
+          if (ticket === generation.current) {
+            await reconcileDriverContext(profile);
+            setDriver(profile);
+          }
         }
       }
       if (ticket === generation.current) setError("");
@@ -197,6 +203,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       body: { identifier, password, mode },
     });
     try {
+      await stopTracking("account_changed");
       await write(keys.session, JSON.stringify(s));
     } catch (cause) {
       await request("auth/session", {
@@ -214,6 +221,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   }
   async function logout() {
     const s = sessionRef.current;
+    await stopTracking("signed_out");
     // Keep the token available for a retry if server revocation is unavailable.
     if (s)
       await request("auth/session", {
@@ -236,6 +244,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     const s = sessionRef.current;
     if (!s || s.mode !== "setup")
       throw new Error("Sign in as a fleet administrator.");
+    await stopTracking("device_setup");
     const pending = await read(keys.pending),
       token =
         pending ??

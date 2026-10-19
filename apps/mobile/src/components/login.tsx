@@ -14,6 +14,7 @@ import {
   useAction,
 } from "./ui";
 import type { Mode } from "@/lib/api";
+import { TrackingCard } from "./tracking-card";
 export function Login({ mode }: { mode: Mode }) {
   const { login, device, refresh, error: contextError } = useFleet(),
     action = useAction();
@@ -106,6 +107,7 @@ export function Login({ mode }: { mode: Mode }) {
             Set up this device
           </Button>
         )}
+        {!setup && <TrackingCard />}
       </View>
     </Screen>
   );

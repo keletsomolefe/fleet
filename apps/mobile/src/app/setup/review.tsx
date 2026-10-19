@@ -60,10 +60,7 @@ export default function Review() {
           title={replacing ? "Replace device access?" : "Attach this truck?"}
           detail="Check the registration before attaching."
         />
-        <TruckCard
-          truck={selection.truck}
-          meta={`Device: ${selection.identifier}`}
-        />
+        <TruckCard truck={selection.truck} />
         {replacing && (
           <View style={styles.card}>
             <Copy>The previous installation loses access.</Copy>

@@ -60,7 +60,7 @@ Existing design documentation and assets remain at the repository root.
 
 Final agreed requirements, reconstructed brand assets and an editable Figma prototype for one fleet business. Updated 17 October 2026.
 
-Latest extension: the native app supports admin device enrollment, truck attachment/replacement, driver sign-in and registration confirmation. Its [12 new editable Figma states](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=140-5332) are recorded in [the native design ledger](design/mobile-device-setup-state.json). The preceding Customers and Locations extension remains recorded in [customer/location state](design/customer-location-state.json) and [its journey checks](design/customer-location-audit.json).
+Latest extension: [durable background location logging](docs/background-location.md) adds SQLite, MQTT with HTTP fallback and backend route history. Its [four editable sharing states](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=144-4641) accompany the searchable truck setup. The native app supports admin device enrollment, truck attachment/replacement, driver sign-in and registration confirmation. Its [12 new editable Figma states](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=140-5332) are recorded in [the native design ledger](design/mobile-device-setup-state.json). The preceding Customers and Locations extension remains recorded in [customer/location state](design/customer-location-state.json) and [its journey checks](design/customer-location-audit.json).
 
 ## Documents
 
@@ -73,9 +73,9 @@ Latest extension: the native app supports admin device enrollment, truck attachm
 
 ## Figma
 
-[Editable design file](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=5-1864): Foundations, Driver App and Web Admin. There are 87 driver screens/states and 87 admin screens/states, plus reusable foundations and exploration/reference boards.
+[Editable design file](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=5-1864): Foundations, Driver App and Web Admin. There are 91 driver screens/states and 87 admin screens/states, plus reusable foundations and exploration/reference boards.
 
-The 174 screens are grouped in 25 journey sections: 11 driver and 14 admin. The driver prototype has 13 named starting points; admin has 14. Read each row left to right, then continue on the next row; recovery states follow their main journey. The [organization baseline](design/organization-validation.json) records the earlier 19 passing journey checks. The [latest admin audit](design/customer-location-audit.json) covers the customer/location extension, with no invalid destinations, unreachable screens or overlapping frames.
+The 178 screens are grouped in 26 journey sections: 12 driver and 14 admin. The driver prototype has 14 named starting points; admin has 14. Read each row left to right, then continue on the next row; recovery states follow their main journey. The [organization baseline](design/organization-validation.json) records the earlier 19 passing journey checks. The [latest admin audit](design/customer-location-audit.json) covers the customer/location extension, with no invalid destinations, unreachable screens or overlapping frames.
 
 The driver checks the truck already assigned to the device by admin before a new session, then continues to clock-in. This does not select another truck. If the registration does not match the physical truck, the driver asks the fleet administrator to correct the device assignment. PIN unlock resumes an existing active session directly.
 

@@ -1,4 +1,9 @@
 import { DriverTruckConfirmation } from '../mobile/mobile.entity.js';
+import {
+  TrackingEvent,
+  TrackingStream,
+} from '../telemetry/telemetry.entity.js';
+import { LocationTelemetry1792368005000 } from './migrations/1792368005000-LocationTelemetry.js';
 import { MobileDeviceEnrollment1792368004000 } from './migrations/1792368004000-MobileDeviceEnrollment.js';
 import { fleetEntities } from '../fleet/fleet.entity.js';
 import { FleetProfiles1792368003000 } from './migrations/1792368003000-FleetProfiles.js';
@@ -27,6 +32,8 @@ export function databaseOptions(maintenance = false): DataSourceOptions {
     entities: [
       ...fleetEntities,
       DriverTruckConfirmation,
+      TrackingStream,
+      TrackingEvent,
       User,
       Permission,
       Role,
@@ -39,6 +46,7 @@ export function databaseOptions(maintenance = false): DataSourceOptions {
       AdminAccess1792368002000,
       FleetProfiles1792368003000,
       MobileDeviceEnrollment1792368004000,
+      LocationTelemetry1792368005000,
     ],
     migrationsTableName: 'migrations',
     migrationsTransactionMode: 'each',

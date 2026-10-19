@@ -1,0 +1,39 @@
+{
+  "updated": "2026-10-19",
+  "fileKey": "LEbt69of7SErhXVRHps0B3",
+  "pageId": "3:2",
+  "mutatedNodeIds": [
+    "140:5600",
+    "140:5958",
+    "140:5605",
+    "140:5704",
+    "140:5799",
+    "140:5879",
+    "140:6253",
+    "140:6337"
+  ],
+  "removedNodeIds": [
+    "140:5595",
+    "I140:5595;3:52",
+    "I140:5595;3:53",
+    "I140:5595;3:54",
+    "140:5953",
+    "I140:5953;3:52",
+    "I140:5953;3:53",
+    "I140:5953;3:54",
+    "140:5409",
+    "140:6433"
+  ],
+  "changes": [
+    "Search by registration or fleet number; installation identity is automatic",
+    "Remove device-ID copy from setup and confirmation cards"
+  ],
+  "validation": {
+    "searchScreen": "140:5541",
+    "visualReview": "passed",
+    "trackingSection": "144:4641",
+    "trackingVisualReview": "passed",
+    "badFonts": [],
+    "rasterFills": 0
+  }
+}

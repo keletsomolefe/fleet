@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
+import { testTelemetry } from "./test-telemetry-flow.mjs";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { parseEnv } from "node:util";
@@ -249,6 +250,17 @@ try {
   pass(
     "Verified Driver ID login, role checks, device enrollment, hashed credentials and idempotent registration confirmation",
   );
+  await testTelemetry({
+    mobile,
+    request,
+    db,
+    env,
+    driverToken,
+    credential,
+    deviceId,
+    truckId: truckIds[0],
+    driverId,
+  });
 
   const moved = { ...enroll, truckId: truckIds[1] };
   assert.equal(
@@ -423,6 +435,13 @@ try {
       () => undefined,
     );
   if (driverId) {
+    await db.query(
+      'DELETE FROM app.tracking_events WHERE "streamId" IN (SELECT id FROM app.tracking_streams WHERE "driverId"=$1)',
+      [driverId],
+    );
+    await db.query('DELETE FROM app.tracking_streams WHERE "driverId"=$1', [
+      driverId,
+    ]);
     await db.query(
       'DELETE FROM app.driver_truck_confirmations WHERE "driverId"=$1',
       [driverId],

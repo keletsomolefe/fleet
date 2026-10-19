@@ -34,6 +34,9 @@ for (const [name, value] of Object.entries({
   KRATOS_ADMIN_PORT: 14434,
   KRATOS_UI_PORT: 14455,
   MAILPIT_PORT: 18025,
+  MQTT_ENABLED: 'true',
+  MQTT_WS_PORT: 1884,
+  MQTT_BIND_HOST: '127.0.0.1',
 })) setDefault(name, value);
 
 for (const name of [
@@ -58,6 +61,7 @@ setDefault('KRATOS_PUBLIC_URL', `http://127.0.0.1:${values.KRATOS_PORT}/`);
 setDefault('KRATOS_ADMIN_URL', `http://127.0.0.1:${values.KRATOS_ADMIN_PORT}/`);
 setDefault('KRATOS_UI_URL', `http://127.0.0.1:${values.KRATOS_UI_PORT}/`);
 setDefault('APP_URL', `http://127.0.0.1:${values.GATEWAY_PORT || 3042}/`);
+setDefault('MQTT_PUBLIC_URL', `ws://127.0.0.1:${values.MQTT_WS_PORT}/mqtt`);
 setDefault('KRATOS_HOOK_URL', `http://host.docker.internal:${values.GATEWAY_PORT || 3042}/api/internal/kratos/after-login`);
 setDefault('DATABASE_SCHEMA', 'app');
 setDefault('DATABASE_URL', `postgres://${encodeURIComponent(values.APP_DB_USER)}:${encodeURIComponent(values.APP_DB_PASSWORD)}@127.0.0.1:${values.POSTGRES_PORT}/${encodeURIComponent(values.POSTGRES_DB)}?sslmode=disable`);

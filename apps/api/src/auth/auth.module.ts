@@ -1,4 +1,10 @@
 import { MobileController } from '../mobile/mobile.controller.js';
+import {
+  MobileTelemetryController,
+  AdminTelemetryController,
+} from '../telemetry/telemetry.controller.js';
+import { TelemetryService } from '../telemetry/telemetry.service.js';
+import { FleetMqttService } from '../telemetry/mqtt.service.js';
 import { MobileAuthService } from '../mobile/mobile-auth.service.js';
 import { MobileDeviceService } from '../mobile/mobile-device.service.js';
 import {
@@ -44,6 +50,8 @@ import { RolesController } from '../rbac/roles.controller.js';
   controllers: [
     AuthController,
     MobileController,
+    MobileTelemetryController,
+    AdminTelemetryController,
     TrucksController,
     DriversController,
     AdminUsersController,
@@ -54,6 +62,8 @@ import { RolesController } from '../rbac/roles.controller.js';
     AuthService,
     MobileAuthService,
     MobileDeviceService,
+    TelemetryService,
+    FleetMqttService,
     FleetService,
     AuthMiddleware,
     KratosService,

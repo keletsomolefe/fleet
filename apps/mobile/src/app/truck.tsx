@@ -12,6 +12,7 @@ import {
   useAction,
 } from "@/components/ui";
 import { useFleet } from "@/state/fleet";
+import { TrackingCard } from "@/components/tracking-card";
 export default function ConfirmTruck() {
   const fleet = useFleet(),
     action = useAction(),
@@ -66,10 +67,7 @@ export default function ConfirmTruck() {
           }
         />
         {driver?.truck && (
-          <TruckCard
-            truck={driver.truck}
-            meta={fleet.device?.device.identifier}
-          />
+          <TruckCard truck={driver.truck} />
         )}
         {driver && (
           <View style={styles.card}>
@@ -77,6 +75,7 @@ export default function ConfirmTruck() {
             <Copy small>{driver.driver.identifier}</Copy>
           </View>
         )}
+        <TrackingCard />
         <Notice
           title="Check with your administrator"
           message={driver?.reason ?? undefined}

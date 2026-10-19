@@ -41,10 +41,7 @@ export default function Ready() {
           title="Device ready"
           detail="Drivers can now sign in and confirm this registration."
         />
-        <TruckCard
-          truck={fleet.device.truck}
-          meta={fleet.device.device.identifier}
-        />
+        <TruckCard truck={fleet.device.truck} />
         <Notice message={action.error} />
       </View>
     </Screen>

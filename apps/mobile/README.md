@@ -1,6 +1,6 @@
 # VHH Fleet mobile
 
-Native Expo SDK 58 app for administrator device enrollment and online driver sign-in. See [the setup, security and API guide](../../docs/mobile-device-setup.md).
+Native Expo SDK 58 app for administrator device enrollment and online driver sign-in, with free native background location logging. See [location durability and deployment](../../docs/background-location.md). See [the setup, security and API guide](../../docs/mobile-device-setup.md).
 
 Run all commands from the repository root:
 
@@ -21,6 +21,6 @@ Android builds were verified with Java 17. Set `JAVA_HOME` to a JDK 17 installat
 
 The application uses Expo Router, SecureStore, local Figma SVG assets, Montserrat and the VHH theme. Native projects are generated with `pnpm --filter mobile prebuild` and ignored by Git. Native settings belong in `app.json`, `app.config.ts` and config plugins. The reference `~/Dev/brocabs` workflow informed local native development commands; no application credentials or integrations were copied.
 
-Run `pnpm mobile:check` and `pnpm test:mobile` before delivery. The latter requires the migrated local database, Kratos and gateway. The web target is a visual preview; credential flows require an installed native build.
+Run `pnpm mobile:check`, `pnpm test:tracking-queue` and `pnpm test:mobile` before delivery. The latter requires the migrated local database, Kratos and gateway. The web target is a visual preview; credential flows require an installed native build.
 
 Production builds must supply an HTTPS `EXPO_PUBLIC_API_URL`. The development EAS profile builds a development client; preview/production profiles are available for signing and distribution configuration. No EAS project or cloud build is created by this change.

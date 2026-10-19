@@ -4,7 +4,7 @@
     "slug": "vhh-fleet",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/brand/vhh-monogram-4096.png",
+    "icon": "./assets/brand/app-icon.png",
     "scheme": "vhh-fleet",
     "userInterfaceStyle": "light",
     "ios": {
@@ -13,9 +13,11 @@
     },
     "android": {
       "package": "com.vhhfleet.driver",
+      "allowBackup": false,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
-        "foregroundImage": "./assets/brand/vhh-monogram-4096.png"
+        "foregroundImage": "./assets/brand/adaptive-icon.png",
+        "monochromeImage": "./assets/brand/adaptive-icon.png"
       }
     },
     "web": {
@@ -25,6 +27,18 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      "expo-sqlite",
+      "expo-background-task",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Fleet to record this truck’s route while you share location.",
+          "locationAlwaysAndWhenInUsePermission": "Allow Fleet to record this truck’s route in the background while location sharing is on.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
       [
         "expo-splash-screen",
         {

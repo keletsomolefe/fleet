@@ -9,7 +9,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const rootEnv = existsSync(rootEnvPath)
     ? parseEnv(readFileSync(rootEnvPath, "utf8"))
     : {};
-  const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? rootEnv.EXPO_PUBLIC_API_URL;
+  const apiUrl =
+    process.env.EXPO_PUBLIC_API_URL ??
+    rootEnv.EXPO_PUBLIC_API_URL ??
+    "http://127.0.0.1:3042/api";
   if (apiUrl && !/^https?:\/\//.test(apiUrl))
     throw new Error("EXPO_PUBLIC_API_URL must be an HTTP(S) URL.");
   const development =
@@ -23,7 +26,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: "VHH Fleet",
     slug: "vhh-fleet",
-    extra: { apiUrl: apiUrl ?? null },
+    extra: { apiUrl },
     ios: {
       ...config.ios,
       infoPlist: {
