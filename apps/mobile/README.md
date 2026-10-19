@@ -1,6 +1,6 @@
 # VHH Fleet mobile
 
-Native Expo SDK 58 app for administrator device enrollment and online driver sign-in, with free native background location logging. See [location durability and deployment](../../docs/background-location.md). See [the setup, security and API guide](../../docs/mobile-device-setup.md).
+Native Expo SDK 58 app with one email/Driver ID sign-in form for administrator device enrollment and driver access, with free native background location logging. See [location durability and deployment](../../docs/background-location.md). See [the setup, security and API guide](../../docs/mobile-device-setup.md).
 
 Run all commands from the repository root:
 

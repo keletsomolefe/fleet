@@ -1,5 +1,6 @@
 import {
   HttpException,
+  ForbiddenException,
   Inject,
   Injectable,
   UnauthorizedException,
@@ -32,17 +33,13 @@ export class MobileAuthService {
     if (this.attempts.size >= 5000)
       this.attempts.delete(this.attempts.keys().next().value!);
     this.attempts.set(key, entry);
-    const profile =
-      input.mode === 'driver'
-        ? await this.db.getRepository(DriverProfile).findOne({
-            where: { identifier: input.identifier.toUpperCase() },
-            relations: { user: true },
-          })
-        : null;
-    const identifier =
-      input.mode === 'driver'
-        ? (profile?.user.email ?? input.identifier)
-        : input.identifier.toLowerCase();
+    const profile = !input.identifier.includes('@')
+      ? await this.db.getRepository(DriverProfile).findOne({
+          where: { identifier: input.identifier.toUpperCase() },
+          relations: { user: true },
+        })
+      : null;
+    const identifier = (profile?.user.email ?? input.identifier).toLowerCase();
     let token: string;
     try {
       const flow = await this.kratos.request<{ id: string }>(
@@ -70,21 +67,10 @@ export class MobileAuthService {
     }
     try {
       const context = await this.auth.authenticateNative(token);
-      if (input.mode === 'setup') this.requireSetup(context);
-      else {
-        this.rbac.require(context, 'driver.access');
-        if (
-          !profile ||
-          profile.userId !== context.user.id ||
-          profile.status !== 'active'
-        )
-          throw new UnauthorizedException(
-            'Driver access is not active. Contact your fleet administrator.',
-          );
-      }
+      const mode = await this.resolveMode(context);
       return {
         sessionToken: token,
-        mode: input.mode,
+        mode,
         user: this.auth.profile(context.user),
         expiresAt: context.session.expires_at ?? null,
       };
@@ -92,6 +78,24 @@ export class MobileAuthService {
       await this.kratos.revokeToken(token).catch(() => undefined);
       throw error;
     }
+  }
+  async resolveMode(context: AdminContext): Promise<'setup' | 'driver'> {
+    // Mode is a navigation result, never an account type or a client-selected grant.
+    if (
+      ['admin.access', 'trucks.read', 'trucks.write'].every((p) =>
+        context.permissions.includes(p),
+      )
+    )
+      return 'setup';
+    this.rbac.require(context, 'driver.access');
+    const profile = await this.db
+      .getRepository(DriverProfile)
+      .findOneBy({ userId: context.user.id, status: 'active' });
+    if (!profile)
+      throw new ForbiddenException(
+        'Driver access is not active. Contact your fleet administrator.',
+      );
+    return 'driver';
   }
   requireSetup(context: AdminContext) {
     this.rbac.require(context, 'admin.access', 'trucks.read', 'trucks.write');

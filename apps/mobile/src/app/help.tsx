@@ -7,9 +7,6 @@ export default function Help() {
       actions={
         <>
           <Button onPress={() => router.replace("/")}>Back to sign in</Button>
-          <Button secondary onPress={() => router.push("/device-setup")}>
-            Set up this device
-          </Button>
         </>
       }
     >
@@ -21,8 +18,9 @@ export default function Help() {
       />
       <View style={styles.card}>
         <Copy small>
-          Ask your administrator to check your Driver ID, account access or
-          password. For the wrong truck, ask them to set up this device again.
+          Ask your administrator to check your email or Driver ID, account
+          access or password. To attach or change the truck, an administrator
+          signs in here.
         </Copy>
       </View>
     </Screen>

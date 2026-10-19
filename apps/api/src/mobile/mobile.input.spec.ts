@@ -55,7 +55,13 @@ describe('Native request boundaries', () => {
         BadRequestException,
       );
   });
-  it('validates login mode, credentials and current association', () => {
+  it('accepts unified credentials and validates legacy mode without trusting it', () => {
+    expect(
+      parseLogin({ identifier: ' user@example.test ', password: 'secret' }),
+    ).toEqual({ identifier: 'user@example.test', password: 'secret' });
+    expect(
+      parseLogin({ identifier: 'TM-001', password: 'secret', mode: 'setup' }),
+    ).not.toHaveProperty('mode');
     expect(
       parseLogin({ identifier: ' TM-001 ', password: 'secret', mode: 'driver' })
         .identifier,

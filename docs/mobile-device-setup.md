@@ -1,13 +1,13 @@
 # Native device setup and driver login
 
-Design source: [native setup and driver sign-in](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=140-5332). The section contains 12 editable VHH screens covering admin sign-in, truck selection, attachment review, replacement, success, empty search, connection failure, driver sign-in, registration confirmation and mismatch recovery. Screen IDs, construction recipe and prototype destinations are saved in [the design ledger](../design/mobile-device-setup-state.json).
+Design source: [native setup and driver sign-in](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=140-5332). The section contains 12 editable VHH screens covering shared sign-in, truck selection, attachment review, replacement, success, empty search, connection failure, driver sign-in, registration confirmation and mismatch recovery. Screen IDs, construction recipe and prototype destinations are saved in [the design ledger](../design/mobile-device-setup-state.json).
 
 ## Device and account lifecycle
 
-1. On the installed app, choose **Set up this device**, then **Administrator sign in**. Use an active, email-verified account with `admin.access`, `trucks.read` and `trucks.write`.
+1. Use the single **Sign in** screen with an email address or Driver ID and password. Kratos authenticates the account; the API derives the next workflow from current permissions. An active, email-verified account with `admin.access`, `trucks.read` and `trucks.write` opens device setup. If this installation already has a truck, it opens **Device ready** with **Change truck** available. These setup permissions take precedence if the account also has driver access.
 2. Search or browse active trucks and select the registration physically present. The app creates and retains a random installation identifier automatically; the setup screen does not ask for a device ID.
 3. Review the registration and attach. Replacing an enrolled installation or moving a device requires explicit confirmation. A stale truck/device selection returns a conflict and must be refreshed.
-4. **Driver sign in** revokes the administrator’s Kratos session. A driver uses their Driver ID and Kratos password. They need an active account, `driver.access` and an active driver profile; profiles and roles remain separate.
+4. **Back to sign in** signs out the administrator and revokes their Kratos session. Drivers use the same form with either their Driver ID or email and Kratos password. They need an active account, `driver.access` and an active driver profile; profiles and roles remain separate. An unconfigured device shows **Device setup needed**, asking an administrator to sign in and attach a truck.
 5. The driver checks the device’s current registration and confirms it. The API requires an active truck, current licence and complete, current PrDP. Confirmation records the driver, Kratos session and exact binding. A new login or changed binding requires confirmation again. Mismatch recovery asks the administrator to correct device setup.
 
 Confirmation does not change the driver’s administrative truck assignment or create a shift, odometer reading or offline PIN. Confirmed drivers can explicitly start [background location sharing](background-location.md). Truck/driver record creation and editing remain in the [admin application](drivers-and-trucks.md).
@@ -15,6 +15,8 @@ Confirmation does not change the driver’s administrative truck assignment or c
 ## Authentication and persistence
 
 Kratos creates, validates and revokes native session tokens. Passwords are forwarded only to its native password flow and never persisted. Native endpoints require bearer tokens, reject browser Origin/fetch metadata/cookie requests, and never accept a browser cookie as a fallback. Existing browser authentication and CSRF protection remain intact. Every protected request validates the active local user and current permissions; driver requests also check profile status and confirmation eligibility.
+
+Login and session refresh both derive navigation mode on the server. The app revalidates current access on foreground, updates the active workflow if permissions change, and preserves the independent device binding across account changes. The old setup-login and device-setup links redirect to the same sign-in form. Older clients may send `mode`; it is validated for compatibility and ignored for authorization.
 
 Session and device credentials use Expo SecureStore. The web preview does not store or submit them. The installation credential is 256 random bits; only its SHA-256 digest is stored on `app.truck_devices`, excluded from normal entity selection and all responses. Enrollment persists a pending secure credential before transmission so an interrupted response can be recovered by checking that credential on retry or restart. Changing truck bindings retains the existing association history. Replacing an installation clears the previous credential immediately.
 
@@ -28,8 +30,8 @@ All responses are private/no-store. The app calls these through the gateway:
 
 | Endpoint | Access and purpose |
 | --- | --- |
-| `POST /api/mobile/auth/login` | Native password flow; `{identifier,password,mode: driver\|setup}` |
-| `GET /api/mobile/auth/session` | Validated local user and current permissions |
+| `POST /api/mobile/auth/login` | Shared native password flow; `{identifier,password}`; server returns permission-derived `mode` |
+| `GET /api/mobile/auth/session` | Validated local user, current permissions and permission-derived navigation mode |
 | `DELETE /api/mobile/auth/session` | Revoke the bearer session |
 | `GET /api/mobile/device` | Device credential; minimal truck context before sign-in |
 | `GET /api/mobile/setup/trucks?q=&page=1` | Setup permissions; active trucks, 20/page, device availability |

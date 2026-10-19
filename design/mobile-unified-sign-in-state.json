@@ -1,0 +1,67 @@
+{
+  "updated": "2026-10-19",
+  "fileKey": "LEbt69of7SErhXVRHps0B3",
+  "pageId": "3:2",
+  "screens": {
+    "setupRequired": "140:5333",
+    "unconfiguredSignIn": "140:5414",
+    "configuredSignIn": "140:6059",
+    "deviceReady": "140:5819"
+  },
+  "mutatedNodeIds": [
+    "140:5393",
+    "140:5394",
+    "I140:5410;3:39",
+    "140:5523",
+    "140:5524",
+    "I140:5527;3:52",
+    "I140:5539;3:47",
+    "140:6168",
+    "140:6169",
+    "I140:6172;3:52",
+    "I140:6186;3:47",
+    "I140:5895;3:39",
+    "140:5414",
+    "140:6059",
+    "140:5539"
+  ],
+  "removedNodeIds": [
+    "140:5412",
+    "I140:5412;3:47",
+    "140:6182",
+    "140:6183",
+    "140:6188",
+    "I140:6188;3:47",
+    "140:5396",
+    "I140:5396;47:291",
+    "I140:5396;47:291;51:320",
+    "I140:5396;47:291;51:321",
+    "I140:5396;47:291;51:322",
+    "I140:5396;47:291;51:323",
+    "I140:5396;47:306",
+    "I140:5396;3:74",
+    "I140:5396;3:75"
+  ],
+  "behavior": [
+    "One Sign in form accepts email or Driver ID",
+    "Server-derived setup permissions take precedence; otherwise active driver access is required",
+    "An existing device binding opens Device ready for setup accounts; drivers confirm the assigned truck",
+    "An unconfigured driver's device requests administrator setup; old sign-in URLs redirect to the shared form"
+  ],
+  "validation": {
+    "visualReview": [
+      "140:5414",
+      "140:6059",
+      "140:5333"
+    ],
+    "editableLayers": true,
+    "reusedExistingComponents": true,
+    "nativeSimulator": "iPhone 17 Pro / iOS 26.5: one sign-in action, shared identifier field, no role selector",
+    "apiUnitTests": 69,
+    "mobileLint": "passed",
+    "mobileTypes": "passed",
+    "apiTypes": "passed",
+    "apiBuild": "passed",
+    "liveIntegration": "blocked: local Docker daemon unresponsive"
+  }
+}

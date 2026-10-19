@@ -30,8 +30,11 @@ type FleetState = {
   deviceName: string;
   selection: { truck: Truck; identifier: string } | null;
   selectTruck: (truck: Truck, identifier: string) => void;
-  refresh: () => Promise<void>;
-  login: (identifier: string, password: string, mode: Mode) => Promise<void>;
+  refresh: () => Promise<DeviceContext | null>;
+  login: (
+    identifier: string,
+    password: string,
+  ) => Promise<"/setup" | "/setup/ready" | "/truck">;
   logout: () => Promise<void>;
   enroll: (
     truck: Truck,
@@ -58,79 +61,81 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     generation = useRef(0);
   const refresh = useCallback(async () => {
     const ticket = generation.current,
-      current = sessionRef.current,
       token = tokenRef.current;
+    let current = sessionRef.current;
     try {
-      let next: DeviceContext | null = null;
-      if (token)
-        next = await request<DeviceContext>("device", { device: token });
-      if (ticket !== generation.current) return;
-      setDevice(next);
       if (current) {
-        const access = await request<{ permissions: string[] }>(
-          "auth/session",
-          { session: current.sessionToken },
-        );
-        const required =
-          current.mode === "driver"
-            ? ["driver.access"]
-            : ["admin.access", "trucks.read", "trucks.write"];
-        if (required.some((p) => !access.permissions.includes(p))) {
-          await stopTracking("access_changed");
-          await remove(keys.session);
-          sessionRef.current = null;
-          setSession(null);
-          throw new ApiError(403, "Your access changed. Please sign in again.");
+        let access: { mode: Mode };
+        try {
+          access = await request<{ mode: Mode }>("auth/session", {
+            session: current.sessionToken,
+          });
+        } catch (cause) {
+          if (
+            ticket === generation.current &&
+            cause instanceof ApiError &&
+            [401, 403].includes(cause.status)
+          ) {
+            if (cause.status === 403) await stopTracking("access_changed");
+            await remove(keys.session);
+            sessionRef.current = null;
+            setSession(null);
+          }
+          throw cause;
         }
-        if (current.mode === "driver" && token) {
-          let profile: DriverContext;
-          try {
-            profile = await request<DriverContext>("driver/truck", {
-              session: current.sessionToken,
-              device: token,
-            });
-          } catch (cause) {
-            if (cause instanceof ApiError && cause.status === 403) {
-              await stopTracking("driver_access_ended");
-              await remove(keys.session);
-              sessionRef.current = null;
-              setSession(null);
-            }
-            throw cause;
-          }
-          if (ticket === generation.current) {
-            await reconcileDriverContext(profile);
-            setDriver(profile);
-          }
+        if (ticket !== generation.current) return null;
+        if (access.mode !== current.mode) {
+          await stopTracking("access_changed");
+          current = { ...current, mode: access.mode };
+          await write(keys.session, JSON.stringify(current));
+          if (ticket !== generation.current) return null;
+          sessionRef.current = current;
+          setSession(current);
+          setSelection(null);
         }
       }
+      const next = token
+        ? await request<DeviceContext>("device", { device: token })
+        : null;
+      if (ticket !== generation.current) return null;
+      setDevice(next);
+      if (current?.mode === "driver" && token) {
+        let profile: DriverContext;
+        try {
+          profile = await request<DriverContext>("driver/truck", {
+            session: current.sessionToken,
+            device: token,
+          });
+        } catch (cause) {
+          if (
+            ticket === generation.current &&
+            cause instanceof ApiError &&
+            cause.status === 403
+          ) {
+            await stopTracking("driver_access_ended");
+            await remove(keys.session);
+            sessionRef.current = null;
+            setSession(null);
+          }
+          throw cause;
+        }
+        if (ticket === generation.current) {
+          await reconcileDriverContext(profile);
+          setDriver(profile);
+        }
+      } else if (ticket === generation.current) setDriver(null);
       if (ticket === generation.current) setError("");
+      return next;
     } catch (cause) {
-      if (ticket !== generation.current) return;
+      if (ticket !== generation.current) return null;
       setDriver(null);
       setDevice(null);
-      if (cause instanceof ApiError && [401, 403].includes(cause.status)) {
-        // Validate the account independently so revoked device credentials do not destroy a valid login.
-        if (current) {
-          try {
-            await request("auth/session", { session: current.sessionToken });
-          } catch (sessionError) {
-            if (
-              sessionError instanceof ApiError &&
-              [401, 403].includes(sessionError.status)
-            ) {
-              await remove(keys.session);
-              sessionRef.current = null;
-              setSession(null);
-            }
-          }
-        }
-      }
       setError(
         cause instanceof Error
           ? cause.message
           : "Could not refresh this device.",
       );
+      return null;
     }
   }, []);
   useEffect(() => {
@@ -197,10 +202,10 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       subscription.remove();
     };
   }, [refresh]);
-  async function login(identifier: string, password: string, mode: Mode) {
+  async function login(identifier: string, password: string) {
     const s = await request<Session>("auth/login", {
       method: "POST",
-      body: { identifier, password, mode },
+      body: { identifier, password },
     });
     try {
       await stopTracking("account_changed");
@@ -217,7 +222,14 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     setSession(s);
     setDriver(null);
     setError("");
-    await refresh();
+    const assigned = await refresh();
+    const active = sessionRef.current;
+    if (!active) throw new Error("Please sign in again.");
+    return active.mode === "setup"
+      ? assigned?.truck
+        ? ("/setup/ready" as const)
+        : ("/setup" as const)
+      : ("/truck" as const);
   }
   async function logout() {
     const s = sessionRef.current;

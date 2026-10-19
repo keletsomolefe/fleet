@@ -22,7 +22,7 @@ export default function Ready() {
             loading={action.busy}
             onPress={() => void action.run(fleet.logout)}
           >
-            Driver sign in
+            Back to sign in
           </Button>
           <Button
             secondary

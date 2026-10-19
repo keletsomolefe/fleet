@@ -41,10 +41,10 @@ async function request(
   };
 }
 const mobile = (path, options) => request(`api/mobile/${path}`, options);
-async function login(identifier, credential, mode) {
+async function login(identifier, credential) {
   return mobile("auth/login", {
     method: "POST",
-    body: { identifier, password: credential, mode },
+    body: { identifier, password: credential },
   });
 }
 const pass = (label) => console.log(`PASS ${label}`);
@@ -56,7 +56,7 @@ try {
         await mobile("auth/login", {
           method: "POST",
           headers: { [header]: "browser" },
-          body: { identifier: "x", password: "x", mode: "setup" },
+          body: { identifier: "x", password: "x" },
         })
       ).status,
       403,
@@ -64,19 +64,18 @@ try {
   assert.equal((await mobile("setup/trucks")).status, 401);
   assert.equal((await mobile("device")).status, 401);
   assert.equal(
-    (await login(env.BOOTSTRAP_ADMIN_EMAIL, "incorrect-password", "setup"))
-      .status,
+    (await login(env.BOOTSTRAP_ADMIN_EMAIL, "incorrect-password")).status,
     401,
   );
   const admin = await login(
     env.BOOTSTRAP_ADMIN_EMAIL,
     env.BOOTSTRAP_ADMIN_PASSWORD,
-    "setup",
   );
   assert.equal(admin.status, 200, JSON.stringify(admin.body));
   const adminToken = admin.body.sessionToken;
   tokens.push(adminToken);
   assert.ok(adminToken);
+  assert.equal(admin.body.mode, "setup");
   assert.match(admin.headers.get("cache-control"), /no-store/);
   assert.equal(
     (await mobile("auth/session", { token: adminToken })).status,
@@ -142,13 +141,20 @@ try {
         )
       ).rows[0].id,
     );
-  assert.equal(
-    (await login(email, password, "setup")).status,
-    403,
-    "Driver-only cannot enroll a device",
-  );
-  const driverLogin = await login(`${tag}-D`, password, "driver");
+  const emailLogin = await login(email, password);
+  assert.equal(emailLogin.status, 200);
+  assert.equal(emailLogin.body.mode, "driver");
+  tokens.push(emailLogin.body.sessionToken);
+  const spoofed = await mobile("auth/login", {
+    method: "POST",
+    body: { identifier: email, password, mode: "setup" },
+  });
+  assert.equal(spoofed.status, 200);
+  assert.equal(spoofed.body.mode, "driver");
+  tokens.push(spoofed.body.sessionToken);
+  const driverLogin = await login(`${tag}-D`, password);
   assert.equal(driverLogin.status, 200);
+  assert.equal(driverLogin.body.mode, "driver");
   const driverToken = driverLogin.body.sessionToken;
   tokens.push(driverToken);
   assert.equal(

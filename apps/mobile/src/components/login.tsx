@@ -2,32 +2,18 @@ import { useState } from "react";
 import { View } from "react-native";
 import { router } from "expo-router";
 import { useFleet } from "@/state/fleet";
-import {
-  Button,
-  Copy,
-  Field,
-  Heading,
-  Logo,
-  Notice,
-  Screen,
-  styles,
-  useAction,
-} from "./ui";
-import type { Mode } from "@/lib/api";
+import { Button, Field, Heading, Logo, Notice, Screen, useAction } from "./ui";
 import { TrackingCard } from "./tracking-card";
-export function Login({ mode }: { mode: Mode }) {
+export function Login() {
   const { login, device, refresh, error: contextError } = useFleet(),
     action = useAction();
   const [identifier, setIdentifier] = useState(""),
     [password, setPassword] = useState("");
-  const setup = mode === "setup";
   function submit() {
     void action.run(async () => {
-      if (!setup && !device?.truck)
-        throw new Error("Set up this device before signing in.");
-      await login(identifier.trim(), password, mode);
+      const destination = await login(identifier.trim(), password);
       setPassword("");
-      router.replace(setup ? "/setup" : "/truck");
+      router.replace(destination);
     });
   }
   return (
@@ -39,14 +25,14 @@ export function Login({ mode }: { mode: Mode }) {
             loading={action.busy}
             disabled={!identifier.trim() || !password}
           >
-            {setup ? "Sign in" : "Continue"}
+            Sign in
           </Button>
           <Button
             secondary
             disabled={action.busy}
-            onPress={() => router.push(setup ? "/device-setup" : "/help")}
+            onPress={() => router.push("/help")}
           >
-            {setup ? "Cancel" : "Need help?"}
+            Need help?
           </Button>
         </>
       }
@@ -54,29 +40,20 @@ export function Login({ mode }: { mode: Mode }) {
       <View style={{ gap: 20 }}>
         <Logo />
         <Heading
-          title={setup ? "Administrator sign in" : "Driver sign in"}
+          title="Sign in"
           detail={
-            setup
-              ? "Set up the device in this truck."
-              : "Sign in to confirm your truck."
+            device?.truck ? "Continue with this truck." : "Sign in to continue."
           }
         />
-        {setup && (
-          <View style={styles.card}>
-            <Copy>Fleet administrator</Copy>
-            <Copy small>Use your fleet account to attach this device.</Copy>
-          </View>
-        )}
         <Field
-          label={setup ? "Email address" : "Driver ID"}
+          label="Email or Driver ID"
           value={identifier}
           onChangeText={setIdentifier}
           editable={!action.busy}
-          autoCapitalize={setup ? "none" : "characters"}
-          keyboardType={setup ? "email-address" : "default"}
+          autoCapitalize="none"
           autoCorrect={false}
-          autoComplete={setup ? "email" : "username"}
-          textContentType={setup ? "emailAddress" : "username"}
+          autoComplete="username"
+          textContentType="username"
           returnKeyType="next"
         />
         <Field
@@ -93,21 +70,16 @@ export function Login({ mode }: { mode: Mode }) {
           returnKeyType="go"
         />
         <Notice message={action.error || contextError} />
-        {!setup && !!contextError && (
+        {!!contextError && (
           <Button
             secondary
             loading={action.busy}
             onPress={() => void action.run(refresh)}
           >
-            Refresh assigned truck
+            Try again
           </Button>
         )}
-        {!setup && !device?.truck && (
-          <Button secondary onPress={() => router.push("/device-setup")}>
-            Set up this device
-          </Button>
-        )}
-        {!setup && <TrackingCard />}
+        <TrackingCard />
       </View>
     </Screen>
   );

@@ -4,6 +4,8 @@ The delivered artifact is [the editable Figma file](https://www.figma.com/design
 
 ## Current source of truth
 
+- [Unified native sign-in amendment](mobile-unified-sign-in-state.json): one email/Driver ID form, with administrator and driver example states using identical controls. Setup permissions take precedence; the current device binding determines whether setup opens truck selection or Device ready. Separate role-selection buttons were removed.
+
 - [Native location sharing](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=144-4641): four editable VHH states for stopped, online, offline and permission recovery, linked from confirmed truck setup. [State ledger](mobile-tracking-state.json) and [construction recipe](build-mobile-tracking.js) and [validation/amendment record](mobile-tracking-validation.json) preserve the implementation. Structural and full-section visual checks passed. Truck setup now uses registration/fleet search and automatic installation identity.
 
 - [Native device setup and online sign-in](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=140-5332): 12 editable screens on the driver page, added 19 October 2026. [State and routes](mobile-device-setup-state.json) and [executed construction recipe](build-mobile-device-setup.js) preserve the admin enrollment/replacement and driver confirmation flow. Both new prototype starts reach every screen; structural checks found no broken destinations, frame overflow or raster fills. The full section was visually reviewed. See [the implemented native workflow](../docs/mobile-device-setup.md).

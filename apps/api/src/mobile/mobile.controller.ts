@@ -42,6 +42,7 @@ export class MobileController {
     const c = await this.auth.authenticateNative(bearer(req));
     return {
       user: this.auth.profile(c.user),
+      mode: await this.mobileAuth.resolveMode(c),
       permissions: c.permissions,
       expiresAt: c.session.expires_at ?? null,
     };

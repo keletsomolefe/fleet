@@ -17,12 +17,13 @@ export default function ConfirmTruck() {
   const fleet = useFleet(),
     action = useAction(),
     driver = fleet.driver,
-    confirmed = !!driver?.confirmedAt && driver.canConfirm;
+    confirmed = !!driver?.confirmedAt && driver.canConfirm,
+    missingSetup = !fleet.device?.truck && !fleet.error;
   return (
     <Screen
       actions={
         <>
-          {confirmed ? (
+          {missingSetup ? null : confirmed ? (
             <Button
               onPress={() => void action.run(fleet.refresh)}
               loading={action.busy}
@@ -38,13 +39,15 @@ export default function ConfirmTruck() {
               Yes, this is my truck
             </Button>
           )}
-          <Button
-            secondary
-            disabled={action.busy}
-            onPress={() => router.push("/mismatch")}
-          >
-            This is not my truck
-          </Button>
+          {fleet.device?.truck && (
+            <Button
+              secondary
+              disabled={action.busy}
+              onPress={() => router.push("/mismatch")}
+            >
+              This is not my truck
+            </Button>
+          )}
           <Button
             secondary
             disabled={action.busy}
@@ -59,16 +62,22 @@ export default function ConfirmTruck() {
         <Emblem name={confirmed ? "check" : "truck"} />
         <Heading
           center
-          title={confirmed ? "Truck confirmed" : "Is this your truck?"}
+          title={
+            missingSetup
+              ? "Device setup needed"
+              : confirmed
+                ? "Truck confirmed"
+                : "Is this your truck?"
+          }
           detail={
-            confirmed
-              ? "Your registration has been confirmed."
-              : "Check the registration of the truck you are in."
+            missingSetup
+              ? "Ask an administrator to sign in and attach this device."
+              : confirmed
+                ? "Your registration has been confirmed."
+                : "Check the registration of the truck you are in."
           }
         />
-        {driver?.truck && (
-          <TruckCard truck={driver.truck} />
-        )}
+        {driver?.truck && <TruckCard truck={driver.truck} />}
         {driver && (
           <View style={styles.card}>
             <Copy>{driver.driver.name}</Copy>

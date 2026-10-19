@@ -32,6 +32,7 @@ function object(raw: unknown, keys: string[]) {
   return v;
 }
 export function parseLogin(raw: unknown) {
+  // Older development clients may send mode; it never selects or grants access.
   const v = object(raw, ['identifier', 'password', 'mode']);
   if (
     typeof v.identifier !== 'string' ||
@@ -40,13 +41,12 @@ export function parseLogin(raw: unknown) {
     typeof v.password !== 'string' ||
     !v.password ||
     v.password.length > 128 ||
-    !['driver', 'setup'].includes(String(v.mode))
+    (v.mode !== undefined && !['driver', 'setup'].includes(String(v.mode)))
   )
     throw new BadRequestException('Enter your sign-in details.');
   return {
     identifier: v.identifier.trim(),
     password: v.password,
-    mode: v.mode as 'driver' | 'setup',
   };
 }
 export function parseEnrollment(raw: unknown) {
