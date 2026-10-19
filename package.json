@@ -6,7 +6,14 @@
     "start": "wattpm start",
     "test": "npm run test --workspace api",
     "test:e2e": "npm run test:e2e --workspace api",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev:setup": "node scripts/setup-dev.mjs",
+    "infra:up": "node scripts/setup-dev.mjs && docker compose up -d --wait --wait-timeout 180",
+    "infra:down": "docker compose down",
+    "infra:logs": "docker compose logs -f",
+    "infra:status": "docker compose ps -a",
+    "infra:migrate": "docker compose run --rm kratos-migrate",
+    "infra:test": "node scripts/test-dev-stack.mjs"
   },
   "dependencies": {
     "@platformatic/runtime": "^3.72.0",

@@ -1,0 +1,117 @@
+name: fleet-dev
+
+x-kratos-environment: &kratos-environment
+  DSN: ${KRATOS_DSN:?Run pnpm dev:setup}
+  SECRETS_COOKIE: ${KRATOS_COOKIE_SECRET:?Run pnpm dev:setup}
+  SECRETS_CIPHER: ${KRATOS_CIPHER_SECRET:?Run pnpm dev:setup}
+  SERVE_PUBLIC_BASE_URL: ${KRATOS_PUBLIC_URL:-http://127.0.0.1:14433/}
+  SELFSERVICE_DEFAULT_BROWSER_RETURN_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}welcome
+  SELFSERVICE_ALLOWED_RETURN_URLS: ${KRATOS_UI_URL:-http://127.0.0.1:14455/},http://127.0.0.1:${GATEWAY_PORT:-3042}/
+  SELFSERVICE_FLOWS_ERROR_UI_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}error
+  SELFSERVICE_FLOWS_LOGIN_UI_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}login
+  SELFSERVICE_FLOWS_REGISTRATION_UI_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}registration
+  SELFSERVICE_FLOWS_SETTINGS_UI_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}settings
+  SELFSERVICE_FLOWS_RECOVERY_UI_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}recovery
+  SELFSERVICE_FLOWS_VERIFICATION_UI_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}verification
+  SELFSERVICE_FLOWS_VERIFICATION_AFTER_DEFAULT_BROWSER_RETURN_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}login
+  SELFSERVICE_FLOWS_LOGOUT_AFTER_DEFAULT_BROWSER_RETURN_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}login
+  SERVE_PUBLIC_CORS_ALLOWED_ORIGINS: http://127.0.0.1:${GATEWAY_PORT:-3042},http://127.0.0.1:${KRATOS_UI_PORT:-14455}
+
+services:
+  postgres:
+    image: postgres:18.6-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fleet}
+      POSTGRES_USER: ${POSTGRES_USER:-fleet_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run pnpm dev:setup}
+      APP_DB_USER: ${APP_DB_USER:-fleet_app}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Run pnpm dev:setup}
+      KRATOS_DB_USER: ${KRATOS_DB_USER:-fleet_kratos}
+      KRATOS_DB_PASSWORD: ${KRATOS_DB_PASSWORD:?Run pnpm dev:setup}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-55432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./docker/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -h 127.0.0.1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  kratos-migrate:
+    image: oryd/kratos:v26.2.0
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment: *kratos-environment
+    command: [migrate, sql, --config, /etc/config/kratos/kratos.yml, --read-from-env, --yes]
+    volumes:
+      - ./docker/kratos:/etc/config/kratos:ro
+
+  kratos:
+    image: oryd/kratos:v26.2.0
+    restart: unless-stopped
+    depends_on:
+      kratos-migrate:
+        condition: service_completed_successfully
+      mailpit:
+        condition: service_healthy
+    environment: *kratos-environment
+    command: [serve, --config, /etc/config/kratos/kratos.yml, --dev, --watch-courier]
+    ports:
+      - "127.0.0.1:${KRATOS_PORT:-14433}:4433"
+      - "127.0.0.1:${KRATOS_ADMIN_PORT:-14434}:4434"
+    volumes:
+      - ./docker/kratos:/etc/config/kratos:ro
+    healthcheck:
+      test: [CMD, kratos, remote, status, --endpoint, http://127.0.0.1:4434]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  kratos-ui:
+    image: oryd/kratos-selfservice-ui-node:v26.2.0
+    restart: unless-stopped
+    depends_on:
+      kratos:
+        condition: service_healthy
+    environment:
+      PORT: "4455"
+      BASE_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}
+      KRATOS_PUBLIC_URL: http://kratos:4433/
+      KRATOS_BROWSER_URL: ${KRATOS_PUBLIC_URL:-http://127.0.0.1:14433/}
+      COOKIE_SECRET: ${KRATOS_UI_COOKIE_SECRET:?Run pnpm dev:setup}
+      CSRF_COOKIE_NAME: fleet_ui_csrf
+      CSRF_COOKIE_SECRET: ${KRATOS_UI_CSRF_SECRET:?Run pnpm dev:setup}
+      DANGEROUSLY_DISABLE_SECURE_CSRF_COOKIES: "true"
+    ports:
+      - "127.0.0.1:${KRATOS_UI_PORT:-14455}:4455"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:4455/health/alive').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  mailpit:
+    image: axllent/mailpit:v1.31.6
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MAILPIT_PORT:-18025}:8025"
+    healthcheck:
+      test: [CMD, /mailpit, readyz]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  postgres_data:
