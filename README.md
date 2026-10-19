@@ -10,6 +10,10 @@ This repository uses pnpm workspaces and Watt to run three applications:
 | `apps/web` | TanStack Start v1 / React | `/` |
 | `apps/gateway` | Platformatic Gateway | Public entrypoint |
 
+The Expo UI app in `apps/mobile` runs separately. Root `pnpm dev`, `pnpm build`
+and `pnpm start` exclude it from Watt; root tests and typechecks also skip it.
+Start it explicitly from the repository root with `pnpm --filter mobile start`.
+
 Use Node.js 22.19 or newer, pnpm and Docker Compose. From the repository root:
 
 ```sh
