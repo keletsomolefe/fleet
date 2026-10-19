@@ -23,6 +23,23 @@ describe('AppController (e2e)', () => {
       .expect('Hello World!');
   });
 
+  it('protects session and administrator APIs before controller execution', async () => {
+    await request(app.getHttpServer()).get('/auth/session').expect(401);
+    await request(app.getHttpServer())
+      .post('/admin/users')
+      .send({})
+      .expect(401);
+    await request(app.getHttpServer())
+      .post('/internal/kratos/after-login')
+      .send({})
+      .expect(401);
+    const response = await request(app.getHttpServer())
+      .get('/auth/config')
+      .expect(200);
+    expect(response.body).not.toHaveProperty('kratosAdminUrl');
+    expect(response.headers['cache-control']).toBe('no-store');
+  });
+
   afterEach(async () => {
     await app.close();
   });

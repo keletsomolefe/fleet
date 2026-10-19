@@ -1,0 +1,8 @@
+# Fleet development conventions
+
+- Use pnpm from the repository root and keep shared configuration in the root `.env`.
+- Keep UI copy concise. Do not put developer notes, implementation status, account-policy explanations, or repeated instructions on product screens. Keep those details in repository documentation. Retain labels, validation requirements, necessary recovery steps, and meaningful outcome/status messages.
+- Use the existing shadcn/ui components and VHH theme for interface changes. The design source is linked in `docs/admin-authentication.md`.
+- Kratos owns authentication sessions and credentials. Application users and authorization belong in the `app` schema through TypeORM.
+- Fleet currently serves one company. Keep a single user model; roles and permissions determine admin, driver and terminal access. Do not introduce workspaces, tenancy, or a fixed admin/driver user type.
+- Never commit credentials, local Kratos hook configuration, or test accounts. Preserve database schema/role isolation and use explicit migrations with synchronization disabled.

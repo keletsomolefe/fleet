@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help setup install dev build start typecheck test test-e2e up down restart status logs migrate infra-test db-shell
+.PHONY: help setup install dev build start typecheck test test-e2e up down restart status logs migrate infra-test db-shell db-migrate seed-admin admin-test
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -23,13 +23,13 @@ start: ## Start the production build
 typecheck: ## Check API and web TypeScript
 	pnpm typecheck
 
-test: ## Run API unit tests
+test: ## Run API and web unit tests
 	pnpm test
 
 test-e2e: ## Run API end-to-end tests
 	pnpm test:e2e
 
-up: ## Start PostgreSQL, Kratos, login UI and Mailpit; wait for readiness
+up: ## Start infrastructure, apply app migrations and bootstrap the development admin
 	pnpm infra:up
 
 down: ## Stop development services and retain database data
@@ -49,6 +49,15 @@ migrate: ## Apply pending Kratos database migrations
 
 infra-test: ## Verify schema isolation and authentication flows
 	pnpm infra:test
+
+db-migrate: ## Apply pending application migrations
+	pnpm db:migrate
+
+seed-admin: ## Bootstrap the default development administrator
+	pnpm db:seed
+
+admin-test: ## Verify admin sessions, creation, hooks and access against the local stack
+	pnpm test:admin
 
 db-shell: ## Open an administrator psql session in the development database
 	docker compose exec postgres sh -c 'exec psql -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"'

@@ -18,8 +18,9 @@ make up    # PostgreSQL, Ory Kratos, login UI and Mailpit
 make dev   # Fleet API, web and gateway
 ```
 
-Open <http://127.0.0.1:3042> for the web starter and
-<http://127.0.0.1:3042/api> for the API starter. Change `GATEWAY_PORT` in `.env`
+Set `BOOTSTRAP_ADMIN_PASSWORD` in the root `.env` before `make up`.
+Open <http://127.0.0.1:3042> (or <http://localhost:3042>) for Fleet admin.
+Change `GATEWAY_PORT` in `.env`
 if that port is already in use.
 
 ```sh
@@ -32,11 +33,14 @@ make infra-test    # check database isolation and Kratos authentication
 make help          # show all commands
 ```
 
-Development login is at <http://127.0.0.1:14455/login>; verification and recovery
+Development login is at <http://127.0.0.1:3042/login>; verification and recovery
 emails appear at <http://127.0.0.1:18025>. PostgreSQL uses one `fleet` database
 with isolated `kratos` and `app` schemas and separate roles. See the
 [development infrastructure guide](docker/README.md) for ports, migrations,
 database access and authentication behavior.
+
+See [admin authentication and UI foundation](docs/admin-authentication.md) for
+account provisioning, TypeORM migrations, Kratos sessions/hooks, shadcn/ui and live tests.
 
 The apps were added using `wattpm add`, with the latest NestJS and TanStack
 CLIs generating the framework starters. TanStack packages stay on stable v1.

@@ -1,6 +1,7 @@
 packages:
   - apps/*
 allowBuilds:
+  esbuild: true
   msgpackr-extract: true
   protobufjs: true
 minimumReleaseAgeExclude:

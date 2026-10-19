@@ -5,17 +5,17 @@ x-kratos-environment: &kratos-environment
   SECRETS_COOKIE: ${KRATOS_COOKIE_SECRET:?Run pnpm dev:setup}
   SECRETS_CIPHER: ${KRATOS_CIPHER_SECRET:?Run pnpm dev:setup}
   SERVE_PUBLIC_BASE_URL: ${KRATOS_PUBLIC_URL:-http://127.0.0.1:14433/}
-  SELFSERVICE_DEFAULT_BROWSER_RETURN_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}welcome
-  SELFSERVICE_ALLOWED_RETURN_URLS: ${KRATOS_UI_URL:-http://127.0.0.1:14455/},http://127.0.0.1:${GATEWAY_PORT:-3042}/
+  SELFSERVICE_DEFAULT_BROWSER_RETURN_URL: ${APP_URL:-http://127.0.0.1:3042/}admin
+  SELFSERVICE_ALLOWED_RETURN_URLS: ${KRATOS_UI_URL:-http://127.0.0.1:14455/},http://127.0.0.1:${GATEWAY_PORT:-3042}/,http://localhost:${GATEWAY_PORT:-3042}/,http://localhost:${KRATOS_UI_PORT:-14455}/
   SELFSERVICE_FLOWS_ERROR_UI_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}error
-  SELFSERVICE_FLOWS_LOGIN_UI_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}login
+  SELFSERVICE_FLOWS_LOGIN_UI_URL: ${APP_URL:-http://127.0.0.1:3042/}login
   SELFSERVICE_FLOWS_REGISTRATION_UI_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}registration
   SELFSERVICE_FLOWS_SETTINGS_UI_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}settings
   SELFSERVICE_FLOWS_RECOVERY_UI_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}recovery
-  SELFSERVICE_FLOWS_VERIFICATION_UI_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}verification
-  SELFSERVICE_FLOWS_VERIFICATION_AFTER_DEFAULT_BROWSER_RETURN_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}login
-  SELFSERVICE_FLOWS_LOGOUT_AFTER_DEFAULT_BROWSER_RETURN_URL: ${KRATOS_UI_URL:-http://127.0.0.1:14455/}login
-  SERVE_PUBLIC_CORS_ALLOWED_ORIGINS: http://127.0.0.1:${GATEWAY_PORT:-3042},http://127.0.0.1:${KRATOS_UI_PORT:-14455}
+  SELFSERVICE_FLOWS_VERIFICATION_UI_URL: ${APP_URL:-http://127.0.0.1:3042/}verify-email
+  SELFSERVICE_FLOWS_VERIFICATION_AFTER_DEFAULT_BROWSER_RETURN_URL: ${APP_URL:-http://127.0.0.1:3042/}login
+  SELFSERVICE_FLOWS_LOGOUT_AFTER_DEFAULT_BROWSER_RETURN_URL: ${APP_URL:-http://127.0.0.1:3042/}login
+  SERVE_PUBLIC_CORS_ALLOWED_ORIGINS: http://127.0.0.1:${GATEWAY_PORT:-3042},http://127.0.0.1:${KRATOS_UI_PORT:-14455},http://localhost:${GATEWAY_PORT:-3042},http://localhost:${KRATOS_UI_PORT:-14455}
 
 services:
   postgres:
@@ -61,7 +61,7 @@ services:
       mailpit:
         condition: service_healthy
     environment: *kratos-environment
-    command: [serve, --config, /etc/config/kratos/kratos.yml, --dev, --watch-courier]
+    command: [serve, --config, /etc/config/kratos/kratos.yml, --config, /etc/config/kratos/kratos.local.json, --dev, --watch-courier]
     ports:
       - "127.0.0.1:${KRATOS_PORT:-14433}:4433"
       - "127.0.0.1:${KRATOS_ADMIN_PORT:-14434}:4434"
