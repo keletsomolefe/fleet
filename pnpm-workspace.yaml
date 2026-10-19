@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+allowBuilds:
+  msgpackr-extract: true
+  protobufjs: true
+minimumReleaseAgeExclude:
+  - '@nestjs/common@12.2.0'
+  - '@nestjs/core@12.2.0'
+  - '@nestjs/platform-express@12.2.0'
+  - '@nestjs/testing@12.2.0'

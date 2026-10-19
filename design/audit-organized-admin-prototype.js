@@ -1,0 +1,31 @@
+const PAGE_ID="3:3";
+const EXPECTED=[{"id":"7:21","key":"adminLogin"},{"id":"7:106","key":"dashboard"},{"id":"7:203","key":"dispatch"},{"id":"7:291","key":"jobCreate"},{"id":"7:378","key":"stops"},{"id":"7:442","key":"assignment"},{"id":"7:519","key":"proofPolicy"},{"id":"7:655","key":"jobDispatched"},{"id":"7:719","key":"jobProgress"},{"id":"10:1271","key":"reorderStops"},{"id":"7:2076","key":"cancelJob"},{"id":"16:1383","key":"proofPolicy0"},{"id":"16:1450","key":"proofPolicy1"},{"id":"16:1517","key":"proofPolicy2"},{"id":"7:588","key":"proofPolicyAlt"},{"id":"16:1584","key":"proofPolicy4"},{"id":"16:1651","key":"proofPolicy5"},{"id":"16:1718","key":"proofPolicy6"},{"id":"7:814","key":"fleet"},{"id":"7:895","key":"mapHistory"},{"id":"7:981","key":"trackerMap"},{"id":"7:1049","key":"staleMap"},{"id":"10:1203","key":"staleDevice"},{"id":"7:1117","key":"drivers"},{"id":"10:917","key":"driverCreate"},{"id":"10:994","key":"driverSaved"},{"id":"7:1194","key":"driverDetails"},{"id":"7:1284","key":"accessReset"},{"id":"10:1335","key":"driverDeactivated"},{"id":"7:1344","key":"trucks"},{"id":"10:1060","key":"truckCreate"},{"id":"10:1137","key":"truckSaved"},{"id":"7:1422","key":"deviceDetails"},{"id":"7:1501","key":"records"},{"id":"7:1592","key":"proofDetail"},{"id":"11:1968","key":"fuelDetail"},{"id":"11:2048","key":"loadingDetail"},{"id":"7:2019","key":"emptySearch"},{"id":"7:1668","key":"exceptions"},{"id":"7:1738","key":"review"},{"id":"7:1820","key":"resolved"},{"id":"11:2117","key":"signatureReview"},{"id":"11:2197","key":"signatureResolved"},{"id":"36:1631","key":"vehicleReports"},{"id":"36:1749","key":"vehicleReportReview"},{"id":"36:1886","key":"vehicleReportAcknowledged"},{"id":"36:2023","key":"vehicleReportResolved"},{"id":"36:2158","key":"shiftRecords"},{"id":"36:2276","key":"shiftDetail"},{"id":"36:2408","key":"shiftProofReview"},{"id":"36:2526","key":"shiftProofResolved"},{"id":"7:1877","key":"exports"},{"id":"7:1955","key":"exportReady"}];
+const JOURNEYS=[{"name":"Admin sign in, dispatch, assignment and progress","keys":["adminLogin","dashboard","dispatch","jobCreate","stops","assignment","proofPolicy","jobDispatched","jobProgress"],"ids":["7:21","7:106","7:203","7:291","7:378","7:442","7:519","7:655","7:719"]},{"name":"Stop reordering and recovery","keys":["stops","reorderStops","stops"],"ids":["7:378","10:1271","7:378"]},{"name":"Discard draft recovery","keys":["jobCreate","cancelJob","jobCreate"],"ids":["7:291","7:2076","7:291"]},{"name":"Add driver and manage access","keys":["drivers","driverCreate","driverSaved","drivers","driverDetails","accessReset","driverDeactivated"],"ids":["7:1117","10:917","10:994","7:1117","7:1194","7:1284","10:1335"]},{"name":"Admin truck and device assignment","keys":["trucks","truckCreate","truckSaved","trucks","deviceDetails"],"ids":["7:1344","10:1060","10:1137","7:1344","7:1422"]},{"name":"Fleet investigation and extraction","keys":["fleet","mapHistory","review","resolved","exports","exportReady"],"ids":["7:814","7:895","7:1738","7:1820","7:1877","7:1955"]},{"name":"Signature review","keys":["exceptions","signatureReview","signatureResolved"],"ids":["7:1668","11:2117","11:2197"]},{"name":"Vehicle report lifecycle","keys":["vehicleReports","vehicleReportReview","vehicleReportAcknowledged","vehicleReportResolved"],"ids":["36:1631","36:1749","36:1886","36:2023"]},{"name":"Mileage missing proof review","keys":["shiftRecords","shiftProofReview","shiftProofResolved"],"ids":["36:2158","36:2408","36:2526"]},{"name":"Mileage proof details","keys":["shiftRecords","shiftDetail"],"ids":["36:2158","36:2276"]},{"name":"Export demonstration","keys":["exports","exportReady"],"ids":["7:1877","7:1955"]}];
+const p=await figma.getNodeByIdAsync(PAGE_ID);await figma.setCurrentPageAsync(p);
+const screens=[],invalid=[],self=[],geometry=[],deadEnds=[];let actionCount=0,controlCount=0;
+for(const e of EXPECTED){
+ const root=await figma.getNodeByIdAsync(e.id);
+ const destinations=new Set(),urls=[];
+ const controls=[root,...root.findAll()].filter(n=>"reactions" in n&&n.reactions.length);
+ controlCount+=controls.length;
+ for(const n of controls)for(const reaction of n.reactions)for(const a of reaction.actions||[]){
+  actionCount++;
+  if(a.type==="NODE"){
+   const d=await figma.getNodeByIdAsync(a.destinationId);
+   if(!d)invalid.push({from:e.id,control:n.id,to:a.destinationId});
+   else {let owner=d;while(owner.parent&&owner.parent.type!=="PAGE")owner=owner.parent;if(owner.parent?.id!==PAGE_ID)invalid.push({from:e.id,control:n.id,to:d.id,reason:"Wrong role page"});}
+   if(a.destinationId===root.id)self.push({from:root.id,control:n.id});
+   destinations.add(a.destinationId);
+  } else if(a.type==="URL")urls.push(a.url);
+ }
+ if(root.parent.type!=="SECTION"||root.x<0||root.y<0||root.x+root.width>root.parent.width||root.y+root.height>root.parent.height)geometry.push(root.id);
+ if(!controls.length)deadEnds.push(root.id);
+ screens.push({...e,parent:root.parent.id,w:root.width,h:root.height,edges:[...destinations],externalLinkCount:new Set(urls).size});
+}
+const byId=Object.fromEntries(screens.map(s=>[s.id,s]));
+const journeys=JOURNEYS.map(j=>{const missing=[];for(let i=0;i<j.ids.length-1;i++)if(!byId[j.ids[i]]?.edges.includes(j.ids[i+1]))missing.push([j.keys[i],j.keys[i+1]]);return{name:j.name,pass:missing.length===0,missing};});
+const reachable=new Set(),todo=p.flowStartingPoints.map(f=>f.nodeId);
+while(todo.length){const id=todo.pop();if(reachable.has(id))continue;reachable.add(id);for(const next of byId[id]?.edges||[])todo.push(next);}
+const unreachable=screens.filter(s=>!reachable.has(s.id)).map(s=>s.id);
+const overlaps=[];for(const section of p.children.filter(n=>n.type==="SECTION")){const children=section.children.filter(n=>n.type==="FRAME");for(let i=0;i<children.length;i++)for(let j=i+1;j<children.length;j++){const a=children[i],b=children[j];if(a.x<b.x+b.width&&b.x<a.x+a.width&&a.y<b.y+b.height&&b.y<a.y+a.height)overlaps.push([a.id,b.id]);}}
+return {pageId:PAGE_ID,screenCount:screens.length,sectionCount:p.children.filter(n=>n.type==="SECTION").length,flowCount:p.flowStartingPoints.length,actionCount,controlCount,invalid,self,geometry,deadEnds,unreachable,overlaps,journeys,screens};

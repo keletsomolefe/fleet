@@ -1,0 +1,95 @@
+{
+  "page": "0:1",
+  "variables": 25,
+  "textStyles": 10,
+  "components": 47,
+  "componentSets": 2,
+  "iconMasters": [
+    {
+      "id": "25:208",
+      "name": "Icon / Check"
+    },
+    {
+      "id": "25:205",
+      "name": "Icon / Pending"
+    },
+    {
+      "id": "28:1381",
+      "name": "Icon / Document"
+    },
+    {
+      "id": "25:188",
+      "name": "Icon / Today"
+    },
+    {
+      "id": "25:192",
+      "name": "Icon / Jobs"
+    },
+    {
+      "id": "25:196",
+      "name": "Icon / Activity"
+    },
+    {
+      "id": "25:200",
+      "name": "Icon / More"
+    },
+    {
+      "id": "47:213",
+      "name": "Icon / Truck"
+    },
+    {
+      "id": "47:218",
+      "name": "Icon / Camera"
+    },
+    {
+      "id": "47:223",
+      "name": "Icon / Triangle alert"
+    },
+    {
+      "id": "47:228",
+      "name": "Icon / Chevron right"
+    },
+    {
+      "id": "47:233",
+      "name": "Icon / Info"
+    },
+    {
+      "id": "47:238",
+      "name": "Icon / Map pin"
+    },
+    {
+      "id": "47:243",
+      "name": "Icon / Users"
+    },
+    {
+      "id": "47:248",
+      "name": "Icon / Search"
+    },
+    {
+      "id": "47:253",
+      "name": "Icon / Download"
+    },
+    {
+      "id": "47:258",
+      "name": "Icon / Clock"
+    },
+    {
+      "id": "47:263",
+      "name": "Icon / Briefcase"
+    },
+    {
+      "id": "51:341",
+      "name": "Icon / Tyre"
+    },
+    {
+      "id": "51:346",
+      "name": "Icon / Wrench"
+    },
+    {
+      "id": "51:349",
+      "name": "Icon / Fuel"
+    }
+  ],
+  "truckContextComponent": "37:204",
+  "proportionalIconConstraints": "polish-svg-scaling.json"
+}

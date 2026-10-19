@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schemas.platformatic.dev/@platformatic/node/3.72.0.json",
+  "application": {
+    "commands": {
+      "build": "npm run build"
+    }
+  },
+  "watch": {
+    "allow": ["src/**/*.ts", "*.json"],
+    "ignore": ["dist/**", "node_modules/**", "**/*.tsbuildinfo"]
+  }
+}

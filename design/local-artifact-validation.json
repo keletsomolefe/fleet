@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-16",
+  "jsonFilesParsed": 16,
+  "markdownLocalLinksChecked": 82,
+  "svgFilesChecked": 25,
+  "iconFiles": 21,
+  "screens": {
+    "driver": 75,
+    "admin": 53
+  },
+  "currentJourneyChecks": 27,
+  "fullScreenExports": {
+    "driver": 75,
+    "admin": 53
+  },
+  "errors": []
+}

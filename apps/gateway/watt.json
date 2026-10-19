@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schemas.platformatic.dev/@platformatic/gateway/3.72.0.json",
+  "watch": true,
+  "gateway": {
+    "applications": [
+      {
+        "id": "api",
+        "proxy": {
+          "prefix": "/api"
+        }
+      },
+      {
+        "id": "web",
+        "proxy": {
+          "prefix": "/"
+        }
+      }
+    ],
+    "refreshTimeout": 1000
+  }
+}

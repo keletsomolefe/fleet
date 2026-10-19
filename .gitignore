@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output and test coverage
+dist/
+build/
+coverage/
+.output/
+.nitro/
+.tanstack/
+.vite/
+*.tsbuildinfo
+
+# Local environment variables (keep templates)
+.env
+.env.*
+!.env.sample
+!.env.example
+
+# Logs
+*.log
+
+# macOS files
+.DS_Store

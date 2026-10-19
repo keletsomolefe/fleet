@@ -1,0 +1,15 @@
+{
+  "$schema": "https://schemas.platformatic.dev/@platformatic/runtime/3.72.0.json",
+  "autoload": {
+    "path": "apps"
+  },
+  "logger": {
+    "level": "{PLT_SERVER_LOGGER_LEVEL}"
+  },
+  "server": {
+    "hostname": "{PLT_SERVER_HOSTNAME}",
+    "port": "{GATEWAY_PORT}"
+  },
+  "managementApi": "{PLT_MANAGEMENT_API}",
+  "entrypoint": "gateway"
+}

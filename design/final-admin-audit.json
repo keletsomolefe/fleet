@@ -1,0 +1,1153 @@
+{
+  "page": "3:3",
+  "screenCount": 53,
+  "fonts": [
+    "Montserrat"
+  ],
+  "imageFills": 0,
+  "instanceCount": 1662,
+  "vectorCount": 1693,
+  "boundNodes": 5798,
+  "totalActions": 742,
+  "issues": [],
+  "frames": {
+    "adminLogin": {
+      "id": "7:21",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "dashboard": {
+      "id": "7:106",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "jobCreate"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "dispatch": {
+      "id": "7:203",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "jobCreate"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "jobCreate": {
+      "id": "7:291",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "stops",
+        "cancelJob"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "stops": {
+      "id": "7:378",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "assignment",
+        "jobCreate",
+        "reorderStops"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "assignment": {
+      "id": "7:442",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "deviceDetails",
+        "proofPolicy",
+        "stops"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "proofPolicy": {
+      "id": "7:519",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "proofPolicy6",
+        "proofPolicy5",
+        "proofPolicyAlt",
+        "jobDispatched",
+        "assignment"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "proofPolicyAlt": {
+      "id": "7:588",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "proofPolicy2",
+        "proofPolicy1",
+        "proofPolicy",
+        "assignment"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "jobDispatched": {
+      "id": "7:655",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "jobProgress"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "jobProgress": {
+      "id": "7:719",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "proofDetail",
+        "review",
+        "mapHistory"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "fleet": {
+      "id": "7:814",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "mapHistory",
+        "staleMap",
+        "trackerMap"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "mapHistory": {
+      "id": "7:895",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "review",
+        "trackerMap"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "trackerMap": {
+      "id": "7:981",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "mapHistory"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "staleMap": {
+      "id": "7:1049",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "staleDevice"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "drivers": {
+      "id": "7:1117",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "driverCreate",
+        "driverDetails"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "driverDetails": {
+      "id": "7:1194",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "accessReset"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "accessReset": {
+      "id": "7:1284",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "driverDetails",
+        "driverDeactivated"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "trucks": {
+      "id": "7:1344",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "truckCreate",
+        "deviceDetails",
+        "staleMap"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "deviceDetails": {
+      "id": "7:1422",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "mapHistory"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "records": {
+      "id": "7:1501",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "review",
+        "proofDetail",
+        "fuelDetail",
+        "loadingDetail",
+        "emptySearch"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "proofDetail": {
+      "id": "7:1592",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "exceptions": {
+      "id": "7:1668",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "review",
+        "signatureReview",
+        "vehicleReportReview"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "review": {
+      "id": "7:1738",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "resolved",
+        "mapHistory"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "resolved": {
+      "id": "7:1820",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "exports": {
+      "id": "7:1877",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "vehicleReports",
+        "shiftRecords",
+        "exportReady"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "exportReady": {
+      "id": "7:1955",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "emptySearch": {
+      "id": "7:2019",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "cancelJob": {
+      "id": "7:2076",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "jobCreate"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "driverCreate": {
+      "id": "10:917",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "driverSaved"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "driverSaved": {
+      "id": "10:994",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "driverCreate"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "truckCreate": {
+      "id": "10:1060",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "truckSaved"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "truckSaved": {
+      "id": "10:1137",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "truckCreate"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "staleDevice": {
+      "id": "10:1203",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "staleMap"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "reorderStops": {
+      "id": "10:1271",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "stops"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "driverDeactivated": {
+      "id": "10:1335",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "accessReset"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "fuelDetail": {
+      "id": "11:1968",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "loadingDetail": {
+      "id": "11:2048",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "jobProgress"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "signatureReview": {
+      "id": "11:2117",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "signatureResolved"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "signatureResolved": {
+      "id": "11:2197",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "proofPolicy0": {
+      "id": "16:1383",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "proofPolicy1",
+        "proofPolicy2",
+        "proofPolicy4",
+        "proofPolicy",
+        "assignment"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "proofPolicy1": {
+      "id": "16:1450",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "proofPolicy0",
+        "proofPolicyAlt",
+        "proofPolicy5",
+        "proofPolicy",
+        "assignment"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "proofPolicy2": {
+      "id": "16:1517",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "proofPolicyAlt",
+        "proofPolicy0",
+        "proofPolicy6",
+        "proofPolicy",
+        "assignment"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "proofPolicy4": {
+      "id": "16:1584",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "proofPolicy5",
+        "proofPolicy6",
+        "proofPolicy0",
+        "proofPolicy",
+        "assignment"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "proofPolicy5": {
+      "id": "16:1651",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "proofPolicy4",
+        "proofPolicy",
+        "proofPolicy1",
+        "assignment"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "proofPolicy6": {
+      "id": "16:1718",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "proofPolicy",
+        "proofPolicy4",
+        "proofPolicy2",
+        "assignment"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "vehicleReports": {
+      "id": "36:1631",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "shiftRecords",
+        "vehicleReportReview"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "vehicleReportReview": {
+      "id": "36:1749",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "vehicleReportAcknowledged",
+        "mapHistory"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "vehicleReportAcknowledged": {
+      "id": "36:1886",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "vehicleReportResolved",
+        "mapHistory"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "vehicleReportResolved": {
+      "id": "36:2023",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "mapHistory"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "shiftRecords": {
+      "id": "36:2158",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftDetail",
+        "shiftProofReview"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "shiftDetail": {
+      "id": "36:2276",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "shiftProofReview": {
+      "id": "36:2408",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords",
+        "shiftProofResolved"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    },
+    "shiftProofResolved": {
+      "id": "36:2526",
+      "w": 1440,
+      "h": 1024,
+      "edges": [
+        "dashboard",
+        "dispatch",
+        "fleet",
+        "drivers",
+        "trucks",
+        "records",
+        "exceptions",
+        "exports",
+        "vehicleReports",
+        "shiftRecords"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=5-1555&starting-point-node-id=5%3A1555&scaling=contain"
+      ]
+    }
+  }
+}

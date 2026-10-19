@@ -1,0 +1,6 @@
+{
+  "$schema": "https://schemas.platformatic.dev/@platformatic/tanstack/3.72.0.json",
+  "application": {
+    "outputDirectory": ".output"
+  }
+}

@@ -1,0 +1,1020 @@
+{
+  "page": "3:2",
+  "screenCount": 75,
+  "fonts": [
+    "Montserrat"
+  ],
+  "imageFills": 0,
+  "instanceCount": 1343,
+  "vectorCount": 1310,
+  "boundNodes": 3700,
+  "totalActions": 438,
+  "issues": [],
+  "frames": {
+    "login": {
+      "id": "5:1555",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "pinSetup",
+        "loginError"
+      ],
+      "urls": []
+    },
+    "loginError": {
+      "id": "5:1659",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "login"
+      ],
+      "urls": []
+    },
+    "pinSetup": {
+      "id": "5:1706",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "truck",
+        "login"
+      ],
+      "urls": []
+    },
+    "unlock": {
+      "id": "5:1744",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "offlineHome",
+        "prepared"
+      ],
+      "urls": []
+    },
+    "truck": {
+      "id": "5:1785",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "shiftStart",
+        "wrongTruck"
+      ],
+      "urls": []
+    },
+    "wrongTruck": {
+      "id": "5:1825",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "truck",
+        "login"
+      ],
+      "urls": []
+    },
+    "home": {
+      "id": "5:1864",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "job",
+        "stop",
+        "offload",
+        "partial",
+        "fuel",
+        "issue",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "jobs": {
+      "id": "5:1909",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "job",
+        "home",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "job": {
+      "id": "5:1949",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "stop",
+        "offload",
+        "partial",
+        "jobs",
+        "home",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "stop": {
+      "id": "5:1994",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "loading",
+        "job",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "loading": {
+      "id": "5:2043",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "loaded",
+        "stop",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "loaded": {
+      "id": "5:2092",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "offload",
+        "job",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "offload": {
+      "id": "5:2132",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "proof",
+        "job",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "proof": {
+      "id": "5:2183",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "signature",
+        "missingProof",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "signature": {
+      "id": "5:2230",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "delivered",
+        "signatureException",
+        "proof",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "delivered": {
+      "id": "5:2272",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "partial",
+        "job",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "missingProof": {
+      "id": "5:2312",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "signature",
+        "signatureException",
+        "proof",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "signatureException": {
+      "id": "5:2354",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "issueSaved",
+        "signature",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "partial": {
+      "id": "5:2401",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "issueSaved",
+        "job",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "fuel": {
+      "id": "5:2450",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "fuelSaved",
+        "offlineHome",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "fuelSaved": {
+      "id": "5:2505",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "queue",
+        "offlineHome",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "offlineHome": {
+      "id": "5:2544",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "job",
+        "fuel",
+        "queue",
+        "unlock",
+        "issue",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "queue": {
+      "id": "5:2587",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "retry",
+        "offlineHome",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "retry": {
+      "id": "5:2630",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "synced",
+        "history",
+        "home",
+        "jobs",
+        "more"
+      ],
+      "urls": []
+    },
+    "synced": {
+      "id": "5:2673",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "history",
+        "home",
+        "jobs",
+        "more"
+      ],
+      "urls": []
+    },
+    "issue": {
+      "id": "5:2711",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "report_stuck",
+        "report_puncture",
+        "report_mechanical",
+        "report_blocked",
+        "report_delay",
+        "report_damage",
+        "report_safety",
+        "report_other",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "issueSaved": {
+      "id": "5:2763",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "history",
+        "job",
+        "home",
+        "jobs",
+        "more"
+      ],
+      "urls": []
+    },
+    "history": {
+      "id": "5:2801",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "partial",
+        "proof",
+        "fuelSaved",
+        "loaded",
+        "synced",
+        "home",
+        "shiftVehicleHistory",
+        "jobs",
+        "more"
+      ],
+      "urls": []
+    },
+    "more": {
+      "id": "5:2847",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "issue",
+        "handover",
+        "shiftEnd",
+        "shiftVehicleHistory",
+        "home",
+        "jobs",
+        "history"
+      ],
+      "urls": [
+        "https://www.figma.com/proto/LEbt69of7SErhXVRHps0B3/VHH-Fleet?node-id=7-21&starting-point-node-id=7%3A21&scaling=contain"
+      ]
+    },
+    "handover": {
+      "id": "5:2889",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "handoverMileage",
+        "more"
+      ],
+      "urls": []
+    },
+    "prepared": {
+      "id": "5:2928",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoPin",
+        "unlock",
+        "unprepared"
+      ],
+      "urls": []
+    },
+    "leratoPin": {
+      "id": "5:2970",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoShiftStart",
+        "prepared"
+      ],
+      "urls": []
+    },
+    "leratoHome": {
+      "id": "5:3009",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoSession",
+        "login",
+        "leratoReportTypes",
+        "leratoJobs",
+        "leratoHistory"
+      ],
+      "urls": []
+    },
+    "unprepared": {
+      "id": "5:3050",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "prepared",
+        "login"
+      ],
+      "urls": []
+    },
+    "leratoJobs": {
+      "id": "11:741",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoHome",
+        "leratoSession",
+        "leratoHistory"
+      ],
+      "urls": []
+    },
+    "leratoHistory": {
+      "id": "11:780",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoHome",
+        "leratoSession",
+        "leratoJobs"
+      ],
+      "urls": []
+    },
+    "leratoSession": {
+      "id": "11:819",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoShiftEnd",
+        "leratoHome",
+        "leratoReportTypes",
+        "leratoJobs",
+        "leratoHistory"
+      ],
+      "urls": []
+    },
+    "report_stuck": {
+      "id": "33:1491",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "reportQueued",
+        "issue",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "report_puncture": {
+      "id": "33:1567",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "reportQueued",
+        "issue",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "report_mechanical": {
+      "id": "33:1643",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "reportQueued",
+        "issue",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "report_blocked": {
+      "id": "33:1719",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "reportQueued",
+        "issue",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "report_delay": {
+      "id": "33:1795",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "reportQueued",
+        "issue",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "report_damage": {
+      "id": "33:1871",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "reportQueued",
+        "issue",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "report_safety": {
+      "id": "33:1947",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "reportQueued",
+        "issue",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "report_other": {
+      "id": "33:2023",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "reportOtherFilled",
+        "reportValidation",
+        "issue",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "reportValidation": {
+      "id": "33:2106",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "reportOtherFilled",
+        "issue",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "reportQueued": {
+      "id": "33:2171",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "reportSent",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "reportSent": {
+      "id": "33:2229",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "issue",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "leratoReportTypes": {
+      "id": "33:2550",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoReport_stuck",
+        "leratoReport_puncture",
+        "leratoReport_mechanical",
+        "leratoReport_blocked",
+        "leratoReport_delay",
+        "leratoReport_damage",
+        "leratoReport_safety",
+        "leratoReport_other",
+        "leratoHome",
+        "leratoJobs",
+        "leratoHistory",
+        "leratoSession"
+      ],
+      "urls": []
+    },
+    "leratoReport_stuck": {
+      "id": "33:2609",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoReportQueued",
+        "leratoReportTypes",
+        "leratoHome",
+        "leratoJobs",
+        "leratoHistory",
+        "leratoSession"
+      ],
+      "urls": []
+    },
+    "leratoReport_puncture": {
+      "id": "33:2676",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoReportQueued",
+        "leratoReportTypes",
+        "leratoHome",
+        "leratoJobs",
+        "leratoHistory",
+        "leratoSession"
+      ],
+      "urls": []
+    },
+    "leratoReport_mechanical": {
+      "id": "33:2743",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoReportQueued",
+        "leratoReportTypes",
+        "leratoHome",
+        "leratoJobs",
+        "leratoHistory",
+        "leratoSession"
+      ],
+      "urls": []
+    },
+    "leratoReport_blocked": {
+      "id": "33:2810",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoReportQueued",
+        "leratoReportTypes",
+        "leratoHome",
+        "leratoJobs",
+        "leratoHistory",
+        "leratoSession"
+      ],
+      "urls": []
+    },
+    "leratoReport_delay": {
+      "id": "33:2877",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoReportQueued",
+        "leratoReportTypes",
+        "leratoHome",
+        "leratoJobs",
+        "leratoHistory",
+        "leratoSession"
+      ],
+      "urls": []
+    },
+    "leratoReport_damage": {
+      "id": "33:2944",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoReportQueued",
+        "leratoReportTypes",
+        "leratoHome",
+        "leratoJobs",
+        "leratoHistory",
+        "leratoSession"
+      ],
+      "urls": []
+    },
+    "leratoReport_safety": {
+      "id": "33:3011",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoReportQueued",
+        "leratoReportTypes",
+        "leratoHome",
+        "leratoJobs",
+        "leratoHistory",
+        "leratoSession"
+      ],
+      "urls": []
+    },
+    "leratoReport_other": {
+      "id": "33:3078",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoReportOtherFilled",
+        "leratoReportValidation",
+        "leratoReportTypes",
+        "leratoHome",
+        "leratoJobs",
+        "leratoHistory",
+        "leratoSession"
+      ],
+      "urls": []
+    },
+    "leratoReportValidation": {
+      "id": "33:3152",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoReportOtherFilled",
+        "leratoReportTypes",
+        "leratoHome",
+        "leratoJobs",
+        "leratoHistory",
+        "leratoSession"
+      ],
+      "urls": []
+    },
+    "leratoReportQueued": {
+      "id": "33:3208",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoReportSent",
+        "leratoHome",
+        "leratoJobs",
+        "leratoHistory",
+        "leratoSession"
+      ],
+      "urls": []
+    },
+    "leratoReportSent": {
+      "id": "33:3257",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoReportTypes",
+        "leratoHome",
+        "leratoJobs",
+        "leratoHistory",
+        "leratoSession"
+      ],
+      "urls": []
+    },
+    "shiftStart": {
+      "id": "34:2523",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "shiftStartReady",
+        "shiftStartMissing",
+        "truck"
+      ],
+      "urls": []
+    },
+    "shiftStartReady": {
+      "id": "34:2596",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "home",
+        "truck"
+      ],
+      "urls": []
+    },
+    "shiftStartMissing": {
+      "id": "34:2669",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "home",
+        "shiftStart"
+      ],
+      "urls": []
+    },
+    "shiftEnd": {
+      "id": "34:2739",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "shiftEndReady",
+        "shiftEndMissing",
+        "more",
+        "home",
+        "jobs",
+        "history"
+      ],
+      "urls": []
+    },
+    "shiftEndReady": {
+      "id": "34:2812",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "shiftSummary",
+        "shiftEnd",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "shiftEndMissing": {
+      "id": "34:2885",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "shiftSummary",
+        "shiftEnd",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "shiftSummary": {
+      "id": "34:2955",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "prepared",
+        "login"
+      ],
+      "urls": []
+    },
+    "handoverMileage": {
+      "id": "34:3025",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "prepared",
+        "handover",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "leratoShiftStart": {
+      "id": "34:3098",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoHome",
+        "prepared"
+      ],
+      "urls": []
+    },
+    "vehicleReportDetail": {
+      "id": "35:2945",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "shiftVehicleHistory",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "shiftVehicleHistory": {
+      "id": "35:3026",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "shiftSummary",
+        "vehicleReportDetail",
+        "issue",
+        "history",
+        "home",
+        "jobs",
+        "more"
+      ],
+      "urls": []
+    },
+    "leratoShiftEnd": {
+      "id": "35:3103",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "prepared",
+        "leratoSession",
+        "leratoHome",
+        "leratoJobs",
+        "leratoHistory"
+      ],
+      "urls": []
+    },
+    "homeScrolled": {
+      "id": "38:4158",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "job",
+        "stop",
+        "offload",
+        "partial",
+        "fuel",
+        "issue",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "reportOtherFilled": {
+      "id": "55:8930",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "reportQueued",
+        "issue",
+        "home",
+        "jobs",
+        "history",
+        "more"
+      ],
+      "urls": []
+    },
+    "leratoReportOtherFilled": {
+      "id": "55:9025",
+      "w": 412,
+      "h": 915,
+      "edges": [
+        "leratoReportQueued",
+        "leratoReportTypes",
+        "leratoHome",
+        "leratoJobs",
+        "leratoHistory",
+        "leratoSession"
+      ],
+      "urls": []
+    }
+  }
+}

@@ -1,0 +1,846 @@
+{
+  "createdNodeIds": [
+    "69:4196",
+    "69:4197",
+    "69:4198",
+    "69:4199",
+    "69:4200",
+    "69:4201",
+    "69:4202",
+    "69:4203",
+    "69:4204",
+    "69:4205"
+  ],
+  "mutatedNodeIds": [
+    "5:1555",
+    "5:1706",
+    "5:1785",
+    "34:2523",
+    "34:2596",
+    "5:1864",
+    "5:1659",
+    "5:1825",
+    "34:2669",
+    "69:4196",
+    "5:1909",
+    "5:1949",
+    "5:1994",
+    "5:2043",
+    "5:2092",
+    "5:2132",
+    "5:2183",
+    "5:2230",
+    "5:2272",
+    "69:4197",
+    "5:2312",
+    "5:2354",
+    "5:2401",
+    "5:2763",
+    "69:4198",
+    "5:1744",
+    "5:2544",
+    "5:2450",
+    "5:2505",
+    "5:2587",
+    "5:2630",
+    "5:2673",
+    "69:4199",
+    "5:2847",
+    "34:2739",
+    "34:2812",
+    "34:2955",
+    "34:2885",
+    "69:4200",
+    "5:2889",
+    "34:3025",
+    "5:2928",
+    "5:2970",
+    "34:3098",
+    "5:3009",
+    "5:3050",
+    "69:4201",
+    "11:741",
+    "11:780",
+    "11:819",
+    "35:3103",
+    "69:4202",
+    "5:2711",
+    "33:1491",
+    "33:1567",
+    "33:1643",
+    "33:1719",
+    "33:1795",
+    "33:1871",
+    "33:1947",
+    "33:2023",
+    "33:2106",
+    "55:8930",
+    "33:2171",
+    "33:2229",
+    "69:4203",
+    "33:2550",
+    "33:2609",
+    "33:2676",
+    "33:2743",
+    "33:2810",
+    "33:2877",
+    "33:2944",
+    "33:3011",
+    "33:3078",
+    "33:3152",
+    "55:9025",
+    "33:3208",
+    "33:3257",
+    "69:4204",
+    "5:2801",
+    "35:3026",
+    "35:2945",
+    "38:4158",
+    "69:4205",
+    "5:1803",
+    "5:1804",
+    "I38:3887;37:206",
+    "I5:1805;3:70",
+    "5:1810",
+    "I5:1812;3:39",
+    "5:1843",
+    "5:1844",
+    "I38:3891;37:206",
+    "I5:1845;3:75",
+    "I5:1851;3:39",
+    "5:1763",
+    "I5:1764;3:75",
+    "I5:2915;3:39",
+    "3:2"
+  ],
+  "sections": [
+    {
+      "id": "69:4196",
+      "name": "01 · Sign in → check assigned truck → clock in",
+      "x": 80,
+      "y": 160,
+      "w": 2968,
+      "h": 2138
+    },
+    {
+      "id": "69:4197",
+      "name": "02 · Assigned jobs → loading → delivery",
+      "x": 80,
+      "y": 2478,
+      "w": 2476,
+      "h": 2138
+    },
+    {
+      "id": "69:4198",
+      "name": "03 · Delivery exceptions and recovery",
+      "x": 80,
+      "y": 4796,
+      "w": 1984,
+      "h": 1043
+    },
+    {
+      "id": "69:4199",
+      "name": "04 · Resume session offline → fuel → sync",
+      "x": 80,
+      "y": 6019,
+      "w": 1984,
+      "h": 2138
+    },
+    {
+      "id": "69:4200",
+      "name": "05 · End shift → mileage → receipt",
+      "x": 80,
+      "y": 8337,
+      "w": 1984,
+      "h": 2138
+    },
+    {
+      "id": "69:4201",
+      "name": "06 · Handover → outgoing mileage → next driver",
+      "x": 80,
+      "y": 10655,
+      "w": 2968,
+      "h": 2138
+    },
+    {
+      "id": "69:4202",
+      "name": "07 · Lerato’s jobs, activity and session",
+      "x": 80,
+      "y": 12973,
+      "w": 1984,
+      "h": 1043
+    },
+    {
+      "id": "69:4203",
+      "name": "08 · Thabo → vehicle issue → saved → sent",
+      "x": 80,
+      "y": 14196,
+      "w": 2476,
+      "h": 3233
+    },
+    {
+      "id": "69:4204",
+      "name": "09 · Lerato → vehicle issue → saved → sent",
+      "x": 80,
+      "y": 17609,
+      "w": 2476,
+      "h": 3233
+    },
+    {
+      "id": "69:4205",
+      "name": "10 · Activity, vehicle records and scroll state",
+      "x": 80,
+      "y": 21022,
+      "w": 1984,
+      "h": 1043
+    }
+  ],
+  "screens": [
+    {
+      "id": "5:1555",
+      "key": "login",
+      "name": "01.01 · login / Ready for the road.",
+      "sectionId": "69:4196",
+      "x": 48,
+      "y": 80
+    },
+    {
+      "id": "5:1706",
+      "key": "pinSetup",
+      "name": "01.02 · pinSetup / Make access simple.",
+      "sectionId": "69:4196",
+      "x": 540,
+      "y": 80
+    },
+    {
+      "id": "5:1785",
+      "key": "truck",
+      "name": "01.03 · truck / Check assigned truck",
+      "sectionId": "69:4196",
+      "x": 1032,
+      "y": 80
+    },
+    {
+      "id": "34:2523",
+      "key": "shiftStart",
+      "name": "01.04 · shiftStart / Start your shift",
+      "sectionId": "69:4196",
+      "x": 1524,
+      "y": 80
+    },
+    {
+      "id": "34:2596",
+      "key": "shiftStartReady",
+      "name": "01.05 · shiftStartReady / Start your shift",
+      "sectionId": "69:4196",
+      "x": 2016,
+      "y": 80
+    },
+    {
+      "id": "5:1864",
+      "key": "home",
+      "name": "01.06 · home / Good morning, Thabo.",
+      "sectionId": "69:4196",
+      "x": 2508,
+      "y": 80
+    },
+    {
+      "id": "5:1659",
+      "key": "loginError",
+      "name": "01.07 · loginError / Check your details",
+      "sectionId": "69:4196",
+      "x": 48,
+      "y": 1175
+    },
+    {
+      "id": "5:1825",
+      "key": "wrongTruck",
+      "name": "01.08 · wrongTruck / Truck does not match?",
+      "sectionId": "69:4196",
+      "x": 540,
+      "y": 1175
+    },
+    {
+      "id": "34:2669",
+      "key": "shiftStartMissing",
+      "name": "01.09 · shiftStartMissing / Photo unavailable",
+      "sectionId": "69:4196",
+      "x": 1032,
+      "y": 1175
+    },
+    {
+      "id": "5:1909",
+      "key": "jobs",
+      "name": "02.01 · jobs / Your jobs",
+      "sectionId": "69:4197",
+      "x": 48,
+      "y": 80
+    },
+    {
+      "id": "5:1949",
+      "key": "job",
+      "name": "02.02 · job / Johannesburg → Pretoria",
+      "sectionId": "69:4197",
+      "x": 540,
+      "y": 80
+    },
+    {
+      "id": "5:1994",
+      "key": "stop",
+      "name": "02.03 · stop / City Deep loading point",
+      "sectionId": "69:4197",
+      "x": 1032,
+      "y": 80
+    },
+    {
+      "id": "5:2043",
+      "key": "loading",
+      "name": "02.04 · loading / Record loading",
+      "sectionId": "69:4197",
+      "x": 1524,
+      "y": 80
+    },
+    {
+      "id": "5:2092",
+      "key": "loaded",
+      "name": "02.05 · loaded / Load recorded.",
+      "sectionId": "69:4197",
+      "x": 2016,
+      "y": 80
+    },
+    {
+      "id": "5:2132",
+      "key": "offload",
+      "name": "02.06 · offload / Record offloading",
+      "sectionId": "69:4197",
+      "x": 48,
+      "y": 1175
+    },
+    {
+      "id": "5:2183",
+      "key": "proof",
+      "name": "02.07 · proof / Delivery proof",
+      "sectionId": "69:4197",
+      "x": 540,
+      "y": 1175
+    },
+    {
+      "id": "5:2230",
+      "key": "signature",
+      "name": "02.08 · signature / Recipient signature",
+      "sectionId": "69:4197",
+      "x": 1032,
+      "y": 1175
+    },
+    {
+      "id": "5:2272",
+      "key": "delivered",
+      "name": "02.09 · delivered / Delivery recorded.",
+      "sectionId": "69:4197",
+      "x": 1524,
+      "y": 1175
+    },
+    {
+      "id": "5:2312",
+      "key": "missingProof",
+      "name": "03.01 · missingProof / Proof still required",
+      "sectionId": "69:4198",
+      "x": 48,
+      "y": 80
+    },
+    {
+      "id": "5:2354",
+      "key": "signatureException",
+      "name": "03.02 · signatureException / Signature exception",
+      "sectionId": "69:4198",
+      "x": 540,
+      "y": 80
+    },
+    {
+      "id": "5:2401",
+      "key": "partial",
+      "name": "03.03 · partial / Partial delivery",
+      "sectionId": "69:4198",
+      "x": 1032,
+      "y": 80
+    },
+    {
+      "id": "5:2763",
+      "key": "issueSaved",
+      "name": "03.04 · issueSaved / Exception recorded.",
+      "sectionId": "69:4198",
+      "x": 1524,
+      "y": 80
+    },
+    {
+      "id": "5:1744",
+      "key": "unlock",
+      "name": "04.01 · unlock / Welcome back, Thabo.",
+      "sectionId": "69:4199",
+      "x": 48,
+      "y": 80
+    },
+    {
+      "id": "5:2544",
+      "key": "offlineHome",
+      "name": "04.02 · offlineHome / Keep moving, Thabo.",
+      "sectionId": "69:4199",
+      "x": 540,
+      "y": 80
+    },
+    {
+      "id": "5:2450",
+      "key": "fuel",
+      "name": "04.03 · fuel / Log a fuel stop",
+      "sectionId": "69:4199",
+      "x": 1032,
+      "y": 80
+    },
+    {
+      "id": "5:2505",
+      "key": "fuelSaved",
+      "name": "04.04 · fuelSaved / Saved on this truck.",
+      "sectionId": "69:4199",
+      "x": 1524,
+      "y": 80
+    },
+    {
+      "id": "5:2587",
+      "key": "queue",
+      "name": "04.05 · queue / Saved and pending",
+      "sectionId": "69:4199",
+      "x": 48,
+      "y": 1175
+    },
+    {
+      "id": "5:2630",
+      "key": "retry",
+      "name": "04.06 · retry / One upload needs retry",
+      "sectionId": "69:4199",
+      "x": 540,
+      "y": 1175
+    },
+    {
+      "id": "5:2673",
+      "key": "synced",
+      "name": "04.07 · synced / Everything is synced.",
+      "sectionId": "69:4199",
+      "x": 1032,
+      "y": 1175
+    },
+    {
+      "id": "5:2847",
+      "key": "more",
+      "name": "05.01 · more / Your truck session",
+      "sectionId": "69:4200",
+      "x": 48,
+      "y": 80
+    },
+    {
+      "id": "34:2739",
+      "key": "shiftEnd",
+      "name": "05.02 · shiftEnd / End your shift",
+      "sectionId": "69:4200",
+      "x": 540,
+      "y": 80
+    },
+    {
+      "id": "34:2812",
+      "key": "shiftEndReady",
+      "name": "05.03 · shiftEndReady / End your shift",
+      "sectionId": "69:4200",
+      "x": 1032,
+      "y": 80
+    },
+    {
+      "id": "34:2955",
+      "key": "shiftSummary",
+      "name": "05.04 · shiftSummary / Shift recorded",
+      "sectionId": "69:4200",
+      "x": 1524,
+      "y": 80
+    },
+    {
+      "id": "34:2885",
+      "key": "shiftEndMissing",
+      "name": "05.05 · shiftEndMissing / Photo unavailable",
+      "sectionId": "69:4200",
+      "x": 48,
+      "y": 1175
+    },
+    {
+      "id": "5:2889",
+      "key": "handover",
+      "name": "06.01 · handover / Change the driver",
+      "sectionId": "69:4201",
+      "x": 48,
+      "y": 80
+    },
+    {
+      "id": "34:3025",
+      "key": "handoverMileage",
+      "name": "06.02 · handoverMileage / End this truck session",
+      "sectionId": "69:4201",
+      "x": 540,
+      "y": 80
+    },
+    {
+      "id": "5:2928",
+      "key": "prepared",
+      "name": "06.03 · prepared / Who is driving?",
+      "sectionId": "69:4201",
+      "x": 1032,
+      "y": 80
+    },
+    {
+      "id": "5:2970",
+      "key": "leratoPin",
+      "name": "06.04 · leratoPin / Welcome, Lerato.",
+      "sectionId": "69:4201",
+      "x": 1524,
+      "y": 80
+    },
+    {
+      "id": "34:3098",
+      "key": "leratoShiftStart",
+      "name": "06.05 · leratoShiftStart / Start your truck session",
+      "sectionId": "69:4201",
+      "x": 2016,
+      "y": 80
+    },
+    {
+      "id": "5:3009",
+      "key": "leratoHome",
+      "name": "06.06 · leratoHome / You’re signed in, Lerato.",
+      "sectionId": "69:4201",
+      "x": 2508,
+      "y": 80
+    },
+    {
+      "id": "5:3050",
+      "key": "unprepared",
+      "name": "06.07 · unprepared / Connect to sign in",
+      "sectionId": "69:4201",
+      "x": 48,
+      "y": 1175
+    },
+    {
+      "id": "11:741",
+      "key": "leratoJobs",
+      "name": "07.01 · leratoJobs / Your jobs",
+      "sectionId": "69:4202",
+      "x": 48,
+      "y": 80
+    },
+    {
+      "id": "11:780",
+      "key": "leratoHistory",
+      "name": "07.02 · leratoHistory / Your activity",
+      "sectionId": "69:4202",
+      "x": 540,
+      "y": 80
+    },
+    {
+      "id": "11:819",
+      "key": "leratoSession",
+      "name": "07.03 · leratoSession / Your truck session",
+      "sectionId": "69:4202",
+      "x": 1032,
+      "y": 80
+    },
+    {
+      "id": "35:3103",
+      "key": "leratoShiftEnd",
+      "name": "07.04 · leratoShiftEnd / End your truck session",
+      "sectionId": "69:4202",
+      "x": 1524,
+      "y": 80
+    },
+    {
+      "id": "5:2711",
+      "key": "reportTypes",
+      "name": "08.01 · reportTypes / Report a vehicle issue",
+      "sectionId": "69:4203",
+      "x": 48,
+      "y": 80
+    },
+    {
+      "id": "33:1491",
+      "key": "report_stuck",
+      "name": "08.02 · report_stuck / Stuck / bogged down",
+      "sectionId": "69:4203",
+      "x": 540,
+      "y": 80
+    },
+    {
+      "id": "33:1567",
+      "key": "report_puncture",
+      "name": "08.03 · report_puncture / Puncture / tyre problem",
+      "sectionId": "69:4203",
+      "x": 1032,
+      "y": 80
+    },
+    {
+      "id": "33:1643",
+      "key": "report_mechanical",
+      "name": "08.04 · report_mechanical / Engine, brakes or vehicle fault",
+      "sectionId": "69:4203",
+      "x": 1524,
+      "y": 80
+    },
+    {
+      "id": "33:1719",
+      "key": "report_blocked",
+      "name": "08.05 · report_blocked / Road or access blocked",
+      "sectionId": "69:4203",
+      "x": 2016,
+      "y": 80
+    },
+    {
+      "id": "33:1795",
+      "key": "report_delay",
+      "name": "08.06 · report_delay / Delay / long queue",
+      "sectionId": "69:4203",
+      "x": 48,
+      "y": 1175
+    },
+    {
+      "id": "33:1871",
+      "key": "report_damage",
+      "name": "08.07 · report_damage / Damage, load or delivery issue",
+      "sectionId": "69:4203",
+      "x": 540,
+      "y": 1175
+    },
+    {
+      "id": "33:1947",
+      "key": "report_safety",
+      "name": "08.08 · report_safety / Accident / safety concern",
+      "sectionId": "69:4203",
+      "x": 1032,
+      "y": 1175
+    },
+    {
+      "id": "33:2023",
+      "key": "report_other",
+      "name": "08.09 · report_other / Something else",
+      "sectionId": "69:4203",
+      "x": 1524,
+      "y": 1175
+    },
+    {
+      "id": "33:2106",
+      "key": "reportValidation",
+      "name": "08.10 · reportValidation / Add a little more detail",
+      "sectionId": "69:4203",
+      "x": 48,
+      "y": 2270
+    },
+    {
+      "id": "55:8930",
+      "key": "reportOtherFilled",
+      "name": "08.11 · reportOtherFilled / Something else · details entered",
+      "sectionId": "69:4203",
+      "x": 540,
+      "y": 2270
+    },
+    {
+      "id": "33:2171",
+      "key": "reportQueued",
+      "name": "08.12 · reportQueued / Report saved on this device",
+      "sectionId": "69:4203",
+      "x": 1032,
+      "y": 2270
+    },
+    {
+      "id": "33:2229",
+      "key": "reportSent",
+      "name": "08.13 · reportSent / Sent to operations",
+      "sectionId": "69:4203",
+      "x": 1524,
+      "y": 2270
+    },
+    {
+      "id": "33:2550",
+      "key": "leratoReportTypes",
+      "name": "09.01 · leratoReportTypes / Report a vehicle issue",
+      "sectionId": "69:4204",
+      "x": 48,
+      "y": 80
+    },
+    {
+      "id": "33:2609",
+      "key": "leratoReport_stuck",
+      "name": "09.02 · leratoReport_stuck / Stuck / bogged down",
+      "sectionId": "69:4204",
+      "x": 540,
+      "y": 80
+    },
+    {
+      "id": "33:2676",
+      "key": "leratoReport_puncture",
+      "name": "09.03 · leratoReport_puncture / Puncture / tyre problem",
+      "sectionId": "69:4204",
+      "x": 1032,
+      "y": 80
+    },
+    {
+      "id": "33:2743",
+      "key": "leratoReport_mechanical",
+      "name": "09.04 · leratoReport_mechanical / Engine, brakes or vehicle fault",
+      "sectionId": "69:4204",
+      "x": 1524,
+      "y": 80
+    },
+    {
+      "id": "33:2810",
+      "key": "leratoReport_blocked",
+      "name": "09.05 · leratoReport_blocked / Road or access blocked",
+      "sectionId": "69:4204",
+      "x": 2016,
+      "y": 80
+    },
+    {
+      "id": "33:2877",
+      "key": "leratoReport_delay",
+      "name": "09.06 · leratoReport_delay / Delay / long queue",
+      "sectionId": "69:4204",
+      "x": 48,
+      "y": 1175
+    },
+    {
+      "id": "33:2944",
+      "key": "leratoReport_damage",
+      "name": "09.07 · leratoReport_damage / Damage, load or delivery issue",
+      "sectionId": "69:4204",
+      "x": 540,
+      "y": 1175
+    },
+    {
+      "id": "33:3011",
+      "key": "leratoReport_safety",
+      "name": "09.08 · leratoReport_safety / Accident / safety concern",
+      "sectionId": "69:4204",
+      "x": 1032,
+      "y": 1175
+    },
+    {
+      "id": "33:3078",
+      "key": "leratoReport_other",
+      "name": "09.09 · leratoReport_other / Something else",
+      "sectionId": "69:4204",
+      "x": 1524,
+      "y": 1175
+    },
+    {
+      "id": "33:3152",
+      "key": "leratoReportValidation",
+      "name": "09.10 · leratoReportValidation / Add a little more detail",
+      "sectionId": "69:4204",
+      "x": 48,
+      "y": 2270
+    },
+    {
+      "id": "55:9025",
+      "key": "leratoReportOtherFilled",
+      "name": "09.11 · leratoReportOtherFilled / Something else · details entered",
+      "sectionId": "69:4204",
+      "x": 540,
+      "y": 2270
+    },
+    {
+      "id": "33:3208",
+      "key": "leratoReportQueued",
+      "name": "09.12 · leratoReportQueued / Report saved on this device",
+      "sectionId": "69:4204",
+      "x": 1032,
+      "y": 2270
+    },
+    {
+      "id": "33:3257",
+      "key": "leratoReportSent",
+      "name": "09.13 · leratoReportSent / Sent to operations",
+      "sectionId": "69:4204",
+      "x": 1524,
+      "y": 2270
+    },
+    {
+      "id": "5:2801",
+      "key": "history",
+      "name": "10.01 · history / Your activity",
+      "sectionId": "69:4205",
+      "x": 48,
+      "y": 80
+    },
+    {
+      "id": "35:3026",
+      "key": "shiftVehicleHistory",
+      "name": "10.02 · shiftVehicleHistory / Shift & vehicle records",
+      "sectionId": "69:4205",
+      "x": 540,
+      "y": 80
+    },
+    {
+      "id": "35:2945",
+      "key": "vehicleReportDetail",
+      "name": "10.03 · vehicleReportDetail / Vehicle issue report",
+      "sectionId": "69:4205",
+      "x": 1032,
+      "y": 80
+    },
+    {
+      "id": "38:4158",
+      "key": "homeScrolled",
+      "name": "10.04 · homeScrolled / Today · truck context hidden",
+      "sectionId": "69:4205",
+      "x": 1524,
+      "y": 80
+    }
+  ],
+  "flowStartingPoints": [
+    {
+      "nodeId": "5:1555",
+      "name": "01 · Full driver journey · sign in to delivery"
+    },
+    {
+      "nodeId": "5:1785",
+      "name": "02 · Check assigned truck · match or report mismatch"
+    },
+    {
+      "nodeId": "5:1909",
+      "name": "03 · Jobs · loading and delivery"
+    },
+    {
+      "nodeId": "5:1744",
+      "name": "04 · Resume active session offline · fuel and sync"
+    },
+    {
+      "nodeId": "5:2847",
+      "name": "05 · End shift · mileage and receipt"
+    },
+    {
+      "nodeId": "5:2889",
+      "name": "06 · Handover · Thabo to Lerato"
+    },
+    {
+      "nodeId": "5:3009",
+      "name": "07 · Lerato · jobs, activity and session"
+    },
+    {
+      "nodeId": "5:2711",
+      "name": "08 · Thabo · vehicle issue and custom report"
+    },
+    {
+      "nodeId": "33:2550",
+      "name": "09 · Lerato · vehicle issue and custom report"
+    },
+    {
+      "nodeId": "5:2801",
+      "name": "10 · Activity · shift and vehicle records"
+    },
+    {
+      "nodeId": "38:4158",
+      "name": "11 · Today · truck bar collapsed"
+    }
+  ]
+}

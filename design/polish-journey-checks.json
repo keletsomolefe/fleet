@@ -1,0 +1,336 @@
+[
+  {
+    "kind": "driver",
+    "name": "Dispatch and delivery",
+    "steps": [
+      "login",
+      "pinSetup",
+      "truck",
+      "shiftStart",
+      "shiftStartReady",
+      "home",
+      "stop",
+      "loading",
+      "loaded",
+      "offload",
+      "proof",
+      "signature",
+      "delivered"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "Offline and retry",
+    "steps": [
+      "unlock",
+      "offlineHome",
+      "fuel",
+      "fuelSaved",
+      "queue",
+      "retry",
+      "synced",
+      "history"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "Handover with readings",
+    "steps": [
+      "more",
+      "handover",
+      "handoverMileage",
+      "prepared",
+      "leratoPin",
+      "leratoShiftStart",
+      "leratoHome",
+      "leratoHistory",
+      "leratoSession",
+      "leratoShiftEnd",
+      "prepared"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "End shift proof",
+    "steps": [
+      "more",
+      "shiftEnd",
+      "shiftEndReady",
+      "shiftSummary",
+      "prepared"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "report stuck",
+    "steps": [
+      "issue",
+      "report_stuck",
+      "reportQueued",
+      "reportSent",
+      "home"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "report puncture",
+    "steps": [
+      "issue",
+      "report_puncture",
+      "reportQueued",
+      "reportSent",
+      "home"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "report mechanical",
+    "steps": [
+      "issue",
+      "report_mechanical",
+      "reportQueued",
+      "reportSent",
+      "home"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "report blocked",
+    "steps": [
+      "issue",
+      "report_blocked",
+      "reportQueued",
+      "reportSent",
+      "home"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "report delay",
+    "steps": [
+      "issue",
+      "report_delay",
+      "reportQueued",
+      "reportSent",
+      "home"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "report damage",
+    "steps": [
+      "issue",
+      "report_damage",
+      "reportQueued",
+      "reportSent",
+      "home"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "report safety",
+    "steps": [
+      "issue",
+      "report_safety",
+      "reportQueued",
+      "reportSent",
+      "home"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "report missing-details recovery",
+    "steps": [
+      "issue",
+      "report_other",
+      "reportValidation",
+      "reportOtherFilled",
+      "reportQueued"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "report field entry",
+    "steps": [
+      "report_other",
+      "reportOtherFilled",
+      "reportQueued"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "leratoReport stuck",
+    "steps": [
+      "leratoReportTypes",
+      "leratoReport_stuck",
+      "leratoReportQueued",
+      "leratoReportSent",
+      "leratoHome"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "leratoReport puncture",
+    "steps": [
+      "leratoReportTypes",
+      "leratoReport_puncture",
+      "leratoReportQueued",
+      "leratoReportSent",
+      "leratoHome"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "leratoReport mechanical",
+    "steps": [
+      "leratoReportTypes",
+      "leratoReport_mechanical",
+      "leratoReportQueued",
+      "leratoReportSent",
+      "leratoHome"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "leratoReport blocked",
+    "steps": [
+      "leratoReportTypes",
+      "leratoReport_blocked",
+      "leratoReportQueued",
+      "leratoReportSent",
+      "leratoHome"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "leratoReport delay",
+    "steps": [
+      "leratoReportTypes",
+      "leratoReport_delay",
+      "leratoReportQueued",
+      "leratoReportSent",
+      "leratoHome"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "leratoReport damage",
+    "steps": [
+      "leratoReportTypes",
+      "leratoReport_damage",
+      "leratoReportQueued",
+      "leratoReportSent",
+      "leratoHome"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "leratoReport safety",
+    "steps": [
+      "leratoReportTypes",
+      "leratoReport_safety",
+      "leratoReportQueued",
+      "leratoReportSent",
+      "leratoHome"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "leratoReport missing-details recovery",
+    "steps": [
+      "leratoReportTypes",
+      "leratoReport_other",
+      "leratoReportValidation",
+      "leratoReportOtherFilled",
+      "leratoReportQueued"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "driver",
+    "name": "leratoReport field entry",
+    "steps": [
+      "leratoReport_other",
+      "leratoReportOtherFilled",
+      "leratoReportQueued"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "admin",
+    "name": "Dispatch",
+    "steps": [
+      "adminLogin",
+      "dashboard",
+      "jobCreate",
+      "stops",
+      "assignment",
+      "proofPolicy",
+      "jobDispatched"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "admin",
+    "name": "Investigation and extraction",
+    "steps": [
+      "fleet",
+      "mapHistory",
+      "review",
+      "resolved",
+      "exports",
+      "exportReady"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "admin",
+    "name": "Report follow-up",
+    "steps": [
+      "exceptions",
+      "vehicleReportReview",
+      "vehicleReportAcknowledged",
+      "vehicleReportResolved",
+      "vehicleReports"
+    ],
+    "status": "pass"
+  },
+  {
+    "kind": "admin",
+    "name": "Mileage proof",
+    "steps": [
+      "records",
+      "shiftRecords",
+      "shiftDetail",
+      "shiftRecords",
+      "shiftProofReview",
+      "shiftProofResolved",
+      "shiftRecords"
+    ],
+    "status": "pass"
+  },
+  {
+    "name": "All 24 proof-policy transitions",
+    "status": "pass"
+  }
+]

@@ -1,0 +1,27 @@
+{
+  "name": "fleet",
+  "scripts": {
+    "dev": "wattpm dev",
+    "build": "wattpm build",
+    "start": "wattpm start",
+    "test": "npm run test --workspace api",
+    "test:e2e": "npm run test:e2e --workspace api",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "dependencies": {
+    "@platformatic/runtime": "^3.72.0",
+    "platformatic": "^3.72.0",
+    "wattpm": "^3.72.0"
+  },
+  "devDependencies": {
+    "wattpm-utils": "^3.72.0"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "packageManager": "pnpm@12.14.0+sha512.c18ba6d87993d3d164cb5e8948f32b2c06ee854487e06cd8d86781342fb3e5bb4634367034711e86802baa9c37bea906ce1929ad08d70884c97d801df13389a6"
+}

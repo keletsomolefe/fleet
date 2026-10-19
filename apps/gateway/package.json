@@ -1,0 +1,19 @@
+{
+  "name": "gateway",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "wattpm dev",
+    "start": "wattpm start",
+    "build": "wattpm build"
+  },
+  "devDependencies": {
+    "fastify": "^5.12.7"
+  },
+  "dependencies": {
+    "@platformatic/gateway": "^3.72.0"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "private": true
+}

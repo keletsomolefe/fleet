@@ -1,0 +1,6 @@
+const page=await figma.getNodeByIdAsync("3:3");await figma.setCurrentPageAsync(page);await Promise.all(['Regular','Medium','Semi Bold','Bold'].map(style=>figma.loadFontAsync({family:'Inter',style})));
+const masks={7:await figma.getNodeByIdAsync("7:519"),3:await figma.getNodeByIdAsync("7:588")},created=[],mutated=[],added={};let i=39;
+for(const m of [0,1,2,4,5,6]){const n=masks[3].clone();page.appendChild(n);n.name='proofPolicy'+m+' / Choose delivery proof';n.x=160+(i%3)*1560;n.y=160+Math.floor(i/3)*1144;i++;masks[m]=n;added['proofPolicy'+m]=n.id;created.push(n.id,...n.findAll().map(c=>c.id));}
+const fields=[['Photo or document',1],['Recipient name',2],['Recipient signature',4]];
+for(const [maskString,root]of Object.entries(masks)){const mask=Number(maskString);for(const [name,bit]of fields){const row=root.findOne(n=>n.type==='FRAME'&&n.name===name);const b=row.children.find(n=>n.type==='INSTANCE');const key=Object.keys(b.componentProperties).find(k=>k.startsWith('Label#'));b.setProperties({[key]:mask&bit?'Required ✓':'Optional ○'});await b.setReactionsAsync([{trigger:{type:'ON_CLICK'},actions:[{type:'NODE',destinationId:masks[mask^bit].id,navigation:'NAVIGATE',transition:null,resetScrollPosition:true}]}]);mutated.push(b.id,...b.findAll().map(n=>n.id));}}
+return {added,createdNodeIds:created.join(','),mutatedNodeIds:mutated.join(','),policyVariants:8};

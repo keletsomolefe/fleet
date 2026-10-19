@@ -1,0 +1,146 @@
+{
+  "date": "2026-10-17",
+  "fileKey": "LEbt69of7SErhXVRHps0B3",
+  "screens": 128,
+  "sections": 21,
+  "flows": 22,
+  "driver": {
+    "screens": 75,
+    "sections": 10,
+    "flows": 11,
+    "actions": 438
+  },
+  "admin": {
+    "screens": 53,
+    "sections": 11,
+    "flows": 11,
+    "actions": 742
+  },
+  "journeys": [
+    {
+      "name": "Sign in, verify assigned truck, clock in, deliver",
+      "pass": true,
+      "missing": []
+    },
+    {
+      "name": "Truck mismatch recovery",
+      "pass": true,
+      "missing": []
+    },
+    {
+      "name": "Resume an active session without new truck confirmation",
+      "pass": true,
+      "missing": []
+    },
+    {
+      "name": "Offline fuel and retry",
+      "pass": true,
+      "missing": []
+    },
+    {
+      "name": "Shift clock-out",
+      "pass": true,
+      "missing": []
+    },
+    {
+      "name": "Handover retains truck and changes driver",
+      "pass": true,
+      "missing": []
+    },
+    {
+      "name": "Thabo custom report validation",
+      "pass": true,
+      "missing": []
+    },
+    {
+      "name": "Lerato custom report validation",
+      "pass": true,
+      "missing": []
+    },
+    {
+      "name": "Admin sign in, dispatch, assignment and progress",
+      "pass": true,
+      "missing": []
+    },
+    {
+      "name": "Stop reordering and recovery",
+      "pass": true,
+      "missing": []
+    },
+    {
+      "name": "Discard draft recovery",
+      "pass": true,
+      "missing": []
+    },
+    {
+      "name": "Add driver and manage access",
+      "pass": true,
+      "missing": []
+    },
+    {
+      "name": "Admin truck and device assignment",
+      "pass": true,
+      "missing": []
+    },
+    {
+      "name": "Fleet investigation and extraction",
+      "pass": true,
+      "missing": []
+    },
+    {
+      "name": "Signature review",
+      "pass": true,
+      "missing": []
+    },
+    {
+      "name": "Vehicle report lifecycle",
+      "pass": true,
+      "missing": []
+    },
+    {
+      "name": "Mileage missing proof review",
+      "pass": true,
+      "missing": []
+    },
+    {
+      "name": "Mileage proof details",
+      "pass": true,
+      "missing": []
+    },
+    {
+      "name": "Export demonstration",
+      "pass": true,
+      "missing": []
+    }
+  ],
+  "truckAssignment": {
+    "newSession": "Check admin-assigned truck matches the physical registration, then continue to clock-in.",
+    "mismatch": "Do not start on a different truck. Ask fleet administrator to correct the device assignment.",
+    "resume": "PIN unlock resumes the active session without repeating truck confirmation.",
+    "contextLabels": {
+      "mutatedNodeIds": [
+        "I38:3871;37:206",
+        "I38:3875;37:206",
+        "I38:3879;37:206",
+        "I38:4111;37:206",
+        "I38:4115;37:206",
+        "I38:4119;37:206",
+        "5:1825"
+      ],
+      "assignmentLabelCount": 6
+    }
+  },
+  "visualReview": {
+    "passed": true,
+    "nodes": [
+      "5:1785",
+      "5:1825",
+      "5:1744",
+      "5:2889",
+      "69:4196",
+      "69:8763"
+    ],
+    "notes": "Updated verification, mismatch and unlock text is unclipped. Pre-session bars say assigned truck; active sessions say current truck. Driver access and admin dispatch sections visually reviewed."
+  },
+  "limitations": "Native Figma demonstration states; no live credentials, storage, synchronization, GPS or export backend."
+}
