@@ -17,7 +17,13 @@
     "db:migrate": "pnpm --filter api migration:run",
     "db:seed": "pnpm --filter api seed:admin",
     "test:admin": "node scripts/test-admin-stack.mjs",
-    "test:fleet": "node scripts/test-fleet-stack.mjs"
+    "test:fleet": "node scripts/test-fleet-stack.mjs",
+    "test:mobile": "node scripts/test-mobile-stack.mjs",
+    "mobile:start": "pnpm --filter mobile start",
+    "mobile:android": "pnpm --filter mobile android",
+    "mobile:ios": "pnpm --filter mobile ios",
+    "mobile:check": "pnpm --filter mobile lint && pnpm --filter mobile typecheck",
+    "mobile:reverse": "node scripts/android-reverse.mjs"
   },
   "dependencies": {
     "@platformatic/runtime": "^3.72.0",

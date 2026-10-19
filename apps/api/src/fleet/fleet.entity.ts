@@ -55,6 +55,20 @@ export class TruckDevice {
   @Column({ type: 'varchar', length: 80, unique: true }) identifier: string;
   @Column({ type: 'varchar', length: 100, nullable: true, unique: true })
   serialNumber: string | null;
+  @Column({
+    type: 'varchar',
+    length: 64,
+    nullable: true,
+    unique: true,
+    select: false,
+  })
+  credentialHash: string | null;
+  @Column({ type: 'timestamptz', nullable: true }) enrolledAt: Date | null;
+  @Column({ type: 'timestamptz', nullable: true }) lastSeenAt: Date | null;
+  @Column({ type: 'uuid', nullable: true }) enrolledById: string | null;
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'enrolledById' })
+  enrolledBy: Relation<User> | null;
   @Column({ type: 'uuid', nullable: true, unique: true }) currentTruckId:
     string | null;
   @ManyToOne(() => Truck, { nullable: true, onDelete: 'RESTRICT' })

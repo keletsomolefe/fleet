@@ -1,3 +1,5 @@
+import { DriverTruckConfirmation } from '../mobile/mobile.entity.js';
+import { MobileDeviceEnrollment1792368004000 } from './migrations/1792368004000-MobileDeviceEnrollment.js';
 import { fleetEntities } from '../fleet/fleet.entity.js';
 import { FleetProfiles1792368003000 } from './migrations/1792368003000-FleetProfiles.js';
 import type { DataSourceOptions } from 'typeorm';
@@ -24,6 +26,7 @@ export function databaseOptions(maintenance = false): DataSourceOptions {
     schema: 'app',
     entities: [
       ...fleetEntities,
+      DriverTruckConfirmation,
       User,
       Permission,
       Role,
@@ -35,6 +38,7 @@ export function databaseOptions(maintenance = false): DataSourceOptions {
       UserRoles1792368001000,
       AdminAccess1792368002000,
       FleetProfiles1792368003000,
+      MobileDeviceEnrollment1792368004000,
     ],
     migrationsTableName: 'migrations',
     migrationsTransactionMode: 'each',

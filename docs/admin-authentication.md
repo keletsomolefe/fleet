@@ -20,7 +20,7 @@ A user can hold several roles. Effective permissions are the union of their role
 | Driver | `driver.access` |
 | Terminal operator | `terminal.access` |
 
-The Driver and Terminal operator roles reserve access capabilities for those future application surfaces; this change does not implement a driver app or terminals. They do not grant admin access on their own. For example, Driver + Administrator combines driving and administration permissions on one user.
+The Driver role enables the [native driver sign-in and truck confirmation flow](mobile-device-setup.md). Terminal operator access remains reserved for its future surface. Neither role grants admin access on its own. For example, Driver + Administrator combines driving and administration permissions on one user.
 
 `/admin/roles` displays the role bundles and their permission catalog. Initial bundles are maintained through explicit migrations; custom role editing and per-user permission overrides are not included. Add new capability keys only when their corresponding feature is introduced, and enforce them on its API as well as its UI. Role names are presentation; normal authorization checks permission keys.
 

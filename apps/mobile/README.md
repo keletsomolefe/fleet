@@ -1,56 +1,26 @@
-# Welcome to your Expo app 👋
+# VHH Fleet mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Native Expo SDK 58 app for administrator device enrollment and online driver sign-in. See [the setup, security and API guide](../../docs/mobile-device-setup.md).
 
-## Get started
+Run all commands from the repository root:
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```sh
+pnpm install
+pnpm infra:up
+pnpm dev
+# Another terminal:
+pnpm mobile:reverse
+pnpm mobile:android
+# Subsequent runs with the installed development build:
+pnpm mobile:start --localhost --port 8081
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+For iOS, use `pnpm mobile:ios`. Configure the public `EXPO_PUBLIC_API_URL` in the root `.env` for a physical device or non-default gateway. Android uses loopback through `adb reverse`; the script forwards Expo, gateway and all configured local infrastructure ports. Pass a device serial after `pnpm mobile:reverse` when several devices are attached.
 
-### Other setup steps
+Android builds were verified with Java 17. Set `JAVA_HOME` to a JDK 17 installation and `ANDROID_HOME` to the Android SDK. If Gradle exits under memory pressure, retry with `GRADLE_OPTS='-Dorg.gradle.workers.max=2 -Dorg.gradle.parallel=false' pnpm mobile:android`. Keep machine-specific JDK paths out of shared configuration.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+The application uses Expo Router, SecureStore, local Figma SVG assets, Montserrat and the VHH theme. Native projects are generated with `pnpm --filter mobile prebuild` and ignored by Git. Native settings belong in `app.json`, `app.config.ts` and config plugins. The reference `~/Dev/brocabs` workflow informed local native development commands; no application credentials or integrations were copied.
 
-## Learn more
+Run `pnpm mobile:check` and `pnpm test:mobile` before delivery. The latter requires the migrated local database, Kratos and gateway. The web target is a visual preview; credential flows require an installed native build.
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Production builds must supply an HTTPS `EXPO_PUBLIC_API_URL`. The development EAS profile builds a development client; preview/production profiles are available for signing and distribution configuration. No EAS project or cloud build is created by this change.

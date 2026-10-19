@@ -1,3 +1,6 @@
+import { MobileController } from '../mobile/mobile.controller.js';
+import { MobileAuthService } from '../mobile/mobile-auth.service.js';
+import { MobileDeviceService } from '../mobile/mobile-device.service.js';
 import {
   TrucksController,
   DriversController,
@@ -40,6 +43,7 @@ import { RolesController } from '../rbac/roles.controller.js';
   ],
   controllers: [
     AuthController,
+    MobileController,
     TrucksController,
     DriversController,
     AdminUsersController,
@@ -48,6 +52,8 @@ import { RolesController } from '../rbac/roles.controller.js';
   ],
   providers: [
     AuthService,
+    MobileAuthService,
+    MobileDeviceService,
     FleetService,
     AuthMiddleware,
     KratosService,

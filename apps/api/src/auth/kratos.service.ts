@@ -16,6 +16,7 @@ export interface KratosSession {
   id: string;
   active: boolean;
   authenticated_at: string;
+  expires_at?: string;
   identity: KratosIdentity;
 }
 
@@ -72,6 +73,19 @@ export class KratosService {
   whoami(cookie: string) {
     return this.request<KratosSession>('sessions/whoami', {
       headers: { Cookie: cookie },
+    });
+  }
+
+  whoamiToken(token: string) {
+    return this.request<KratosSession>('sessions/whoami', {
+      headers: { 'X-Session-Token': token },
+    });
+  }
+
+  revokeToken(token: string) {
+    return this.request<void>('self-service/logout/api', {
+      method: 'DELETE',
+      body: JSON.stringify({ session_token: token }),
     });
   }
 

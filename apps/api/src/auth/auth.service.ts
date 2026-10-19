@@ -49,6 +49,27 @@ export class AuthService {
         );
       throw error;
     }
+    return this.authorize(session, ['admin.access']);
+  }
+
+  async authenticateNative(token: string): Promise<AdminContext> {
+    let session: KratosSession;
+    try {
+      session = await this.kratos.whoamiToken(token);
+    } catch (error) {
+      if (error instanceof KratosError && [401, 403].includes(error.status))
+        throw new UnauthorizedException(
+          'Your session has ended. Please sign in.',
+        );
+      throw error;
+    }
+    return this.authorize(session, []);
+  }
+
+  private async authorize(
+    session: KratosSession,
+    required: string[],
+  ): Promise<AdminContext> {
     if (!session.active || session.identity.state === 'inactive')
       throw new UnauthorizedException('Please sign in.');
     const email = session.identity.traits.email.toLowerCase();
@@ -71,9 +92,7 @@ export class AuthService {
       );
     }
     if (!user || !user.isActive)
-      throw new ForbiddenException(
-        'This account does not have active administrator access.',
-      );
+      throw new ForbiddenException('This account is not active.');
     let access: Access;
     try {
       access = await this.rbac.access(user.id);
@@ -82,7 +101,7 @@ export class AuthService {
         'Account access is temporarily unavailable.',
       );
     }
-    this.rbac.require(access, 'admin.access');
+    this.rbac.require(access, ...required);
     return { user, session, ...access };
   }
 
