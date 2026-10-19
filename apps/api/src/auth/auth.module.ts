@@ -1,4 +1,9 @@
 import {
+  TrucksController,
+  DriversController,
+} from '../fleet/fleet.controller.js';
+import { FleetService } from '../fleet/fleet.service.js';
+import {
   MiddlewareConsumer,
   Module,
   RequestMethod,
@@ -35,12 +40,15 @@ import { RolesController } from '../rbac/roles.controller.js';
   ],
   controllers: [
     AuthController,
+    TrucksController,
+    DriversController,
     AdminUsersController,
     KratosHookController,
     RolesController,
   ],
   providers: [
     AuthService,
+    FleetService,
     AuthMiddleware,
     KratosService,
     AdminUsersService,

@@ -218,6 +218,20 @@ function Navigation({ session }: { session: AdminSession }) {
                             >
                               {content}
                             </Link>
+                          ) : item.section === 'drivers' ||
+                            item.section === 'trucks' ? (
+                            <Link
+                              to={
+                                item.section === 'drivers'
+                                  ? '/admin/drivers'
+                                  : '/admin/trucks'
+                              }
+                              search={{ q: '', page: 1, status: '' }}
+                              aria-current={active ? 'page' : undefined}
+                              onClick={() => setOpenMobile(false)}
+                            >
+                              {content}
+                            </Link>
                           ) : item.section === 'roles' ? (
                             <Link
                               to="/admin/roles"
@@ -311,12 +325,20 @@ export function AdminShell({
     )
   const title =
     pathname.endsWith('/new') || pathname.endsWith('/signup')
-      ? 'Create user'
+      ? pathname.startsWith('/admin/drivers')
+        ? 'Add a driver'
+        : pathname.startsWith('/admin/trucks')
+          ? 'Add truck and device'
+          : 'Create user'
       : pathname.startsWith('/admin/users/')
         ? 'Users'
-        : item?.title === 'Overview'
-          ? 'Fleet overview'
-          : (item?.title ?? 'Administration')
+        : pathname.startsWith('/admin/drivers/')
+          ? 'Driver profile'
+          : pathname.startsWith('/admin/trucks/')
+            ? 'Truck profile'
+            : item?.title === 'Overview'
+              ? 'Fleet overview'
+              : (item?.title ?? 'Administration')
   return (
     <SidebarProvider style={{ '--sidebar-width': '240px' } as CSSProperties}>
       <Navigation session={session} />

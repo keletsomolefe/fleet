@@ -3,13 +3,14 @@ import {
   ConflictException,
   ForbiddenException,
   Inject,
+  HttpException,
   Injectable,
   Logger,
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
 import { KratosError, KratosService } from '../auth/kratos.service.js';
 import { User } from './user.entity.js';
 import { Role, UserRole } from '../rbac/rbac.entity.js';
@@ -67,7 +68,11 @@ export class AdminUsersService {
     @Inject(RbacService) private readonly rbac: RbacService,
   ) {}
 
-  async create(raw: unknown, creator: User): Promise<User> {
+  async create(
+    raw: unknown,
+    creator: User,
+    provision?: (manager: EntityManager, user: User) => Promise<void>,
+  ): Promise<User> {
     const input = parseUserInput(raw);
     if (await this.users.existsBy({ email: input.email }))
       throw new ConflictException('An account with this email already exists.');
@@ -94,17 +99,21 @@ export class AdminUsersService {
       throw error;
     }
     try {
-      return await this.users.save(
-        this.users.create({
-          kratosIdentityId: identity.id,
-          email: input.email,
-          firstName: input.firstName,
-          lastName: input.lastName,
-          isActive: true,
-          createdById: creator.id,
-        }),
-      );
-    } catch {
+      const details = this.users.create({
+        kratosIdentityId: identity.id,
+        email: input.email,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        isActive: true,
+        createdById: creator.id,
+      });
+      if (!provision) return await this.users.save(details);
+      return await this.database.transaction(async (manager) => {
+        const user = await manager.save(User, details);
+        await provision(manager, user);
+        return user;
+      });
+    } catch (error) {
       try {
         await this.kratos.deleteIdentity(identity.id);
       } catch {
@@ -112,6 +121,11 @@ export class AdminUsersService {
           `User provisioning cleanup required for identity ${identity.id}`,
         );
       }
+      if (error instanceof HttpException) throw error;
+      if ((error as { code?: string })?.code === '23505')
+        throw new ConflictException(
+          'Account or driver details are already in use.',
+        );
       throw new ServiceUnavailableException(
         'The user could not be saved. Please try again.',
       );

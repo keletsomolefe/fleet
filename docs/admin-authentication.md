@@ -8,9 +8,9 @@ The web application uses shadcn/ui with Radix, Tailwind CSS 4, local Montserrat 
 
 Fleet currently serves one company. All users belong to that company; there is no workspace, tenant, company selector, or company-scoped authorization model.
 
-Users are created through `/admin/users/new` by someone with `users.create`. Creation stores a neutral user with no roles or access. `/admin/users` lists all application users, including drivers and terminal operators; `/admin/users/:id` manages their roles and active status. `/admin/signup` redirects to user creation for existing bookmarks. Public Kratos registration does not grant application access. Newly created accounts must verify their email, using `/verify-email`, before login. Operational pages are currently empty shells.
+Users are created through `/admin/users/new` by someone with `users.create`. Creation stores a neutral user with no roles or access. `/admin/users` lists all application users, including drivers and terminal operators; `/admin/users/:id` manages their roles and active status. `/admin/signup` redirects to user creation for existing bookmarks. Public Kratos registration does not grant application access. Newly created accounts must verify their email, using `/verify-email`, before login. Driver and truck management are implemented; other operational pages remain empty shells. See [Drivers, trucks and devices](drivers-and-trucks.md).
 
-A user can hold several roles. Effective permissions are the union of their roles, loaded from PostgreSQL on every protected request. There is no `userType`, `isAdmin`, or separate administrator account. Credentials and identity remain in Kratos. Driver-specific facts such as licence details and vehicle assignments belong in a future driver profile linked to the same user; a role alone does not establish driver eligibility.
+A user can hold several roles. Effective permissions are the union of their roles, loaded from PostgreSQL on every protected request. There is no `userType`, `isAdmin`, or separate administrator account. Credentials and identity remain in Kratos. Driver-specific facts, licence details and vehicle assignments live in a driver profile linked to the same user; a role alone does not establish driver eligibility.
 
 | Role | Initial access |
 | --- | --- |

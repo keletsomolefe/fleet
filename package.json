@@ -16,7 +16,8 @@
     "infra:test": "node scripts/test-dev-stack.mjs",
     "db:migrate": "pnpm --filter api migration:run",
     "db:seed": "pnpm --filter api seed:admin",
-    "test:admin": "node scripts/test-admin-stack.mjs"
+    "test:admin": "node scripts/test-admin-stack.mjs",
+    "test:fleet": "node scripts/test-fleet-stack.mjs"
   },
   "dependencies": {
     "@platformatic/runtime": "^3.72.0",

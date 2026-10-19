@@ -1,3 +1,5 @@
+import { fleetEntities } from '../fleet/fleet.entity.js';
+import { FleetProfiles1792368003000 } from './migrations/1792368003000-FleetProfiles.js';
 import type { DataSourceOptions } from 'typeorm';
 import { User } from '../users/user.entity.js';
 import { CreateUsers1792368000000 } from './migrations/1792368000000-CreateUsers.js';
@@ -20,11 +22,19 @@ export function databaseOptions(maintenance = false): DataSourceOptions {
     type: 'postgres',
     url: process.env.DATABASE_URL,
     schema: 'app',
-    entities: [User, Permission, Role, RolePermission, UserRole],
+    entities: [
+      ...fleetEntities,
+      User,
+      Permission,
+      Role,
+      RolePermission,
+      UserRole,
+    ],
     migrations: [
       CreateUsers1792368000000,
       UserRoles1792368001000,
       AdminAccess1792368002000,
+      FleetProfiles1792368003000,
     ],
     migrationsTableName: 'migrations',
     migrationsTransactionMode: 'each',

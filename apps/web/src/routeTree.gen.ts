@@ -15,9 +15,17 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminSectionRouteImport } from './routes/admin.$section'
+import { Route as AdminDriversRouteImport } from './routes/admin.drivers'
 import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AdminSignupRouteImport } from './routes/admin.signup'
+import { Route as AdminTrucksRouteImport } from './routes/admin.trucks'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminDriversIndexRouteImport } from './routes/admin.drivers.index'
+import { Route as AdminDriversDriverIdRouteImport } from './routes/admin.drivers.$driverId'
+import { Route as AdminDriversNewRouteImport } from './routes/admin.drivers.new'
+import { Route as AdminTrucksIndexRouteImport } from './routes/admin.trucks.index'
+import { Route as AdminTrucksTruckIdRouteImport } from './routes/admin.trucks.$truckId'
+import { Route as AdminTrucksNewRouteImport } from './routes/admin.trucks.new'
 import { Route as AdminUsersIndexRouteImport } from './routes/admin.users.index'
 import { Route as AdminUsersUserIdRouteImport } from './routes/admin.users.$userId'
 import { Route as AdminUsersNewRouteImport } from './routes/admin.users.new'
@@ -52,6 +60,11 @@ const AdminSectionRoute = AdminSectionRouteImport.update({
   path: '/$section',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminDriversRoute = AdminDriversRouteImport.update({
+  id: '/drivers',
+  path: '/drivers',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminRolesRoute = AdminRolesRouteImport.update({
   id: '/roles',
   path: '/roles',
@@ -62,10 +75,45 @@ const AdminSignupRoute = AdminSignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminTrucksRoute = AdminTrucksRouteImport.update({
+  id: '/trucks',
+  path: '/trucks',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
   getParentRoute: () => AdminRoute,
+} as any)
+const AdminDriversIndexRoute = AdminDriversIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminDriversRoute,
+} as any)
+const AdminDriversDriverIdRoute = AdminDriversDriverIdRouteImport.update({
+  id: '/$driverId',
+  path: '/$driverId',
+  getParentRoute: () => AdminDriversRoute,
+} as any)
+const AdminDriversNewRoute = AdminDriversNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AdminDriversRoute,
+} as any)
+const AdminTrucksIndexRoute = AdminTrucksIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminTrucksRoute,
+} as any)
+const AdminTrucksTruckIdRoute = AdminTrucksTruckIdRouteImport.update({
+  id: '/$truckId',
+  path: '/$truckId',
+  getParentRoute: () => AdminTrucksRoute,
+} as any)
+const AdminTrucksNewRoute = AdminTrucksNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AdminTrucksRoute,
 } as any)
 const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
   id: '/',
@@ -89,12 +137,20 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/$section': typeof AdminSectionRoute
+  '/admin/drivers': typeof AdminDriversRouteWithChildren
   '/admin/roles': typeof AdminRolesRoute
   '/admin/signup': typeof AdminSignupRoute
+  '/admin/trucks': typeof AdminTrucksRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/': typeof AdminIndexRoute
+  '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
+  '/admin/drivers/new': typeof AdminDriversNewRoute
+  '/admin/trucks/$truckId': typeof AdminTrucksTruckIdRoute
+  '/admin/trucks/new': typeof AdminTrucksNewRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/new': typeof AdminUsersNewRoute
+  '/admin/drivers/': typeof AdminDriversIndexRoute
+  '/admin/trucks/': typeof AdminTrucksIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -105,8 +161,14 @@ export interface FileRoutesByTo {
   '/admin/roles': typeof AdminRolesRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin': typeof AdminIndexRoute
+  '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
+  '/admin/drivers/new': typeof AdminDriversNewRoute
+  '/admin/trucks/$truckId': typeof AdminTrucksTruckIdRoute
+  '/admin/trucks/new': typeof AdminTrucksNewRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/new': typeof AdminUsersNewRoute
+  '/admin/drivers': typeof AdminDriversIndexRoute
+  '/admin/trucks': typeof AdminTrucksIndexRoute
   '/admin/users': typeof AdminUsersIndexRoute
 }
 export interface FileRoutesById {
@@ -116,12 +178,20 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/$section': typeof AdminSectionRoute
+  '/admin/drivers': typeof AdminDriversRouteWithChildren
   '/admin/roles': typeof AdminRolesRoute
   '/admin/signup': typeof AdminSignupRoute
+  '/admin/trucks': typeof AdminTrucksRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/': typeof AdminIndexRoute
+  '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
+  '/admin/drivers/new': typeof AdminDriversNewRoute
+  '/admin/trucks/$truckId': typeof AdminTrucksTruckIdRoute
+  '/admin/trucks/new': typeof AdminTrucksNewRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/new': typeof AdminUsersNewRoute
+  '/admin/drivers/': typeof AdminDriversIndexRoute
+  '/admin/trucks/': typeof AdminTrucksIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
 }
 export interface FileRouteTypes {
@@ -132,12 +202,20 @@ export interface FileRouteTypes {
     | '/login'
     | '/verify-email'
     | '/admin/$section'
+    | '/admin/drivers'
     | '/admin/roles'
     | '/admin/signup'
+    | '/admin/trucks'
     | '/admin/users'
     | '/admin/'
+    | '/admin/drivers/$driverId'
+    | '/admin/drivers/new'
+    | '/admin/trucks/$truckId'
+    | '/admin/trucks/new'
     | '/admin/users/$userId'
     | '/admin/users/new'
+    | '/admin/drivers/'
+    | '/admin/trucks/'
     | '/admin/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -148,8 +226,14 @@ export interface FileRouteTypes {
     | '/admin/roles'
     | '/admin/signup'
     | '/admin'
+    | '/admin/drivers/$driverId'
+    | '/admin/drivers/new'
+    | '/admin/trucks/$truckId'
+    | '/admin/trucks/new'
     | '/admin/users/$userId'
     | '/admin/users/new'
+    | '/admin/drivers'
+    | '/admin/trucks'
     | '/admin/users'
   id:
     | '__root__'
@@ -158,12 +242,20 @@ export interface FileRouteTypes {
     | '/login'
     | '/verify-email'
     | '/admin/$section'
+    | '/admin/drivers'
     | '/admin/roles'
     | '/admin/signup'
+    | '/admin/trucks'
     | '/admin/users'
     | '/admin/'
+    | '/admin/drivers/$driverId'
+    | '/admin/drivers/new'
+    | '/admin/trucks/$truckId'
+    | '/admin/trucks/new'
     | '/admin/users/$userId'
     | '/admin/users/new'
+    | '/admin/drivers/'
+    | '/admin/trucks/'
     | '/admin/users/'
   fileRoutesById: FileRoutesById
 }
@@ -218,6 +310,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSectionRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/drivers': {
+      id: '/admin/drivers'
+      path: '/drivers'
+      fullPath: '/admin/drivers'
+      preLoaderRoute: typeof AdminDriversRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/roles': {
       id: '/admin/roles'
       path: '/roles'
@@ -232,12 +331,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSignupRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/trucks': {
+      id: '/admin/trucks'
+      path: '/trucks'
+      fullPath: '/admin/trucks'
+      preLoaderRoute: typeof AdminTrucksRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/users': {
       id: '/admin/users'
       path: '/users'
       fullPath: '/admin/users'
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/admin/drivers/': {
+      id: '/admin/drivers/'
+      path: '/'
+      fullPath: '/admin/drivers/'
+      preLoaderRoute: typeof AdminDriversIndexRouteImport
+      parentRoute: typeof AdminDriversRoute
+    }
+    '/admin/drivers/$driverId': {
+      id: '/admin/drivers/$driverId'
+      path: '/$driverId'
+      fullPath: '/admin/drivers/$driverId'
+      preLoaderRoute: typeof AdminDriversDriverIdRouteImport
+      parentRoute: typeof AdminDriversRoute
+    }
+    '/admin/drivers/new': {
+      id: '/admin/drivers/new'
+      path: '/new'
+      fullPath: '/admin/drivers/new'
+      preLoaderRoute: typeof AdminDriversNewRouteImport
+      parentRoute: typeof AdminDriversRoute
+    }
+    '/admin/trucks/': {
+      id: '/admin/trucks/'
+      path: '/'
+      fullPath: '/admin/trucks/'
+      preLoaderRoute: typeof AdminTrucksIndexRouteImport
+      parentRoute: typeof AdminTrucksRoute
+    }
+    '/admin/trucks/$truckId': {
+      id: '/admin/trucks/$truckId'
+      path: '/$truckId'
+      fullPath: '/admin/trucks/$truckId'
+      preLoaderRoute: typeof AdminTrucksTruckIdRouteImport
+      parentRoute: typeof AdminTrucksRoute
+    }
+    '/admin/trucks/new': {
+      id: '/admin/trucks/new'
+      path: '/new'
+      fullPath: '/admin/trucks/new'
+      preLoaderRoute: typeof AdminTrucksNewRouteImport
+      parentRoute: typeof AdminTrucksRoute
     }
     '/admin/users/': {
       id: '/admin/users/'
@@ -263,6 +411,38 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminDriversRouteChildren {
+  AdminDriversDriverIdRoute: typeof AdminDriversDriverIdRoute
+  AdminDriversNewRoute: typeof AdminDriversNewRoute
+  AdminDriversIndexRoute: typeof AdminDriversIndexRoute
+}
+
+const AdminDriversRouteChildren: AdminDriversRouteChildren = {
+  AdminDriversDriverIdRoute: AdminDriversDriverIdRoute,
+  AdminDriversNewRoute: AdminDriversNewRoute,
+  AdminDriversIndexRoute: AdminDriversIndexRoute,
+}
+
+const AdminDriversRouteWithChildren = AdminDriversRoute._addFileChildren(
+  AdminDriversRouteChildren,
+)
+
+interface AdminTrucksRouteChildren {
+  AdminTrucksTruckIdRoute: typeof AdminTrucksTruckIdRoute
+  AdminTrucksNewRoute: typeof AdminTrucksNewRoute
+  AdminTrucksIndexRoute: typeof AdminTrucksIndexRoute
+}
+
+const AdminTrucksRouteChildren: AdminTrucksRouteChildren = {
+  AdminTrucksTruckIdRoute: AdminTrucksTruckIdRoute,
+  AdminTrucksNewRoute: AdminTrucksNewRoute,
+  AdminTrucksIndexRoute: AdminTrucksIndexRoute,
+}
+
+const AdminTrucksRouteWithChildren = AdminTrucksRoute._addFileChildren(
+  AdminTrucksRouteChildren,
+)
+
 interface AdminUsersRouteChildren {
   AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
   AdminUsersNewRoute: typeof AdminUsersNewRoute
@@ -281,16 +461,20 @@ const AdminUsersRouteWithChildren = AdminUsersRoute._addFileChildren(
 
 interface AdminRouteChildren {
   AdminSectionRoute: typeof AdminSectionRoute
+  AdminDriversRoute: typeof AdminDriversRouteWithChildren
   AdminRolesRoute: typeof AdminRolesRoute
   AdminSignupRoute: typeof AdminSignupRoute
+  AdminTrucksRoute: typeof AdminTrucksRouteWithChildren
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminSectionRoute: AdminSectionRoute,
+  AdminDriversRoute: AdminDriversRouteWithChildren,
   AdminRolesRoute: AdminRolesRoute,
   AdminSignupRoute: AdminSignupRoute,
+  AdminTrucksRoute: AdminTrucksRouteWithChildren,
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
 }

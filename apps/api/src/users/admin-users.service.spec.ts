@@ -26,6 +26,7 @@ describe('User provisioning', () => {
     deleteIdentity: ReturnType<typeof vi.fn>;
   };
   let service: AdminUsersService;
+  let database: { transaction: ReturnType<typeof vi.fn> };
   beforeEach(() => {
     users = {
       existsBy: vi.fn().mockResolvedValue(false),
@@ -36,10 +37,19 @@ describe('User provisioning', () => {
       createIdentity: vi.fn().mockResolvedValue({ id: 'created-identity' }),
       deleteIdentity: vi.fn().mockResolvedValue(undefined),
     };
+    database = {
+      transaction: vi.fn(async (work) =>
+        work({
+          save: vi.fn((_entity, details) =>
+            Promise.resolve({ ...details, id: 'user-id' }),
+          ),
+        }),
+      ),
+    };
     service = new AdminUsersService(
       users as unknown as Repository<User>,
       kratos as unknown as KratosService,
-      {} as DataSource,
+      database as unknown as DataSource,
       {} as RbacService,
     );
   });
@@ -89,5 +99,33 @@ describe('User provisioning', () => {
     expect(kratos.deleteIdentity).toHaveBeenCalledExactlyOnceWith(
       'created-identity',
     );
+  });
+  it('provisions related records in the same transaction and never grants roles', async () => {
+    const provision = vi.fn().mockResolvedValue(undefined);
+    const user = await service.create(
+      input,
+      { id: 'creator' } as User,
+      provision,
+    );
+    expect(database.transaction).toHaveBeenCalledOnce();
+    expect(users.save).not.toHaveBeenCalled();
+    expect(provision).toHaveBeenCalledWith(
+      expect.objectContaining({ save: expect.any(Function) }),
+      user,
+    );
+    expect(user).not.toHaveProperty('password');
+    expect(kratos.deleteIdentity).not.toHaveBeenCalled();
+  });
+  it('cleans up the new Kratos identity and preserves a profile conflict after rollback', async () => {
+    const conflict = new ConflictException('Driver identifier already exists.');
+    await expect(
+      service.create(input, {} as User, async () => {
+        throw conflict;
+      }),
+    ).rejects.toBe(conflict);
+    expect(kratos.deleteIdentity).toHaveBeenCalledExactlyOnceWith(
+      'created-identity',
+    );
+    expect(users.save).not.toHaveBeenCalled();
   });
 });
