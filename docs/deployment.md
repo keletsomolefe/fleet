@@ -17,7 +17,7 @@ The key's server-side `authorized_keys` entry has `restrict` and a forced `/usr/
 
 The existing shared Caddy proxy supplies HTTPS through the `caddy` Docker network. Fleet's small internal edge router handles `/auth/*` (Kratos public API), `/account/*` (fallback recovery/settings UI), `/mqtt` (secure WebSocket transport) and the application. `/api/internal/*` is blocked at the edge; Kratos calls the hook directly on the private Docker network. Fleet exposes no database, Kratos admin, application or MQTT host ports. The test email UI is bound only to `127.0.0.1:18026`.
 
-Application sessions/credentials remain in Kratos. The application and Kratos have separate PostgreSQL roles and `app`/`kratos` schemas. Compose passes only each service's required environment variables. Secrets stay on the server across deployments; volumes are retained. Memory limits account for the shared 4 GB VPS.
+Application sessions/credentials remain in Kratos. The application and Kratos have separate PostgreSQL roles and `app`/`kratos` schemas. Compose passes only each service's required environment variables. Secrets stay on the server across deployments; volumes are retained. Memory limits account for the shared 4 GB VPS. Kratos has 512 MiB of RAM headroom (1 GiB including swap) for its default 128 MB Argon2 hashing; an initial 192 MiB limit was too small during password processing.
 
 ## Deployment and recovery
 

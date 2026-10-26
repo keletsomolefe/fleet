@@ -77,7 +77,8 @@ services:
   kratos:
     image: oryd/kratos:v26.2.0
     restart: unless-stopped
-    mem_limit: 192m
+    mem_limit: 512m
+    memswap_limit: 1024m
     environment: *kratos-env
     command:
       [
