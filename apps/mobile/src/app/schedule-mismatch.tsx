@@ -54,7 +54,7 @@ export default function ScheduleMismatch() {
         </>
       }
     >
-      <Heading title="Schedule mismatch" />
+      <Heading title="Schedule problem" />
       {scheduled && (
         <>
           <Copy small>Scheduled for {scheduled.date}</Copy>

@@ -44,7 +44,7 @@ export const isFlowId = (value: unknown): value is string =>
 
 function validateLoad(input: LoadFlowInput): LoadFlowInput {
   if (!input || !['login', 'verification'].includes(input.kind))
-    throw new Error('Invalid authentication form.')
+    throw new Error('Could not submit this form. Please try again.')
   return {
     kind: input.kind,
     flowId: isFlowId(input.flowId) ? input.flowId : undefined,
@@ -67,14 +67,14 @@ export const submitAuthFlow = createServerFn({ method: 'POST' })
       !input.values ||
       typeof input.values !== 'object'
     )
-      throw new Error('Invalid authentication form.')
+      throw new Error('Could not submit this form. Please try again.')
     for (const [key, value] of Object.entries(input.values)) {
       if (
         !['identifier', 'password', 'email', 'code'].includes(key) ||
         typeof value !== 'string' ||
         value.length > 320
       )
-        throw new Error('Invalid authentication form.')
+        throw new Error('Could not submit this form. Please try again.')
     }
     return input
   })

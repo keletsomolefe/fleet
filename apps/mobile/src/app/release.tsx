@@ -27,7 +27,7 @@ export default function ReleaseVehicle() {
               })
             }
           >
-            Finish and release vehicle
+            Finish driving
           </Button>
           <Button
             secondary
@@ -43,7 +43,7 @@ export default function ReleaseVehicle() {
       <TruckCard truck={fleet.driver.truck} />
       <Copy>
         {fleet.driver.truck.disputed
-          ? "Location sharing stops. Your administrator must resolve the vehicle flag before another driver can select it."
+          ? "Location sharing stops. Another driver can use this vehicle after administrator review."
           : "Location sharing stops and this vehicle becomes available to the next driver."}
       </Copy>
       <Notice message={action.error} />

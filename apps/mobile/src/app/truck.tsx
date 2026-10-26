@@ -53,12 +53,12 @@ export default function Driving() {
                 router.push("/schedule-mismatch");
               }}
             >
-              Report schedule mismatch
+              Report a problem
             </Button>
           )}
           {driver?.pendingDispute && (
             <Button secondary onPress={() => void action.run(fleet.refresh)}>
-              Refresh status
+              Check for updates
             </Button>
           )}
           {driver?.drivingSession && (
@@ -103,8 +103,8 @@ export default function Driving() {
       )}
       {driver?.pendingDispute && (
         <Notice
-          title="Awaiting administrator"
-          message="Your schedule mismatch has been sent for review."
+          title="Waiting for review"
+          message="The schedule problem has been sent to your administrator."
         />
       )}
       {driver?.truck && (active || !scheduled) ? (

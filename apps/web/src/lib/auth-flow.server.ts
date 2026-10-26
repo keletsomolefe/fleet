@@ -171,7 +171,7 @@ export async function loadFlowServer(
       throw new Error("Flow unavailable");
     result.flow = flow;
   } catch {
-    result.error = "Could not connect to authentication. Please try again.";
+    result.error = "Could not connect. Please try again.";
   }
   return result;
 }
@@ -275,13 +275,13 @@ export async function submitFlowServer(
       return {
         error:
           response.status >= 500
-            ? "Authentication is temporarily unavailable. Please try again."
+            ? "Could not connect. Please try again."
             : "Check your details and try again.",
       };
     }
-    return { error: "Could not connect to authentication. Please try again." };
+    return { error: "Could not connect. Please try again." };
   } catch {
-    return { error: "Could not connect to authentication. Please try again." };
+    return { error: "Could not connect. Please try again." };
   }
 }
 

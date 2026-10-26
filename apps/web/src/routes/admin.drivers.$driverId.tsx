@@ -3,8 +3,6 @@ import { DriverForm } from '@/components/driver-form'
 import { PageError } from '@/components/page-error'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { getDriver } from '@/lib/fleet'
-import { getDriverOptions } from '@/lib/fleet'
-import { can } from '@/lib/auth'
 export const Route = createFileRoute('/admin/drivers/$driverId')({
   validateSearch: (
     s: Record<string, unknown>,
@@ -17,14 +15,9 @@ export const Route = createFileRoute('/admin/drivers/$driverId')({
             : {}),
         }
       : {},
-  loader: async ({ params, context }) => {
+  loader: async ({ params }) => {
     const result = await getDriver({ data: params.driverId })
-    const trucks = can(context.session, 'drivers.write')
-      ? await getDriverOptions({
-          data: { kind: 'trucks', driverId: params.driverId },
-        })
-      : null
-    return { result, trucks }
+    return { result }
   },
   staleTime: 0,
   gcTime: 0,
@@ -50,7 +43,6 @@ function Page() {
         key={data.result.data.id}
         driver={data.result.data}
         session={session}
-        trucks={data.trucks?.data ?? []}
       />
     </>
   )

@@ -28,16 +28,13 @@ export function AuthLayout({ children }: { children: ReactNode }) {
             <br />
             One clear record.
           </p>
-          <p className="max-w-[460px] text-sm leading-5">
-            Fleet connects your people, movement and delivery proof.
-          </p>
         </div>
         <p className="hidden text-[11px] leading-4 lg:block">
-          FLEET / OPERATIONS
+          Fleet
         </p>
       </aside>
       <section
-        aria-label="Administrator access"
+        aria-label="Fleet account"
         className="flex items-center justify-center bg-muted p-5 sm:p-10 lg:justify-start lg:p-12"
       >
         <div className="w-full max-w-[556px]">{children}</div>

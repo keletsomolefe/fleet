@@ -1,6 +1,5 @@
 import { router } from "expo-router";
-import { Button, Copy, Emblem, Heading, Screen, styles } from "@/components/ui";
-import { View } from "react-native";
+import { Button, Emblem, Heading, Screen } from "@/components/ui";
 export default function Help() {
   return (
     <Screen
@@ -13,15 +12,9 @@ export default function Help() {
       <Emblem name="info" />
       <Heading
         center
-        title="Need help signing in?"
-        detail="Contact your fleet administrator."
+        title="Sign-in help"
+        detail="Contact your administrator to reset your password or check your account."
       />
-      <View style={styles.card}>
-        <Copy small>
-          Ask your administrator to check your email or Driver ID, account
-          access or password. Vehicle conflicts are reviewed by your administrator.
-        </Copy>
-      </View>
     </Screen>
   );
 }

@@ -48,7 +48,7 @@ export function KratosForm({
       setError(result.error ?? "");
       setAlreadyAuthenticated(result.alreadyAuthenticated);
     } catch {
-      setError("Could not connect to authentication. Please try again.");
+      setError("Could not connect. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -77,7 +77,7 @@ export function KratosForm({
       if (result.complete) setComplete(true);
       if (result.error) setError(result.error);
     } catch {
-      setError("Could not connect to authentication. Please try again.");
+      setError("Could not connect. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -95,28 +95,19 @@ export function KratosForm({
     <AuthLayout>
       <Card className="gap-0 rounded-xl py-0 shadow-none">
         <CardContent className="space-y-6 p-6 sm:p-8">
-          <div className="space-y-4">
-            <h1>
-              {verification ? "Verify your email" : "Welcome to operations"}
-            </h1>
-            {!verification && (
-              <p className="text-xs leading-[18px] text-muted-foreground">
-                Sign in to Fleet.
-              </p>
-            )}
-          </div>
+          <h1>{verification ? "Verify your email" : "Welcome to Fleet"}</h1>
           {denied && (
             <Alert variant="destructive">
               <AlertDescription>
-                This account does not have active administrator access. Contact
-                your fleet administrator or sign out to use another account.
+                You don’t have access to this page. Contact your administrator
+                or sign out to use another account.
               </AlertDescription>
             </Alert>
           )}
           {unavailable && (
             <Alert>
               <AlertDescription>
-                Account access is temporarily unavailable. Please try again.
+                Could not sign you in. Please try again.
               </AlertDescription>
             </Alert>
           )}
@@ -137,16 +128,16 @@ export function KratosForm({
             <div className="space-y-6">
               <Alert>
                 <AlertDescription>
-                  Your email is verified. You can now sign in.
+                  Email verified.
                 </AlertDescription>
               </Alert>
               <Button asChild className="w-full">
-                <a href="/login">Continue to sign in</a>
+                <a href="/login">Sign in</a>
               </Button>
             </div>
           ) : denied ? null : alreadyAuthenticated ? (
             <Button asChild className="w-full">
-              <a href="/admin">Open admin</a>
+              <a href="/admin">Open Fleet</a>
             </Button>
           ) : flow ? (
             <form onSubmit={submit} className="space-y-6">
@@ -222,7 +213,7 @@ export function KratosForm({
                       </a>
                     ) : (
                       <p className="text-xs text-muted-foreground">
-                        Ask your administrator for a setup link.
+                        Forgot password? Contact your administrator.
                       </p>
                     )}
                   </div>
@@ -233,8 +224,8 @@ export function KratosForm({
                 {verification
                   ? needsCode
                     ? "Verify email"
-                    : "Send verification code"
-                  : "Sign in to operations"}
+                    : "Send code"
+                  : "Sign in"}
               </Button>
               {verification && needsCode && (
                 <Button
@@ -244,7 +235,7 @@ export function KratosForm({
                   disabled={busy}
                   onClick={() => void initialize()}
                 >
-                  Request a new code
+                  Send a new code
                 </Button>
               )}
             </form>

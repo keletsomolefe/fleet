@@ -78,7 +78,7 @@ export default function VehicleFlags() {
           ? "Schedule confirmed. The driver can continue."
           : resolution === "release_vehicle"
             ? "Vehicle released. The next driver can select it."
-            : "Flag resolved. Current driving session retained.",
+            : "Resolved. The current driver can continue.",
     );
     await load();
   }
@@ -105,7 +105,7 @@ export default function VehicleFlags() {
             >
               {selected.kind === "schedule"
                 ? "Assign requested vehicle"
-                : "Resolve and release vehicle"}
+                : "Release vehicle"}
             </Button>
             <Button
               secondary
@@ -150,7 +150,7 @@ export default function VehicleFlags() {
               loading={action.busy}
               onPress={() => void action.run(load)}
             >
-              Refresh flags
+              Refresh
             </Button>
             {fleet.session?.mode === "driver" && (
               <Button secondary onPress={() => router.replace("/truck")}>
@@ -175,7 +175,7 @@ export default function VehicleFlags() {
           <TruckCard truck={selected.truck} />
           {selected.kind === "schedule" && (
             <>
-              <Copy>Schedule mismatch · {selected.scheduleDate}</Copy>
+              <Copy>Schedule problem · {selected.scheduleDate}</Copy>
               <Copy>{selected.driverNote}</Copy>
               {selected.requestedScheduledDriver && (
                 <Copy small>
@@ -197,7 +197,7 @@ export default function VehicleFlags() {
             </Copy>
           </View>
           <Field
-            label="Resolution note"
+            label="What was decided?"
             value={note}
             onChangeText={setNote}
             multiline
@@ -211,7 +211,7 @@ export default function VehicleFlags() {
             <TruckCard
               key={item.id}
               truck={item.truck}
-              meta={`${item.kind === "schedule" ? "Schedule mismatch" : "Vehicle in use"} · ${item.requestedBy}`}
+              meta={`${item.kind === "schedule" ? "Schedule problem" : "Vehicle in use"} · ${item.requestedBy}`}
               onPress={() => {
                 setSelected(item);
                 setNote("");

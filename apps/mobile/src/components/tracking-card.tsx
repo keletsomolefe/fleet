@@ -54,18 +54,21 @@ export function TrackingCard() {
             : "Location sharing paused"
           : "Location sharing off"}
       </Copy>
-      <Copy small>
-        {state.pending} records waiting · {state.transport}
-      </Copy>
+      {state.pending > 0 && (
+        <Copy small>
+          {state.pending} {state.pending === 1 ? "location" : "locations"}{" "}
+          waiting to send
+        </Copy>
+      )}
       {state.lastFixAt && (
         <Copy small>
-          Last GPS fix: {new Date(state.lastFixAt).toLocaleTimeString()}
+          Last location: {new Date(state.lastFixAt).toLocaleTimeString()}
         </Copy>
       )}
       {state.blocked > 0 && (
         <Notice
-          title="Location log needs review"
-          message={`${state.blocked} records are retained on this device. Contact your fleet administrator.`}
+          title="Locations need attention"
+          message="Some saved locations need checking. Contact your administrator."
         />
       )}
       {state.active ? (
@@ -81,9 +84,9 @@ export function TrackingCard() {
         fleet.driver?.confirmedAt && (
           <>
             <Copy small>
-              Record this truck’s route while sharing is on, including offline
-              and in the background. Allow precise location and “all the time”
-              access.
+              Allow precise location and “all the time” access to share your
+              route while you use other apps. Your route is saved when you’re
+              offline.
             </Copy>
             <Button
               loading={action.busy}
@@ -91,7 +94,7 @@ export function TrackingCard() {
                 void run(() => startTracking(fleet.session!, fleet.driver!))
               }
             >
-              Start location sharing
+              Share location
             </Button>
           </>
         )
@@ -102,7 +105,7 @@ export function TrackingCard() {
           loading={action.busy}
           onPress={() => void run(syncLocationLog)}
         >
-          Sync location log
+          Send saved locations
         </Button>
       )}
       <Notice message={action.error || state.error} />

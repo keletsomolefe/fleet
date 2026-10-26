@@ -170,7 +170,7 @@ export function AttentionMenu({ session }: { session: AdminSession }) {
           >
             <p className="font-semibold">
               {item.kind === "schedule"
-                ? "Schedule mismatch"
+                ? "Schedule problem"
                 : "Vehicle in use"}{" "}
               · {item.registration}
             </p>

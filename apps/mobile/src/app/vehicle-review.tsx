@@ -31,7 +31,7 @@ export default function ReviewVehicle() {
         <>
           {mismatch ? (
             <Button onPress={() => router.replace("/schedule-mismatch")}>
-              Report schedule mismatch
+              Report a problem
             </Button>
           ) : blocked ? (
             !flagged &&
@@ -45,7 +45,7 @@ export default function ReviewVehicle() {
                   })
                 }
               >
-                Flag for review
+                Report a problem
               </Button>
             )
           ) : (
@@ -79,7 +79,7 @@ export default function ReviewVehicle() {
       <Heading
         title={
           mismatch
-            ? "Schedule mismatch"
+            ? "Schedule problem"
             : blocked
               ? "Vehicle unavailable"
               : fleet.driver?.schedule
@@ -95,7 +95,7 @@ export default function ReviewVehicle() {
         <View style={styles.card}>
           <Copy>
             {flagged || truck.disputed
-              ? "Flagged for administrator review"
+              ? "Waiting for review"
               : "Vehicle in use"}
           </Copy>
           {truck.activeSession && (
@@ -103,8 +103,8 @@ export default function ReviewVehicle() {
           )}
           <Copy small>
             {flagged || truck.disputed
-              ? "Your administrator must resolve this before you can drive this vehicle."
-              : "The current driver must finish driving first. Flag this vehicle if the details are incorrect."}
+              ? "Your administrator needs to check this before you can drive this vehicle."
+              : "The current driver must finish first. Report a problem if this is incorrect."}
           </Copy>
         </View>
       )}

@@ -219,7 +219,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   }
   async function finishDriving() {
     if (!sessionRef.current || !driver?.drivingSession)
-      throw new Error("Refresh your driving session first.");
+      throw new Error("Refresh your vehicle details, then try again.");
     await stopTracking("driver_released");
     generation.current++;
     const next = await request<DriverContext>("driver/driving-sessions/end", {

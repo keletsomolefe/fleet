@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 
 export const navigation = [
   {
-    label: "Operations",
+    label: "Fleet",
     items: [
       {
         title: "Overview",
@@ -360,7 +360,7 @@ export function AdminShell({
           <div className="flex min-w-0 items-center gap-3">
             <SidebarTrigger className="md:hidden" />
             <p className="truncate text-xs text-muted-foreground">
-              Operations / {title}
+              Fleet / {title}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">

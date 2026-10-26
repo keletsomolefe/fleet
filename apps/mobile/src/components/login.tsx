@@ -39,12 +39,9 @@ export function Login() {
     >
       <View style={{ gap: 20 }}>
         <Logo />
-        <Heading
-          title="Sign in"
-          detail="Sign in to continue."
-        />
+        <Heading title="Welcome to Fleet" />
         <Field
-          label="Email or Driver ID"
+          label="Email or driver ID"
           value={identifier}
           onChangeText={setIdentifier}
           editable={!action.busy}

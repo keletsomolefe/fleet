@@ -112,7 +112,7 @@ export async function request<T>(
   } catch {
     throw new ApiError(
       0,
-      "Could not reach operations. Check your connection and try again.",
+      "Could not connect. Check your connection and try again.",
     );
   }
   if (response.status === 204) return undefined as T;

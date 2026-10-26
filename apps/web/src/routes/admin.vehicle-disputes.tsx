@@ -111,7 +111,7 @@ function Page() {
           <p className="text-sm">Flagged by {selected.requestedBy}</p>
           {selected.kind === "schedule" && (
             <div className="space-y-2 text-sm">
-              <p>Schedule mismatch · {selected.scheduleDate}</p>
+              <p>Schedule problem · {selected.scheduleDate}</p>
               <p>
                 Requested vehicle:{" "}
                 {selected.requestedTruck?.registration ?? "Not specified"}
@@ -132,7 +132,7 @@ function Page() {
           <form className="space-y-4" onSubmit={resolve}>
             <fieldset disabled={busy} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="resolution">Resolution</Label>
+                <Label htmlFor="resolution">Action</Label>
                 <select
                   id="resolution"
                   name="resolution"
@@ -141,7 +141,7 @@ function Page() {
                   defaultValue=""
                 >
                   <option value="" disabled>
-                    Choose a resolution
+                    Choose an action
                   </option>
                   {selected.kind === "schedule" ? (
                     <>
@@ -169,7 +169,7 @@ function Page() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="note">Resolution note</Label>
+                <Label htmlFor="note">What was decided?</Label>
                 <textarea
                   id="note"
                   required
@@ -212,7 +212,7 @@ function Page() {
                 </h2>
                 <p className="text-xs">
                   {d.kind === "schedule"
-                    ? "Schedule mismatch"
+                    ? "Schedule problem"
                     : "Vehicle in use"}{" "}
                   · {d.requestedBy}
                 </p>

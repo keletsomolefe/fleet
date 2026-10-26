@@ -167,7 +167,7 @@ export default function Schedules() {
             {cancel
               ? "Cancel scheduled day"
               : conflicts.length
-                ? "Override conflicting dates"
+                ? "Replace scheduled days"
                 : "Save schedule"}
           </Button>
           <Button secondary onPress={() => router.replace("/admin")}>
@@ -208,7 +208,7 @@ export default function Schedules() {
             {cancel.date} · {cancel.driverName} · {cancel.registration}
           </Copy>
           <Button secondary onPress={() => setCancel(null)}>
-            Back to assignment
+            Back to schedule
           </Button>
         </>
       ) : (

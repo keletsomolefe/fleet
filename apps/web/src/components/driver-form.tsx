@@ -1,9 +1,9 @@
-import { useState, type FormEvent } from 'react'
+import { useCallback, useState, type FormEvent } from 'react'
 import { Link, useRouter } from '@tanstack/react-router'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   FleetField,
@@ -21,37 +21,28 @@ import {
   type Driver,
 } from '@/lib/fleet'
 
-type Option = {
-  id: string
-  firstName?: string
-  lastName?: string
-  email?: string
-  identifier?: string
-  registration?: string
-}
 export function DriverForm({
   driver,
   session,
-  users: initialUsers = [],
-  trucks: initialTrucks = [],
 }: {
   driver?: Driver
   session: AdminSession
-  users?: Option[]
-  trucks?: Option[]
 }) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     [saved, setSaved] = useState('')
-  const [mode, setMode] = useState<'existing' | 'new'>('existing'),
-    [users, setUsers] = useState(initialUsers),
-    [trucks, setTrucks] = useState(initialTrucks)
-  const [userQuery, setUserQuery] = useState(''),
-    [truckQuery, setTruckQuery] = useState(''),
-    [selectedUser, setSelectedUser] = useState<Option | null>(null)
-  const [truckId, setTruckId] = useState(driver?.currentTruckId ?? ''),
-    [driverStatus, setDriverStatus] = useState(driver?.status ?? 'active')
-  const [searching, setSearching] = useState('')
+  const [mode, setMode] = useState<'existing' | 'new'>('existing')
+  const [selectedUser, setSelectedUser] = useState<ComboboxOption | null>(null)
+  const [selectedTruck, setSelectedTruck] = useState<ComboboxOption | null>(
+    driver?.currentTruck
+      ? {
+          value: driver.currentTruck.id,
+          label: `${driver.currentTruck.identifier} · ${driver.currentTruck.registration}`,
+        }
+      : null,
+  )
+  const [driverStatus, setDriverStatus] = useState(driver?.status ?? 'active')
+  const truckId = selectedTruck?.value ?? ''
   const router = useRouter(),
     writable = can(session, 'drivers.write')
   const values: Record<string, unknown> = {
@@ -59,31 +50,26 @@ export function DriverForm({
     status: 'active',
     ...driver,
   }
-  const selectedTruck =
-    trucks.find((t) => t.id === truckId) ??
-    (driver?.currentTruck?.id === truckId ? driver.currentTruck : null)
-  async function search(kind: 'users' | 'trucks') {
-    setSearching(kind)
-    setError('')
-    try {
-      const result = await getDriverOptions({
-        data: {
-          kind,
-          q: kind === 'users' ? userQuery : truckQuery,
-          driverId: driver?.id,
-        },
-      })
-      if (!result.data) throw new Error(result.error!)
-      if (kind === 'users') setUsers(result.data)
-      else setTrucks(result.data)
-    } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : 'Could not load choices.',
-      )
-    } finally {
-      setSearching('')
-    }
-  }
+  const loadUsers = useCallback(async (query: string) => {
+    const result = await getDriverOptions({
+      data: { kind: 'users', q: query, driverId: driver?.id },
+    })
+    if (!result.data) throw new Error(result.error ?? 'Could not load users.')
+    return result.data.map((user) => ({
+      value: user.id,
+      label: `${user.firstName} ${user.lastName} · ${user.email}`,
+    }))
+  }, [driver?.id])
+  const loadTrucks = useCallback(async (query: string) => {
+    const result = await getDriverOptions({
+      data: { kind: 'trucks', q: query, driverId: driver?.id },
+    })
+    if (!result.data) throw new Error(result.error ?? 'Could not load vehicles.')
+    return result.data.map((truck) => ({
+      value: truck.id,
+      label: `${truck.identifier} · ${truck.registration}`,
+    }))
+  }, [driver?.id])
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (busy) return
@@ -115,7 +101,7 @@ export function DriverForm({
                   password: data.get('password'),
                 },
               }
-            : { userId: selectedUser?.id }
+            : { userId: selectedUser?.value }
           : {}),
       }
       const result = await saveFleet(
@@ -214,67 +200,21 @@ export function DriverForm({
                   )}
                 </div>
                 {mode === 'existing' ? (
-                  <div className="space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                      <Input
-                        aria-label="Search users"
-                        placeholder="Search name or email"
-                        value={userQuery}
-                        maxLength={200}
-                        onChange={(e) => setUserQuery(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault()
-                            void search('users')
-                          }
-                        }}
-                        className="flex-1"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={!!searching}
-                        onClick={() => void search('users')}
-                      >
-                        {searching === 'users' ? 'Searching…' : 'Find user'}
-                      </Button>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="userId" className="text-xs">
-                        User *
-                      </Label>
-                      <select
-                        id="userId"
-                        name="userId"
-                        value={selectedUser?.id ?? ''}
-                        required
-                        onChange={(e) =>
-                          setSelectedUser(
-                            users.find((u) => u.id === e.target.value) ?? null,
-                          )
-                        }
-                        className="h-12 w-full rounded-md border bg-muted px-3 text-sm"
-                      >
-                        <option value="">Select a user</option>
-                        {selectedUser &&
-                          !users.some((u) => u.id === selectedUser.id) && (
-                            <option value={selectedUser.id}>
-                              {selectedUser.firstName} {selectedUser.lastName} ·{' '}
-                              {selectedUser.email}
-                            </option>
-                          )}
-                        {users.map((u) => (
-                          <option key={u.id} value={u.id}>
-                            {u.firstName} {u.lastName} · {u.email}
-                          </option>
-                        ))}
-                      </select>
-                      {!users.length && (
-                        <p className="text-xs text-muted-foreground">
-                          No eligible users found
-                        </p>
-                      )}
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="userId" className="text-xs">
+                      User *
+                    </Label>
+                    <Combobox
+                      id="userId"
+                      name="userId"
+                      value={selectedUser}
+                      onValueChange={setSelectedUser}
+                      loadOptions={loadUsers}
+                      placeholder="Search name or email"
+                      emptyMessage="No users found."
+                      disabled={busy || !writable}
+                      required
+                    />
                   </div>
                 ) : (
                   <div className="grid gap-5 sm:grid-cols-2">
@@ -343,7 +283,7 @@ export function DriverForm({
                       value={driverStatus}
                       onChange={(e) => {
                         setDriverStatus(e.target.value)
-                        if (e.target.value === 'inactive') setTruckId('')
+                        if (e.target.value === 'inactive') setSelectedTruck(null)
                       }}
                     />
                   ) : (
@@ -358,53 +298,19 @@ export function DriverForm({
             ))}
             <Card className="gap-4 rounded-xl p-6 shadow-none">
               <h2 className="text-sm font-semibold">Truck assignment</h2>
-              <div className="flex flex-wrap gap-2">
-                <Input
-                  aria-label="Search available trucks"
-                  placeholder="Search identifier or registration"
-                  value={truckQuery}
-                  maxLength={200}
-                  onChange={(e) => setTruckQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      void search('trucks')
-                    }
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={!!searching}
-                  onClick={() => void search('trucks')}
-                >
-                  {searching === 'trucks' ? 'Searching…' : 'Find truck'}
-                </Button>
-              </div>
               <Label htmlFor="currentTruckId" className="text-xs">
                 Current truck
               </Label>
-              <select
+              <Combobox
                 id="currentTruckId"
                 name="currentTruckId"
-                value={truckId}
-                disabled={driverStatus === 'inactive' || !writable}
-                onChange={(e) => setTruckId(e.target.value)}
-                className="h-12 w-full rounded-md border bg-muted px-3 text-sm disabled:opacity-60"
-              >
-                <option value="">Unassigned</option>
-                {selectedTruck &&
-                  !trucks.some((t) => t.id === selectedTruck.id) && (
-                    <option value={selectedTruck.id}>
-                      {selectedTruck.identifier} · {selectedTruck.registration}
-                    </option>
-                  )}
-                {trucks.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.identifier} · {t.registration}
-                  </option>
-                ))}
-              </select>
+                value={selectedTruck}
+                onValueChange={setSelectedTruck}
+                loadOptions={loadTrucks}
+                placeholder="Search fleet number or registration"
+                emptyMessage="No vehicles found."
+                disabled={busy || driverStatus === 'inactive' || !writable}
+              />
               <p className="text-[11px] text-muted-foreground">
                 A current licence and PrDP are required for assignment.
               </p>
@@ -454,7 +360,7 @@ export function DriverForm({
               ) : (
                 <p className="text-xs text-muted-foreground">
                   {selectedUser
-                    ? `${selectedUser.firstName} ${selectedUser.lastName}`
+                    ? selectedUser.label
                     : mode === 'new'
                       ? 'New account'
                       : 'No user selected'}

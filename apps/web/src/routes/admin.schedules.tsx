@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { Driver, Truck } from "@/lib/fleet";
 export const Route = createFileRoute("/admin/schedules")({
@@ -18,6 +19,36 @@ type Entry = {
   driverName: string;
   note: string;
 };
+async function loadDrivers(
+  query: string,
+  signal: AbortSignal,
+): Promise<ComboboxOption[]> {
+  const response = await fetch(
+    `/api/admin/drivers?q=${encodeURIComponent(query)}&status=active`,
+    { signal, cache: "no-store" },
+  );
+  if (!response.ok) throw new Error("Could not load drivers.");
+  const data = (await response.json()) as { items: Driver[] };
+  return data.items.map((driver) => ({
+    value: driver.id,
+    label: `${driver.user.firstName} ${driver.user.lastName} · ${driver.identifier}`,
+  }));
+}
+async function loadVehicles(
+  query: string,
+  signal: AbortSignal,
+): Promise<ComboboxOption[]> {
+  const response = await fetch(
+    `/api/admin/trucks?q=${encodeURIComponent(query)}&status=active`,
+    { signal, cache: "no-store" },
+  );
+  if (!response.ok) throw new Error("Could not load vehicles.");
+  const data = (await response.json()) as { items: Truck[] };
+  return data.items.map((truck) => ({
+    value: truck.id,
+    label: `${truck.registration} · ${truck.identifier}`,
+  }));
+}
 function localDate() {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Africa/Johannesburg",
@@ -49,12 +80,8 @@ function Schedules() {
     [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false);
   const [from, to] = range(anchor, mode);
-  const [driverQuery, setDriverQuery] = useState(""),
-    [truckQuery, setTruckQuery] = useState(""),
-    [drivers, setDrivers] = useState<Driver[]>([]),
-    [trucks, setTrucks] = useState<Truck[]>([]),
-    [driverId, setDriverId] = useState(""),
-    [truckId, setTruckId] = useState(""),
+  const [selectedDriver, setSelectedDriver] = useState<ComboboxOption | null>(null),
+    [selectedTruck, setSelectedTruck] = useState<ComboboxOption | null>(null),
     [start, setStart] = useState(from),
     [end, setEnd] = useState(to),
     [weekdays, setWeekdays] = useState([1, 2, 3, 4, 5]),
@@ -68,6 +95,8 @@ function Schedules() {
       }>
     >([]),
     [cancel, setCancel] = useState<Entry | null>(null);
+  const driverId = selectedDriver?.value ?? "";
+  const truckId = selectedTruck?.value ?? "";
   const allowed = [
     "admin.access",
     "drivers.read",
@@ -105,35 +134,6 @@ function Schedules() {
     setEnd(to);
     setConflicts([]);
   }, [from, to]);
-  useEffect(() => {
-    let active = true;
-    const timer = setTimeout(() => {
-      void Promise.all([
-        fetch(
-          `/api/admin/drivers?q=${encodeURIComponent(driverQuery)}&status=active`,
-        ),
-        fetch(
-          `/api/admin/trucks?q=${encodeURIComponent(truckQuery)}&status=active`,
-        ),
-      ])
-        .then(async ([a, b]) => {
-          if (!a.ok || !b.ok)
-            throw new Error("Could not load drivers and vehicles.");
-          const [d, t] = await Promise.all([a.json(), b.json()]);
-          if (active) {
-            setDrivers(d.items);
-            setTrucks(t.items);
-          }
-        })
-        .catch((e) => {
-          if (active) setError(e.message);
-        });
-    }, 250);
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, [driverQuery, truckQuery]);
   async function write(path: string, body: unknown) {
     const r = await fetch("/api/admin/" + path, {
       method: "POST",
@@ -173,7 +173,7 @@ function Schedules() {
       setSaved(
         cancel
           ? "Scheduled day cancelled."
-          : `Schedule saved${data.overridden ? ` · ${data.overridden} assignments overridden` : ""}.`,
+          : `Schedule saved${data.overridden ? ` · ${data.overridden} scheduled days replaced` : ""}.`,
       );
       setCancel(null);
       setConflicts([]);
@@ -319,64 +319,38 @@ function Schedules() {
               ) : (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="driver-search">Driver</Label>
-                    <Input
-                      id="driver-search"
-                      value={driverQuery}
+                    <Label htmlFor="schedule-driver">Driver</Label>
+                    <Combobox
+                      id="schedule-driver"
+                      name="driverId"
+                      value={selectedDriver}
                       placeholder="Search name or driver number"
-                      onChange={(e) => {
-                        setDriverQuery(e.target.value);
-                        setDriverId("");
+                      loadOptions={loadDrivers}
+                      emptyMessage="No drivers found."
+                      disabled={busy}
+                      required
+                      onValueChange={(driver) => {
+                        setSelectedDriver(driver);
                         setConflicts([]);
                       }}
                     />
-                    <select
-                      aria-label="Choose driver"
-                      required
-                      value={driverId}
-                      onChange={(e) => {
-                        setDriverId(e.target.value);
-                        setConflicts([]);
-                      }}
-                      className="h-12 w-full rounded-md border px-3 text-sm"
-                    >
-                      <option value="">Choose driver</option>
-                      {drivers.map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.user.firstName} {d.user.lastName} · {d.identifier}
-                        </option>
-                      ))}
-                    </select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="vehicle-search">Vehicle</Label>
-                    <Input
-                      id="vehicle-search"
-                      value={truckQuery}
+                    <Label htmlFor="schedule-vehicle">Vehicle</Label>
+                    <Combobox
+                      id="schedule-vehicle"
+                      name="truckId"
+                      value={selectedTruck}
                       placeholder="Search registration or fleet number"
-                      onChange={(e) => {
-                        setTruckQuery(e.target.value);
-                        setTruckId("");
+                      loadOptions={loadVehicles}
+                      emptyMessage="No vehicles found."
+                      disabled={busy}
+                      required
+                      onValueChange={(truck) => {
+                        setSelectedTruck(truck);
                         setConflicts([]);
                       }}
                     />
-                    <select
-                      aria-label="Choose vehicle"
-                      required
-                      value={truckId}
-                      onChange={(e) => {
-                        setTruckId(e.target.value);
-                        setConflicts([]);
-                      }}
-                      className="h-12 w-full rounded-md border px-3 text-sm"
-                    >
-                      <option value="">Choose vehicle</option>
-                      {trucks.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.registration} · {t.identifier}
-                        </option>
-                      ))}
-                    </select>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
@@ -440,7 +414,7 @@ function Schedules() {
               {!!conflicts.length && (
                 <Alert variant="destructive">
                   <AlertDescription>
-                    {conflicts.length} conflicting assignments:{" "}
+                    {conflicts.length} scheduled days overlap:{" "}
                     {[...new Set(conflicts.map((c) => c.date))].join(", ")}.
                     Saving will replace them.
                     <ul className="mt-2 space-y-1">
@@ -478,7 +452,7 @@ function Schedules() {
                   : cancel
                     ? "Cancel scheduled day"
                     : conflicts.length
-                      ? "Override conflicting dates"
+                      ? "Replace scheduled days"
                       : "Save schedule"}
               </Button>
               {cancel && (
@@ -491,7 +465,7 @@ function Schedules() {
                     setNote("");
                   }}
                 >
-                  Back to assignment
+                  Back to schedule
                 </Button>
               )}
             </fieldset>

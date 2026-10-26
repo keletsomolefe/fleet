@@ -109,7 +109,7 @@ export default function ChooseVehicle() {
               onPress={() => setSelected(truck)}
               meta={
                 truck.disputed
-                  ? "Flagged for review"
+                  ? "Needs review"
                   : truck.activeSession
                     ? `In use · ${truck.activeSession.driverName}`
                     : truck.scheduled

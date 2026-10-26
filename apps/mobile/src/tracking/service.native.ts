@@ -152,7 +152,7 @@ async function flushNow() {
     if (!token) {
       await q.failed(
         batch,
-        "Location upload credential is missing. Records are retained.",
+        "Some saved locations could not be sent. Contact your administrator.",
       );
       break;
     }
@@ -293,7 +293,7 @@ export async function startTracking(session: Session, driver: DriverContext) {
         active.driver_id !== driver.driver.id ||
         active.driving_session_id !== driver.drivingSession?.id
       )
-        throw new Error("Stop the previous location sharing session first.");
+        throw new Error("Stop location sharing before starting again.");
       if (!(await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK)))
         await activate();
       return;
