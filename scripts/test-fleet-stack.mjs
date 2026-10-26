@@ -492,9 +492,9 @@ try {
   );
   for (const [path, expected] of [
     ["admin/drivers/new", "Add a driver"],
-    ["admin/trucks/new", "Add truck and device"],
+    ["admin/trucks/new", "Add vehicle"],
     [`admin/drivers/${d1}`, "Driver profile"],
-    [`admin/trucks/${t2}`, "Device binding history"],
+    [`admin/trucks/${t2}`, "Previous device history"],
   ]) {
     const page = await request(
       app,
@@ -507,7 +507,7 @@ try {
       200,
       `SSR ${path}: ${page.headers.get("location")}`,
     );
-    assert.ok(page.body.includes(expected));
+    assert.ok(page.body.includes(expected), `SSR ${path}: expected ${expected}`);
   }
   pass(
     "Dispatcher read-only permissions, protected write APIs, direct-route protection and populated server-rendered screens",

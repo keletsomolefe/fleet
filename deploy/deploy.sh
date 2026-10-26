@@ -5,6 +5,7 @@ readonly sha=${1:?Commit SHA required}
 [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || exit 64
 export FLEET_IMAGE="ghcr.io/keletsomolefe/fleet:$sha"
 compose() { docker compose --project-directory "$release" --env-file /opt/fleet/.env -f "$release/compose.yaml" "$@"; }
+source "$release/prepare-baseline.sh"
 stage_config() {
   local source=$1 file
   kratos_changed=false
@@ -28,7 +29,9 @@ else
   compose up -d --wait --wait-timeout 180 kratos
 fi
 compose up -d --wait --wait-timeout 120 kratos-ui
+prepare_launch_baseline
 compose run --rm -T --no-deps app node apps/api/node_modules/typeorm/cli.js migration:run -d apps/api/dist/database/data-source.js
+printf '%s\n' "$application_baseline" > "$release/database-baseline"
 compose run --rm -T --no-deps owner-bootstrap
 previous=$(readlink -f /opt/fleet/current || true)
 rollout() {
@@ -38,14 +41,17 @@ rollout() {
   else
     compose up -d --wait --wait-timeout 120 edge || return 1
   fi
-  curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors https://fleet.nativesounds.co.za/brand/fleet-mark.svg -o /dev/null
+  curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors https://fleet.nativesounds.co.za/brand/fleet-mark.svg -o /dev/null || return 1
+  curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors https://fleet.nativesounds.co.za/api/ -o /dev/null || return 1
 }
 if ! rollout; then
-  if [[ -n "$previous" && -s "$previous/release-sha" ]]; then
+  if [[ -n "$previous" && -s "$previous/release-sha" && -s "$previous/database-baseline" && "$(cat "$previous/database-baseline")" == "$application_baseline" ]]; then
     old=$(cat "$previous/release-sha")
     stage_config "$previous"
     FLEET_IMAGE="ghcr.io/keletsomolefe/fleet:$old" docker compose --project-directory "$previous" --env-file /opt/fleet/.env -f "$previous/compose.yaml" up -d --wait --wait-timeout 180 app edge
     printf 'Fleet rollout failed; previous application image restored. Database migrations were retained.\n' >&2
+  else
+    printf 'Fleet rollout failed; no previous application compatible with this database baseline is available.\n' >&2
   fi
   exit 1
 fi

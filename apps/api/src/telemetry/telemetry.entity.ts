@@ -49,6 +49,7 @@ export class TrackingStream {
 })
 @Index('idx_tracking_event_time', ['recordedAt', 'id'])
 export class TrackingEvent {
+  @Column({ type: 'boolean', default: false }) unconfirmed: boolean;
   @PrimaryColumn('uuid') id: string;
   @Column('uuid') streamId: string;
   @ManyToOne(() => TrackingStream, { onDelete: 'RESTRICT' })

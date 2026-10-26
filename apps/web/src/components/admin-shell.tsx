@@ -98,11 +98,14 @@ export const navigation = [
         icon: "map",
         permission: "locations.read",
       },
+      { title: "Products", section: "products", icon: "document", permission: "products.read" },
+      { title: "Transport rates", section: "pricing", icon: "document", permission: "pricing.read" },
     ],
   },
   {
     label: "Review & records",
     items: [
+      { title: "Truck earnings", section: "earnings", icon: "overview", permission: "revenue.read" },
       {
         title: "Needs attention",
         section: "vehicle-disputes",

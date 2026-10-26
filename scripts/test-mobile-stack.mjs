@@ -411,8 +411,9 @@ try {
     },
   });
   assert.equal(receipt.status, 200, JSON.stringify(receipt.body));
-  assert.deepEqual(receipt.body.acceptedIds, [offlinePoint.eventId]);
-  assert.equal(receipt.body.rejected[0].eventId, afterRelease.eventId);
+  assert.deepEqual(receipt.body.acceptedIds, [offlinePoint.eventId, afterRelease.eventId]);
+  assert.ok(receipt.body.acceptedIds.includes(afterRelease.eventId));
+  assert.equal((await db.query('SELECT unconfirmed FROM app.tracking_events WHERE id=$1',[afterRelease.eventId])).rows[0].unconfirmed,true);
   assert.equal(receipt.body.captureAllowed, false);
   assert.equal(
     (

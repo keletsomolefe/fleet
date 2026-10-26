@@ -26,7 +26,12 @@
     "mobile:build:staging": "pnpm --dir apps/mobile dlx eas-cli@latest build --profile staging",
     "mobile:check": "pnpm --filter mobile lint && pnpm --filter mobile typecheck",
     "mobile:reverse": "node scripts/android-reverse.mjs",
-    "test:schedules": "node scripts/test-schedules-stack.mjs"
+    "test:schedules": "node scripts/test-schedules-stack.mjs",
+    "test:issues": "node scripts/test-driver-issues-stack.mjs",
+    "test:deployment": "node scripts/test-deploy-baseline.mjs",
+    "db:reset": "node scripts/reset-app-db.mjs",
+    "test:activity-queue": "pnpm --filter api exec node --import tsx ../../scripts/test-activity-queue.mjs",
+    "test:transport": "pnpm --filter api exec node --import tsx ../../scripts/test-transport-stack.mjs"
   },
   "dependencies": {
     "@platformatic/runtime": "^3.72.0",

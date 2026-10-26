@@ -47,6 +47,8 @@ function Routes() {
         </Stack.Protected>
         <Stack.Protected guard={session?.mode === "driver"}>
           <Stack.Screen name="truck" />
+          <Stack.Screen name="issues" />
+          <Stack.Screen name="activities" />
           <Stack.Screen name="vehicles" />
           <Stack.Screen name="vehicle-review" />
           <Stack.Screen name="schedule-mismatch" />

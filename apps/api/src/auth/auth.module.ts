@@ -1,3 +1,10 @@
+import { TransportService } from '../transport/transport.service.js';
+import { AdminTransportController, MobileTransportController } from '../transport/transport.controller.js';
+import { IssuesService } from '../issues/issues.service.js';
+import {
+  AdminIssuesController,
+  MobileIssuesController,
+} from '../issues/issues.controller.js';
 import { SchedulingService } from '../scheduling/scheduling.service.js';
 import { OperationsEventsService } from '../operations/operations-events.service.js';
 import {
@@ -59,7 +66,11 @@ import { RolesController } from '../rbac/roles.controller.js';
     ]),
   ],
   controllers: [
+    AdminTransportController,
+    MobileTransportController,
     AuthController,
+    AdminIssuesController,
+    MobileIssuesController,
     AdminSchedulesController,
     AdminNotificationsController,
     MobileSchedulesController,
@@ -75,7 +86,9 @@ import { RolesController } from '../rbac/roles.controller.js';
     RolesController,
   ],
   providers: [
+    TransportService,
     AuthService,
+    IssuesService,
     SchedulingService,
     OperationsEventsService,
     MobileAuthService,

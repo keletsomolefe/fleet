@@ -1,21 +1,16 @@
+import { LaunchBaseline1793188800000 } from './migrations/1793188800000-LaunchBaseline.js';
+import { transportEntities } from '../transport/transport.entity.js';
+import { DriverIssue } from '../issues/issue.entity.js';
 import { DriverSchedule } from '../scheduling/schedule.entity.js';
-import { DriverSchedules1793102400000 } from './migrations/1793102400000-DriverSchedules.js';
 import { DriverTruckConfirmation } from '../mobile/mobile.entity.js';
 import { DrivingSession, VehicleDispute } from '../mobile/driving.entity.js';
-import { PersonalPhoneDriving1793016000000 } from './migrations/1793016000000-PersonalPhoneDriving.js';
 import {
   TrackingEvent,
   TrackingStream,
 } from '../telemetry/telemetry.entity.js';
-import { LocationTelemetry1792368005000 } from './migrations/1792368005000-LocationTelemetry.js';
-import { MobileDeviceEnrollment1792368004000 } from './migrations/1792368004000-MobileDeviceEnrollment.js';
 import { fleetEntities } from '../fleet/fleet.entity.js';
-import { FleetProfiles1792368003000 } from './migrations/1792368003000-FleetProfiles.js';
 import type { DataSourceOptions } from 'typeorm';
 import { User } from '../users/user.entity.js';
-import { CreateUsers1792368000000 } from './migrations/1792368000000-CreateUsers.js';
-import { UserRoles1792368001000 } from './migrations/1792368001000-UserRoles.js';
-import { AdminAccess1792368002000 } from './migrations/1792368002000-AdminAccess.js';
 import {
   Permission,
   Role,
@@ -35,10 +30,12 @@ export function databaseOptions(maintenance = false): DataSourceOptions {
     schema: 'app',
     entities: [
       ...fleetEntities,
+      ...transportEntities,
       DriverTruckConfirmation,
       DrivingSession,
       DriverSchedule,
       VehicleDispute,
+      DriverIssue,
       TrackingStream,
       TrackingEvent,
       User,
@@ -47,16 +44,7 @@ export function databaseOptions(maintenance = false): DataSourceOptions {
       RolePermission,
       UserRole,
     ],
-    migrations: [
-      CreateUsers1792368000000,
-      UserRoles1792368001000,
-      AdminAccess1792368002000,
-      FleetProfiles1792368003000,
-      MobileDeviceEnrollment1792368004000,
-      LocationTelemetry1792368005000,
-      PersonalPhoneDriving1793016000000,
-      DriverSchedules1793102400000,
-    ],
+    migrations: [LaunchBaseline1793188800000],
     migrationsTableName: 'migrations',
     migrationsTransactionMode: 'each',
     synchronize: false,

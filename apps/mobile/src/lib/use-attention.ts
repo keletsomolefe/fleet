@@ -8,7 +8,8 @@ export type Attention = {
   latest: {
     id: string;
     kind: string;
-    registration: string;
+    registration: string | null;
+    category: string | null;
     driverName: string;
     createdAt: string;
   }[];

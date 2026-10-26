@@ -3,6 +3,22 @@ import {
   getRequestHeader,
   setResponseHeader,
 } from "@tanstack/react-start/server";
+export const issueLabels = {
+  vehicle: "Vehicle problem",
+  safety: "Safety concern",
+  other: "Other issue",
+};
+export interface DriverIssue {
+  id: string;
+  kind: "issue";
+  category: keyof typeof issueLabels;
+  description: string;
+  truck: VehicleDispute["truck"] | null;
+  requestedBy: string;
+  createdAt: string;
+  resolvedAt: string | null;
+  resolutionNote: string | null;
+}
 export interface VehicleDispute {
   kind: "occupancy" | "schedule";
   scheduleDate: string | null;
@@ -25,29 +41,40 @@ export interface VehicleDispute {
   createdAt: string;
 }
 export const getVehicleDisputes = createServerFn({ method: "GET" }).handler(
-  async (): Promise<{ items: VehicleDispute[]; error?: string }> => {
+  async (): Promise<{
+    items: (VehicleDispute | DriverIssue)[];
+    error?: string;
+  }> => {
     setResponseHeader("Cache-Control", "private, no-store");
     try {
-      const r = await fetch(
-        new URL("api/admin/vehicle-disputes", process.env.APP_URL),
-        {
-          headers: { Cookie: getRequestHeader("cookie") ?? "" },
-          signal: AbortSignal.timeout(8000),
-        },
+      const responses = await Promise.all(
+        ["vehicle-disputes", "issues"].map((path) =>
+          fetch(new URL(`api/admin/${path}`, process.env.APP_URL), {
+            headers: { Cookie: getRequestHeader("cookie") ?? "" },
+            signal: AbortSignal.timeout(8000),
+          }),
+        ),
       );
-      if (!r.ok)
+      if (responses.some((r) => !r.ok))
         return {
           items: [],
-          error:
-            r.status === 403
-              ? "You do not have access to vehicle flags."
-              : "Could not load vehicle flags.",
+          error: responses.some((r) => r.status === 403)
+            ? "You do not have access to these items."
+            : "Could not load items.",
         };
-      return await r.json();
+      const [disputes, issues] = (await Promise.all(
+        responses.map((r) => r.json()),
+      )) as [{ items: VehicleDispute[] }, { items: DriverIssue[] }];
+      return {
+        items: [...disputes.items, ...issues.items].sort(
+          (a, b) =>
+            b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id),
+        ),
+      };
     } catch {
       return {
         items: [],
-        error: "Could not load vehicle flags. Please try again.",
+        error: "Could not load items. Please try again.",
       };
     }
   },

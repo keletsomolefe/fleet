@@ -23,6 +23,7 @@ export default function Driving() {
     <Screen
       actions={
         <>
+          <Button secondary onPress={() => router.push('/activities')}>Jobs & activity</Button>
           {driver && (
             <Button
               disabled={!driver.canDrive || !!driver.pendingDispute}
@@ -53,7 +54,12 @@ export default function Driving() {
                 router.push("/schedule-mismatch");
               }}
             >
-              Report a problem
+              Report a schedule problem
+            </Button>
+          )}
+          {driver && (
+            <Button secondary onPress={() => router.push("/issues")}>
+              Report an issue
             </Button>
           )}
           {driver?.pendingDispute && (

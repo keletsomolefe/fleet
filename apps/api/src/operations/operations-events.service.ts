@@ -81,13 +81,23 @@ export class OperationsEventsService {
   }
   async snapshot(c: AdminContext) {
     this.require(c);
-    const [count] = await this.db.query(
-      'SELECT count(*)::int AS count FROM app.vehicle_disputes WHERE "resolvedAt" IS NULL',
-    );
-    const latest = await this.db
-      .query(`SELECT d.id, d.kind, d."createdAt", t.registration, concat(u."firstName",' ',u."lastName") AS "driverName"
-      FROM app.vehicle_disputes d JOIN app.trucks t ON t.id=d."truckId" JOIN app.driver_profiles p ON p.id=d."driverId" JOIN app.users u ON u.id=p."userId"
-      WHERE d."resolvedAt" IS NULL ORDER BY d."createdAt" DESC,d.id DESC LIMIT 20`);
-    return { count: count.count as number, latest };
+    // One database snapshot keeps the combined count and preview consistent.
+    const [snapshot] = await this.db.query(`WITH open_items AS (
+      SELECT d.id, d.kind, NULL::text AS category, d."createdAt", t.registration,
+        concat(u."firstName",' ',u."lastName") AS "driverName"
+      FROM app.vehicle_disputes d JOIN app.trucks t ON t.id=d."truckId"
+      JOIN app.driver_profiles p ON p.id=d."driverId" JOIN app.users u ON u.id=p."userId"
+      WHERE d."resolvedAt" IS NULL
+      UNION ALL
+      SELECT i.id, 'issue', i.category, i."createdAt", t.registration,
+        concat(u."firstName",' ',u."lastName")
+      FROM app.driver_issues i LEFT JOIN app.trucks t ON t.id=i."truckId"
+      JOIN app.driver_profiles p ON p.id=i."driverId" JOIN app.users u ON u.id=p."userId"
+      WHERE i."resolvedAt" IS NULL
+    ) SELECT count(*)::int AS count,
+      COALESCE((SELECT jsonb_agg(item ORDER BY item."createdAt" DESC, item.id DESC)
+        FROM (SELECT * FROM open_items ORDER BY "createdAt" DESC, id DESC LIMIT 20) item), '[]'::jsonb) AS latest
+      FROM open_items`);
+    return snapshot;
   }
 }

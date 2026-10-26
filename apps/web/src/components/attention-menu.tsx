@@ -5,13 +5,15 @@ import { Link } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { AdminSession } from "@/lib/auth";
+import { issueLabels } from "@/lib/vehicle-disputes";
 
 type Snapshot = {
   count: number;
   latest: Array<{
     id: string;
     kind: string;
-    registration: string;
+    registration: string | null;
+    category: keyof typeof issueLabels | null;
     driverName: string;
     createdAt: string;
   }>;
@@ -36,6 +38,7 @@ export function AttentionMenu({ session }: { session: AdminSession }) {
       pending = false,
       pendingInvalidate = false,
       connecting = false,
+      fingerprint = "",
       socket: MqttClient | undefined;
     async function refresh(invalidate = false) {
       if (busy) {
@@ -54,8 +57,10 @@ export function AttentionMenu({ session }: { session: AdminSession }) {
         if (alive) {
           setData(next);
           setError("");
-          if (invalidate)
+          const nextFingerprint = JSON.stringify(next);
+          if (invalidate || (fingerprint && fingerprint !== nextFingerprint))
             window.dispatchEvent(new Event("fleet:attention-changed"));
+          fingerprint = nextFingerprint;
         }
       } catch {
         if (alive) setError("Could not refresh items. Try again.");
@@ -97,7 +102,7 @@ export function AttentionMenu({ session }: { session: AdminSession }) {
         socket = client;
         client.on("connect", () =>
           client.subscribe(cfg.topic, { qos: 1 }, (err) => {
-            if (!err) void refresh();
+            if (!err) void refresh(true);
           }),
         );
         client.on("message", () => void refresh(true));
@@ -115,10 +120,12 @@ export function AttentionMenu({ session }: { session: AdminSession }) {
     update();
     const timer = setInterval(update, 20000);
     window.addEventListener("focus", update);
+    window.addEventListener("fleet:attention-refresh", update);
     return () => {
       alive = false;
       clearInterval(timer);
       window.removeEventListener("focus", update);
+      window.removeEventListener("fleet:attention-refresh", update);
       socket?.end(true);
     };
   }, [allowed, session.csrfToken]);
@@ -169,10 +176,13 @@ export function AttentionMenu({ session }: { session: AdminSession }) {
             }}
           >
             <p className="font-semibold">
-              {item.kind === "schedule"
-                ? "Schedule problem"
-                : "Vehicle in use"}{" "}
-              · {item.registration}
+              {item.kind === "issue"
+                ? (item.category && issueLabels[item.category]) ||
+                  "Driver issue"
+                : item.kind === "schedule"
+                  ? "Schedule problem"
+                  : "Vehicle in use"}{" "}
+              {item.registration && <>· {item.registration}</>}
             </p>
             <p className="text-muted-foreground">{item.driverName}</p>
           </Link>

@@ -23,7 +23,11 @@ Application sessions/credentials remain in Kratos. The application and Kratos ha
 
 `deploy/receive.sh` serializes server deployments with `flock`, pulls the immutable image and downloads matching configuration. `deploy/deploy.sh` starts dependencies, applies Kratos and explicit TypeORM migrations, initializes an owner only when there are no owners, then starts the application and verifies public HTTPS. Existing owner passwords and roles are never reset on a later push.
 
-If application health fails, the script attempts to restore the previous application's image/configuration. Database migrations are retained. Fleet remains pre-production; this is not a guarantee of database-compatible rollback. Old Fleet image tags are pruned while preserving the current and previous releases. No other project's containers, images or volumes are pruned.
+The launch baseline replaces the former application migrations. The user authorized wiping staging application data for this deployment. Before applying `LaunchBaseline1793188800000`, `deploy/prepare-baseline.sh` recognizes the retired migration chain, stops the old application, and transactionally drops and recreates only the `app` schema, including its migration history, with the existing application role as owner and public access revoked. Kratos identities, passwords, sessions, extensions, roles and other services remain. Owner bootstrap reconnects the marked original owner identity. The reset is skipped when the baseline is already recorded; unknown migration histories stop deployment without deleting data. `pnpm db:reset --yes` remains local-only.
+
+Run `pnpm test:deployment` with the local Docker stack to verify this transition in a temporary database, including repeat deployment and schema isolation checks.
+
+If application health fails, the script attempts to restore the previous application's image/configuration only when that release records the same database baseline. It cannot restore a release from the retired migration chain after the reset. Database migrations are retained. Fleet remains pre-production; this is not a guarantee of database-compatible rollback. Old Fleet image tags are pruned while preserving the current and previous releases. No other project's containers, images or volumes are pruned.
 
 To redeploy an existing SHA manually as the normal server operator:
 

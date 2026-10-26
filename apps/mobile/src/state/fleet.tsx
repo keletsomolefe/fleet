@@ -18,6 +18,12 @@ import {
   type Truck,
 } from "@/lib/api";
 import { keys, read, remove, write } from "@/lib/storage";
+import {
+  prepareRecording,
+  refreshActivities,
+  stopRecording,
+  watchActivities,
+} from "@/activities/service";
 import { stopTracking, reconcileDriverContext } from "@/tracking/service";
 
 type Selection = {
@@ -78,16 +84,33 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         await reconcileDriverContext(next);
         if (ticket !== generation.current) return;
         setDriver(next);
+        if (!next.drivingSession || next.pendingDispute) await stopRecording();
+        await write(
+          `fleet.driver-context.${current.user.id}`,
+          JSON.stringify(next),
+        );
+        void prepareRecording(
+          updated,
+          next,
+          () =>
+            ticket === generation.current &&
+            sessionRef.current?.sessionToken === updated.sessionToken,
+        )
+          .then(() => refreshActivities(updated, next.driver.id))
+          .catch(() => undefined);
       } else {
         await stopTracking("access_changed");
+        await stopRecording();
         setDriver(null);
       }
       setError("");
     } catch (cause) {
       if (ticket !== generation.current) return;
-      setDriver(null);
       if (cause instanceof ApiError && [401, 403].includes(cause.status)) {
+        setDriver(null);
+        await remove(`fleet.driver-context.${current.user.id}`);
         await stopTracking("access_ended");
+        await stopRecording();
         await remove(keys.session);
         sessionRef.current = null;
         setSession(null);
@@ -101,6 +124,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       );
     }
   }, []);
+  useEffect(() => watchActivities(), []);
   useEffect(() => {
     let mounted = true;
     const invalidate = () => {
@@ -122,8 +146,15 @@ export function FleetProvider({ children }: { children: ReactNode }) {
           // Server refresh replaces any legacy setup mode; no phone-to-truck binding is restored.
           sessionRef.current = value;
           setSession(value);
+          const cached = await read(`fleet.driver-context.${value.user.id}`);
+          if (cached && value.mode === "driver")
+            setDriver(JSON.parse(cached) as DriverContext);
+          if (mounted) setReady(true);
           await refresh();
-        } else await stopTracking("signed_out");
+        } else {
+          await stopTracking("signed_out");
+          await stopRecording();
+        }
       } catch (cause) {
         if (mounted)
           setError(
@@ -155,6 +186,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     });
     try {
       await stopTracking("account_changed");
+      await stopRecording();
       await write(keys.session, JSON.stringify(next));
     } catch (cause) {
       await request("auth/session", {
@@ -178,6 +210,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   async function logout() {
     generation.current++;
     await stopTracking("signed_out");
+    await stopRecording();
     const current = sessionRef.current;
     if (current)
       await request("auth/session", {
@@ -196,6 +229,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     if (!sessionRef.current || !selection)
       throw new Error("Choose a vehicle first.");
     await stopTracking("vehicle_changed");
+    await stopRecording();
     generation.current++;
     try {
       const next = await request<DriverContext>("driver/driving-sessions", {
@@ -210,6 +244,16 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       });
       generation.current++;
       setDriver(next);
+      await write(
+        `fleet.driver-context.${sessionRef.current!.user.id}`,
+        JSON.stringify(next),
+      );
+      const confirmedGeneration = generation.current;
+      await prepareRecording(
+        sessionRef.current!,
+        next,
+        () => confirmedGeneration === generation.current,
+      );
       setSelection(null);
       setError("");
     } catch (cause) {
@@ -221,6 +265,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     if (!sessionRef.current || !driver?.drivingSession)
       throw new Error("Refresh your vehicle details, then try again.");
     await stopTracking("driver_released");
+    await stopRecording();
     generation.current++;
     const next = await request<DriverContext>("driver/driving-sessions/end", {
       method: "POST",
@@ -245,6 +290,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     if (!driver?.schedule || !sessionRef.current)
       throw new Error("Refresh your schedule first.");
     await stopTracking("schedule_dispute");
+    await stopRecording();
     generation.current++;
     await request("driver/schedule-mismatch", {
       method: "POST",

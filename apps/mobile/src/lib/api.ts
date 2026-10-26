@@ -88,6 +88,7 @@ export async function request<T>(
     body?: unknown;
     session?: string;
     device?: string;
+    recording?: string;
   } = {},
 ): Promise<T> {
   // The web target is a visual preview. Native session credentials never enter browser storage.
@@ -105,6 +106,7 @@ export async function request<T>(
           ? { Authorization: `Bearer ${options.session}` }
           : {}),
         ...(options.device ? { "X-Fleet-Device-Token": options.device } : {}),
+        ...(options.recording ? { "X-Fleet-Recording-Token": options.recording } : {}),
       },
       body: options.body ? JSON.stringify(options.body) : undefined,
       signal: AbortSignal.timeout(15000),

@@ -23,7 +23,9 @@ The application uses Expo Router, SecureStore, local SVG assets, Montserrat and 
 
 The display name, icons and splash screen use Fleet. The existing `com.vhhfleet.driver` application identifiers and `vhh-fleet` URL scheme are retained for installed-app compatibility, including saved sessions. The old installation credential is retained only to drain historical location records; new driving uses per-session upload credentials. Rebuild the native app with `pnpm mobile:android` or `pnpm mobile:ios` after changing launcher branding.
 
-Run `pnpm mobile:check`, `pnpm test:tracking-queue` and `pnpm test:mobile` before delivery. The latter requires the migrated local database, Kratos and gateway. The web target is a visual preview; credential flows require an installed native build.
+Drivers can report vehicle problems, safety concerns and other issues from their vehicle screen. Administrators receive live MQTT alerts in the shared **Needs attention** inbox on mobile and web, with a red unresolved-count badge. See [reporting and notifications](../../docs/driver-scheduling.md#needs-attention-and-mqtt).
+
+Run `pnpm mobile:check`, `pnpm test:tracking-queue`, `pnpm test:mobile` and `pnpm test:issues` before delivery. The live checks require the migrated local database, Kratos and gateway; issue-alert checks also require MQTT enabled. The web target is a visual preview; credential flows require an installed native build.
 
 Build a staging app from the repository root:
 

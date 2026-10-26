@@ -1,6 +1,7 @@
 import * as TaskManager from "expo-task-manager";
 import * as BackgroundTask from "expo-background-task";
 import type { LocationObject } from "expo-location";
+import { ACTIVITY_UPLOAD_TASK, syncActivities } from "../activities/service";
 import {
   capture,
   flush,
@@ -8,6 +9,14 @@ import {
   LOCATION_TASK,
   UPLOAD_TASK,
 } from "./service";
+TaskManager.defineTask(ACTIVITY_UPLOAD_TASK, async () => {
+  try {
+    await syncActivities();
+    return BackgroundTask.BackgroundTaskResult.Success;
+  } catch {
+    return BackgroundTask.BackgroundTaskResult.Failed;
+  }
+});
 TaskManager.defineTask(LOCATION_TASK, async ({ data, error }) => {
   try {
     if (error) {

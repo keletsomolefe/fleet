@@ -515,8 +515,9 @@ try {
   assert.equal(receipt.body.captureAllowed, false);
   assert.ok(receipt.body.acceptedIds.includes(samples[0].eventId));
   assert.ok(
-    receipt.body.rejected.some((r) => r.eventId === samples[1].eventId),
+    receipt.body.acceptedIds.includes(samples[1].eventId),
   );
+  assert.equal((await db.query('SELECT unconfirmed FROM app.tracking_events WHERE id=$1',[samples[1].eventId])).rows[0].unconfirmed,true);
   const endAt = (
     await db.query('SELECT "endedAt" FROM app.tracking_streams WHERE id=$1', [
       streamId,
@@ -528,7 +529,7 @@ try {
   assert.ok(renewed.body.confirmedAt);
   assert.notEqual(renewed.body.drivingSession.id, drive);
   pass(
-    "Each day requires confirmation; delayed pre-midnight samples stay attributed and unconfirmed next-day samples are rejected",
+    "Each day requires confirmation; delayed pre-midnight samples stay attributed and unconfirmed next-day samples are retained for review",
   );
 } finally {
   socket?.end(true);

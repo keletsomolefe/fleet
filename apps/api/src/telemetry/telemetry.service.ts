@@ -334,7 +334,7 @@ export class TelemetryService {
         const recorded = instant(sample.recordedAt);
         if (
           recorded < stream.startedAt ||
-          (stream.endedAt && recorded > stream.endedAt)
+          (!stream.drivingSessionId && stream.endedAt && recorded > stream.endedAt)
         ) {
           rejected.push({
             eventId: id,
@@ -361,6 +361,7 @@ export class TelemetryService {
           typeof sample.data.mocked === 'boolean' ? sample.data.mocked : null,
           hash,
           JSON.stringify(sample.data),
+          !!(stream.endedAt && recorded > stream.endedAt),
         ]);
         const record = Object.assign(new TrackingEvent(), {
           id,
@@ -374,7 +375,7 @@ export class TelemetryService {
       }
       if (inserts.length)
         await m.query(
-          `INSERT INTO app.tracking_events (id,"streamId",sequence,kind,"recordedAt",latitude,longitude,accuracy,speed,heading,mocked,digest,raw) VALUES ${inserts.map((row, i) => '(' + row.map((_, j) => '$' + (i * 13 + j + 1)).join(',') + ')').join(',')}`,
+          `INSERT INTO app.tracking_events (id,"streamId",sequence,kind,"recordedAt",latitude,longitude,accuracy,speed,heading,mocked,digest,raw,unconfirmed) VALUES ${inserts.map((row, i) => '(' + row.map((_, j) => '$' + (i * 14 + j + 1)).join(',') + ')').join(',')}`,
           inserts.flat(),
         );
       if (batch.end) {
@@ -451,7 +452,7 @@ export class TelemetryService {
   async latest() {
     return this.db
       .query(`SELECT DISTINCT ON (t.id) t.id AS "truckId",t.identifier,t.registration,p.identifier AS "driverIdentifier",e."recordedAt",e."receivedAt",e.latitude,e.longitude,e.accuracy,e.speed,e.heading,e.mocked,s."endedAt",s.id AS "streamId",(e."recordedAt" < now()-interval '2 minutes') AS stale
-    FROM app.tracking_events e JOIN app.tracking_streams s ON s.id=e."streamId" LEFT JOIN app.device_truck_associations a ON a.id=s."associationId" LEFT JOIN app.driving_sessions ds ON ds.id=s."drivingSessionId" JOIN app.trucks t ON t.id=COALESCE(ds."truckId",a."truckId") JOIN app.driver_profiles p ON p.id=s."driverId" WHERE e.kind='location' AND (COALESCE(ds."endedAt",a."endedAt") IS NULL OR e."recordedAt"<=COALESCE(ds."endedAt",a."endedAt")) ORDER BY t.id,e."recordedAt" DESC,e.id DESC`);
+    FROM app.tracking_events e JOIN app.tracking_streams s ON s.id=e."streamId" LEFT JOIN app.device_truck_associations a ON a.id=s."associationId" LEFT JOIN app.driving_sessions ds ON ds.id=s."drivingSessionId" JOIN app.trucks t ON t.id=COALESCE(ds."truckId",a."truckId") JOIN app.driver_profiles p ON p.id=s."driverId" WHERE e.kind='location' AND e.unconfirmed=false AND (COALESCE(ds."endedAt",a."endedAt") IS NULL OR e."recordedAt"<=COALESCE(ds."endedAt",a."endedAt")) ORDER BY t.id,e."recordedAt" DESC,e.id DESC`);
   }
   async history(
     truckId: string,

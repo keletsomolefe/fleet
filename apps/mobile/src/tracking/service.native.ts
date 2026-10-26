@@ -373,22 +373,6 @@ async function readTrackingIntent(driverId: string, associationId: string) {
 }
 export async function capture(locations: Location.LocationObject[]) {
   const q = await outbox();
-  const current = await q.active();
-  if (current) {
-    // Johannesburg has no daylight-saving transition. End offline capture at the confirmed day's boundary.
-    const localStart = new Date(current.started_at + 2 * 3600000);
-    const cutoff =
-      Date.UTC(
-        localStart.getUTCFullYear(),
-        localStart.getUTCMonth(),
-        localStart.getUTCDate() + 1,
-      ) -
-      2 * 3600000;
-    if (Date.now() >= cutoff) {
-      await q.stop("daily_confirmation_required", cutoff);
-      await stopCapture("daily_confirmation_required");
-    }
-  }
   const records = locations as unknown as {
     timestamp: number;
     coords: Record<string, unknown>;
@@ -496,7 +480,7 @@ export function watchTracking() {
     if (state === "active") void reconcileTracking().catch(recordError);
   });
   const network = Network.addNetworkStateListener((state) => {
-    if (state.isConnected) void flush();
+    if (state.isConnected) void syncLocationLog();
   });
   const timer = setInterval(() => {
     if (AppState.currentState === "active")
