@@ -1,7 +1,7 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-export type Mode = "driver" | "setup";
+export type Mode = "driver" | "admin";
 export interface Account {
   id: string;
   firstName: string;
@@ -11,6 +11,7 @@ export interface Account {
 export interface Session {
   sessionToken: string;
   mode: Mode;
+  permissions: string[];
   user: Account;
   expiresAt: string | null;
 }
@@ -21,16 +22,27 @@ export interface Truck {
   make: string;
   model: string;
   status?: string;
-  device?: { id: string; identifier: string; enrolled: boolean } | null;
+  activeSession?: {
+    id: string;
+    driverId: string;
+    driverName: string;
+    startedAt: string;
+  } | null;
+  disputed?: boolean;
+  scheduled?: boolean;
 }
-export interface DeviceContext {
-  device: { id: string; identifier: string };
-  truck: Truck | null;
-  associationId: string | null;
-}
-export interface DriverContext extends DeviceContext {
+export interface DriverContext {
+  date: string;
+  schedule: { id: string; date: string; truck: Truck } | null;
+  pendingDispute: { id: string; note: string | null } | null;
   driver: { id: string; identifier: string; name: string };
-  canConfirm: boolean;
+  truck: Truck | null;
+  drivingSession: {
+    id: string;
+    startedAt: string;
+    onThisPhone: boolean;
+  } | null;
+  canDrive: boolean;
   reason: string | null;
   confirmedAt: string | null;
 }
@@ -40,10 +52,26 @@ export interface TruckList {
   page: number;
   pageSize: number;
 }
+export interface VehicleDispute {
+  kind: "occupancy" | "schedule";
+  requestedScheduleId: string | null;
+  requestedScheduledDriver: string | null;
+  scheduleDate: string | null;
+  driverNote: string | null;
+  requestedTruck: Truck | null;
+  schedule: { id: string; truckId: string } | null;
+  requestedTruckSession: { id: string; driverName: string } | null;
+  id: string;
+  truck: Truck;
+  requestedBy: string;
+  currentDriver: { id: string; driverName: string; startedAt: string } | null;
+  createdAt: string;
+}
 export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    public details?: Record<string, unknown>,
   ) {
     super(message);
   }
@@ -95,6 +123,7 @@ export async function request<T>(
       typeof body?.message === "string"
         ? body.message
         : "Could not complete the request. Please try again.",
+      body && typeof body === "object" ? body : undefined,
     );
   return body as T;
 }

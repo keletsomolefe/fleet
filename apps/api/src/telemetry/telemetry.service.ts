@@ -1,3 +1,6 @@
+import { today } from '../scheduling/schedule.input.js';
+import { DriverSchedule } from '../scheduling/schedule.entity.js';
+import { VehicleDispute } from '../mobile/driving.entity.js';
 import {
   BadRequestException,
   ConflictException,
@@ -8,12 +11,16 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { DataSource, In, IsNull } from 'typeorm';
+import { DrivingService } from '../mobile/driving.service.js';
+import { DrivingSession } from '../mobile/driving.entity.js';
 import type { AdminContext } from '../auth/auth.service.js';
-import { TruckDevice } from '../fleet/fleet.entity.js';
 import {
-  MobileDeviceService,
-  hashDeviceToken,
-} from '../mobile/mobile-device.service.js';
+  KratosError,
+  KratosService,
+  type KratosSession,
+} from '../auth/kratos.service.js';
+import { TruckDevice } from '../fleet/fleet.entity.js';
+import { hashDeviceToken } from '../mobile/mobile-device.service.js';
 import { TrackingEvent, TrackingStream } from './telemetry.entity.js';
 import {
   digest,
@@ -28,15 +35,20 @@ import {
 export class TelemetryService {
   constructor(
     @Inject(DataSource) private readonly db: DataSource,
-    @Inject(MobileDeviceService) private readonly devices: MobileDeviceService,
+    @Inject(DrivingService) private readonly driving: DrivingService,
+    @Inject(KratosService) private readonly kratos: KratosService,
   ) {}
   async device(token: string) {
+    const personal = await this.db
+      .getRepository(TrackingStream)
+      .findOneBy({ uploadTokenHash: hashDeviceToken(token) });
+    if (personal) return { id: personal.id };
     const d = await this.db
       .getRepository(TruckDevice)
       .findOneBy({ credentialHash: hashDeviceToken(token) });
     if (!d)
       throw new UnauthorizedException(
-        'Device access has ended. Ask an administrator to set up this device.',
+        'Location sharing access has ended. Start sharing again.',
       );
     return d;
   }
@@ -52,22 +64,32 @@ export class TelemetryService {
       batchSize: 100,
     };
   }
-  async start(context: AdminContext, token: string, input: unknown) {
+  async start(context: AdminContext, input: unknown) {
     const v = input as Record<string, unknown>;
-    if (!v || Object.keys(v).some((k) => k !== 'streamId'))
+    if (
+      !v ||
+      Object.keys(v).some(
+        (k) => !['streamId', 'drivingSessionId', 'uploadToken'].includes(k),
+      )
+    )
       throw new BadRequestException('Invalid tracking start.');
     const id = uuid(v.streamId);
+    const drivingSessionId = uuid(v.drivingSessionId);
+    const uploadTokenHash = hashDeviceToken(
+      typeof v.uploadToken === 'string' ? v.uploadToken : '',
+    );
     return this.db.transaction(async (m) => {
       await m.query('SET LOCAL synchronous_commit = on');
       await m.query(
         "SELECT pg_advisory_xact_lock(hashtext('fleet-assets-v1'))",
       );
-      const state = await this.devices.driverContext(context, token);
+      const state = await this.driving.context(context, m);
       if (
-        !state.canConfirm ||
+        !state.canDrive ||
         !state.confirmedAt ||
         !state.truck ||
-        !state.associationId
+        !state.drivingSession?.onThisPhone ||
+        state.drivingSession.id !== drivingSessionId
       )
         throw new ForbiddenException(
           'Confirm your truck before sharing location.',
@@ -76,60 +98,176 @@ export class TelemetryService {
         existing = await repo.findOneBy({ id });
       if (existing) {
         if (
-          existing.deviceId !== state.device.id ||
+          existing.drivingSessionId !== drivingSessionId ||
           existing.driverId !== state.driver.id ||
           existing.kratosSessionId !== context.session.id ||
-          existing.endedAt
+          existing.endedAt ||
+          (
+            await repo
+              .createQueryBuilder('s')
+              .addSelect('s.uploadTokenHash')
+              .where('s.id=:id', { id })
+              .getOne()
+          )?.uploadTokenHash !== uploadTokenHash
         )
           throw new ConflictException('Start a new location sharing session.');
-        return existing;
+        return {
+          id: existing.id,
+          deviceId: existing.id,
+          driverId: existing.driverId,
+          associationId: drivingSessionId,
+          startedAt: existing.startedAt,
+        };
       }
+      const startedAt: Date = (
+        await m.query('SELECT clock_timestamp() AS at')
+      )[0].at;
       await repo.update(
-        { deviceId: state.device.id, endedAt: IsNull() },
-        { endedAt: new Date() },
+        { drivingSessionId, endedAt: IsNull() },
+        { endedAt: startedAt },
       );
-      return repo.save(
+      const stream = await repo.save(
         repo.create({
           id,
-          deviceId: state.device.id,
+          deviceId: null,
           driverId: state.driver.id,
-          associationId: state.associationId,
+          associationId: null,
+          drivingSessionId,
+          uploadTokenHash,
           kratosSessionId: context.session.id,
+          startedAt,
           endedAt: null,
           finalSequence: null,
         }),
       );
+      return {
+        id: stream.id,
+        deviceId: stream.id,
+        driverId: stream.driverId,
+        associationId: drivingSessionId,
+        startedAt: stream.startedAt,
+      };
     });
   }
   async ingest(token: string, input: unknown) {
     const batch = parseBatch(input),
       credentialHash = hashDeviceToken(token);
+    const candidate = await this.db
+      .getRepository(TrackingStream)
+      .findOneBy({ id: batch.streamId, uploadTokenHash: credentialHash });
+    let validSession = true;
+    let sessionEndsAt: Date | null = null;
+    if (candidate && !candidate.endedAt) {
+      try {
+        const session = await this.kratos.request<KratosSession>(
+          `admin/sessions/${candidate.kratosSessionId}?expand=identity`,
+          {},
+          true,
+        );
+        validSession =
+          session.active &&
+          !!session.identity &&
+          session.identity.state !== 'inactive';
+        sessionEndsAt = session.expires_at
+          ? new Date(session.expires_at)
+          : null;
+        if (sessionEndsAt && sessionEndsAt <= new Date()) validSession = false;
+      } catch (error) {
+        if (
+          error instanceof KratosError &&
+          [401, 403, 404].includes(error.status)
+        )
+          validSession = false;
+        else throw error;
+      }
+    }
     // This transaction commits before a business receipt is returned by HTTP or MQTT.
     return this.db.transaction(async (m) => {
       await m.query('SET LOCAL synchronous_commit = on');
+      await m.query(
+        "SELECT pg_advisory_xact_lock(hashtext('fleet-assets-v1'))",
+      );
       await m.query('SELECT pg_advisory_xact_lock(hashtext($1))', [
         `tracking:${batch.streamId}`,
       ]);
-      const device = await m.findOneBy(TruckDevice, { credentialHash });
-      if (!device) throw new UnauthorizedException('Device access has ended.');
-      const stream = await m.findOneBy(TrackingStream, {
+      const personal = await m.findOneBy(TrackingStream, {
         id: batch.streamId,
-        deviceId: device.id,
+        uploadTokenHash: credentialHash,
       });
+      const device = personal
+        ? null
+        : await m.findOneBy(TruckDevice, { credentialHash });
+      if (!personal && !device)
+        throw new UnauthorizedException('Location sharing access has ended.');
+      const stream =
+        personal ??
+        (await m.findOneBy(TrackingStream, {
+          id: batch.streamId,
+          deviceId: device!.id,
+        }));
       if (!stream) throw new NotFoundException('Tracking session not found.');
+      const drive = stream.drivingSessionId
+        ? await m.findOneBy(DrivingSession, { id: stream.drivingSessionId })
+        : null;
       const access = (
         await m.query(
           `SELECT EXISTS(SELECT 1 FROM app.driver_profiles p JOIN app.users u ON u.id=p."userId"
-        JOIN app.device_truck_associations a ON a.id=$2 JOIN app.trucks t ON t.id=a."truckId"
-        WHERE p.id=$1 AND p.status='active' AND u."isActive" AND a."endedAt" IS NULL AND t.status='active'
-        AND p."licenceExpiresOn">=CURRENT_DATE AND p."prdpExpiresOn">=CURRENT_DATE AND p."prdpNumber" IS NOT NULL
+        JOIN app.trucks t ON t.id=COALESCE((SELECT "truckId" FROM app.driving_sessions WHERE id=$3),(SELECT "truckId" FROM app.device_truck_associations WHERE id=$2))
+        WHERE p.id=$1 AND p.status='active' AND u."isActive" AND t.status='active'
+        AND p."licenceExpiresOn">=(now() AT TIME ZONE 'Africa/Johannesburg')::date AND p."prdpExpiresOn">=(now() AT TIME ZONE 'Africa/Johannesburg')::date AND p."prdpNumber" IS NOT NULL
         AND EXISTS(SELECT 1 FROM app.user_roles ur JOIN app.role_permissions rp ON rp."roleId"=ur."roleId" JOIN app.permissions pm ON pm.id=rp."permissionId" WHERE ur."userId"=u.id AND pm.key='driver.access')) AS allowed`,
-          [stream.driverId, stream.associationId],
+          [stream.driverId, stream.associationId, stream.drivingSessionId],
         )
       )[0].allowed;
-      const captureAllowed = !!access && !stream.endedAt;
+      const schedule = drive
+        ? await m.findOneBy(DriverSchedule, {
+            driverId: drive.driverId,
+            date: today(),
+            cancelledAt: IsNull(),
+          })
+        : null;
+      const dayEndsAt = drive
+        ? new Date(
+            Date.parse(drive.confirmedDate + 'T00:00:00Z') + 22 * 3600000,
+          )
+        : null;
+      if (
+        dayEndsAt &&
+        dayEndsAt <= new Date() &&
+        (!stream.endedAt || dayEndsAt < stream.endedAt)
+      ) {
+        stream.endedAt = dayEndsAt;
+        await m.save(stream);
+      }
+      const scheduleAllowed =
+        !!drive &&
+        drive.confirmedDate === today() &&
+        (drive.scheduleId ?? null) === (schedule?.id ?? null) &&
+        !(await m.existsBy(VehicleDispute, {
+          driverId: drive.driverId,
+          kind: 'schedule',
+          scheduleDate: today(),
+          resolvedAt: IsNull(),
+        }));
+      const captureAllowed =
+        scheduleAllowed &&
+        !!access &&
+        validSession &&
+        !stream.endedAt &&
+        !!drive &&
+        !drive.endedAt;
+      if (
+        drive?.endedAt &&
+        (!stream.endedAt || drive.endedAt < stream.endedAt)
+      ) {
+        stream.endedAt = drive.endedAt;
+        await m.save(stream);
+      }
       if (!captureAllowed && !stream.endedAt) {
-        stream.endedAt = new Date();
+        stream.endedAt =
+          sessionEndsAt && sessionEndsAt < new Date()
+            ? sessionEndsAt
+            : new Date();
         await m.save(stream);
       }
       const acceptedIds: string[] = [],
@@ -191,6 +329,18 @@ export class TelemetryService {
               reason:
                 'Record identifier or sequence conflicts with stored history.',
             });
+          continue;
+        }
+        const recorded = instant(sample.recordedAt);
+        if (
+          recorded < stream.startedAt ||
+          (stream.endedAt && recorded > stream.endedAt)
+        ) {
+          rejected.push({
+            eventId: id,
+            reason:
+              'Record is outside this driving session. Retained for review.',
+          });
           continue;
         }
         const c =
@@ -268,10 +418,10 @@ export class TelemetryService {
   }
   async streams(truckId: string) {
     return this.db.query(
-      `SELECT s.*,p.identifier AS "driverIdentifier",d.identifier AS "deviceIdentifier",a."truckId",
+      `SELECT s.id,s."deviceId",s."driverId",s."associationId",s."drivingSessionId",s."startedAt",s."endedAt",s."finalSequence",p.identifier AS "driverIdentifier",COALESCE(d.identifier,'Personal phone') AS "deviceIdentifier",COALESCE(ds."truckId",a."truckId") AS "truckId",
       (SELECT count(*)::int FROM app.tracking_events e WHERE e."streamId"=s.id) AS "receivedCount",
       (SELECT MAX(e."recordedAt") FROM app.tracking_events e WHERE e."streamId"=s.id AND e.kind='location') AS "lastFixAt"
-      FROM app.tracking_streams s JOIN app.device_truck_associations a ON a.id=s."associationId" JOIN app.driver_profiles p ON p.id=s."driverId" JOIN app.truck_devices d ON d.id=s."deviceId" WHERE a."truckId"=$1 ORDER BY s."startedAt" DESC LIMIT 100`,
+      FROM app.tracking_streams s LEFT JOIN app.device_truck_associations a ON a.id=s."associationId" LEFT JOIN app.driving_sessions ds ON ds.id=s."drivingSessionId" JOIN app.driver_profiles p ON p.id=s."driverId" LEFT JOIN app.truck_devices d ON d.id=s."deviceId" WHERE COALESCE(ds."truckId",a."truckId")=$1 ORDER BY s."startedAt" DESC LIMIT 100`,
       [uuid(truckId)],
     );
   }
@@ -301,7 +451,7 @@ export class TelemetryService {
   async latest() {
     return this.db
       .query(`SELECT DISTINCT ON (t.id) t.id AS "truckId",t.identifier,t.registration,p.identifier AS "driverIdentifier",e."recordedAt",e."receivedAt",e.latitude,e.longitude,e.accuracy,e.speed,e.heading,e.mocked,s."endedAt",s.id AS "streamId",(e."recordedAt" < now()-interval '2 minutes') AS stale
-    FROM app.tracking_events e JOIN app.tracking_streams s ON s.id=e."streamId" JOIN app.device_truck_associations a ON a.id=s."associationId" JOIN app.trucks t ON t.id=a."truckId" JOIN app.driver_profiles p ON p.id=s."driverId" WHERE e.kind='location' AND (a."endedAt" IS NULL OR e."recordedAt"<a."endedAt") ORDER BY t.id,e."recordedAt" DESC,e.id DESC`);
+    FROM app.tracking_events e JOIN app.tracking_streams s ON s.id=e."streamId" LEFT JOIN app.device_truck_associations a ON a.id=s."associationId" LEFT JOIN app.driving_sessions ds ON ds.id=s."drivingSessionId" JOIN app.trucks t ON t.id=COALESCE(ds."truckId",a."truckId") JOIN app.driver_profiles p ON p.id=s."driverId" WHERE e.kind='location' AND (COALESCE(ds."endedAt",a."endedAt") IS NULL OR e."recordedAt"<=COALESCE(ds."endedAt",a."endedAt")) ORDER BY t.id,e."recordedAt" DESC,e.id DESC`);
   }
   async history(
     truckId: string,
@@ -336,7 +486,7 @@ export class TelemetryService {
       }
     }
     const rows = await this.db.query(
-      `SELECT e.*,s."driverId",s."deviceId",a."truckId",a."startedAt" AS "bindingStartedAt",a."endedAt" AS "bindingEndedAt",(e."recordedAt"<a."startedAt" OR (a."endedAt" IS NOT NULL AND e."recordedAt">=a."endedAt")) AS "outsideBindingInterval" FROM app.tracking_events e JOIN app.tracking_streams s ON s.id=e."streamId" JOIN app.device_truck_associations a ON a.id=s."associationId" WHERE a."truckId"=$1 AND e."recordedAt">=$2 AND e."recordedAt"<$3 AND e."receivedAt"<=$4 AND ($5::timestamptz IS NULL OR (e."recordedAt",e.id)>($5::timestamptz,$6::uuid)) ORDER BY e."recordedAt",e.id LIMIT 1001`,
+      `SELECT e.*,s."driverId",s."deviceId",s."drivingSessionId",COALESCE(ds."truckId",a."truckId") AS "truckId",COALESCE(ds."startedAt",a."startedAt") AS "bindingStartedAt",COALESCE(ds."endedAt",a."endedAt") AS "bindingEndedAt",(e."recordedAt"<COALESCE(ds."startedAt",a."startedAt") OR (COALESCE(ds."endedAt",a."endedAt") IS NOT NULL AND e."recordedAt">COALESCE(ds."endedAt",a."endedAt"))) AS "outsideBindingInterval" FROM app.tracking_events e JOIN app.tracking_streams s ON s.id=e."streamId" LEFT JOIN app.device_truck_associations a ON a.id=s."associationId" LEFT JOIN app.driving_sessions ds ON ds.id=s."drivingSessionId" WHERE COALESCE(ds."truckId",a."truckId")=$1 AND e."recordedAt">=$2 AND e."recordedAt"<$3 AND e."receivedAt"<=$4 AND ($5::timestamptz IS NULL OR (e."recordedAt",e.id)>($5::timestamptz,$6::uuid)) ORDER BY e."recordedAt",e.id LIMIT 1001`,
       [truckId, from, to, snapshot, afterTime, afterId],
     );
     const more = rows.length > 1000,

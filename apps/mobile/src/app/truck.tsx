@@ -3,54 +3,82 @@ import { router } from "expo-router";
 import {
   Button,
   Copy,
-  Emblem,
   Heading,
   Notice,
   Screen,
-  styles,
   TruckCard,
+  styles,
   useAction,
 } from "@/components/ui";
 import { useFleet } from "@/state/fleet";
 import { TrackingCard } from "@/components/tracking-card";
-export default function ConfirmTruck() {
+
+export default function Driving() {
   const fleet = useFleet(),
     action = useAction(),
-    driver = fleet.driver,
-    confirmed = !!driver?.confirmedAt && driver.canConfirm,
-    missingSetup = !fleet.device?.truck && !fleet.error;
+    driver = fleet.driver;
+  const active = !!driver?.confirmedAt;
+  const scheduled = driver?.schedule;
   return (
     <Screen
       actions={
         <>
-          {missingSetup ? null : confirmed ? (
+          {driver && (
             <Button
-              onPress={() => void action.run(fleet.refresh)}
-              loading={action.busy}
+              disabled={!driver.canDrive || !!driver.pendingDispute}
+              onPress={() => {
+                if (!active && scheduled) {
+                  fleet.selectTruck(scheduled.truck);
+                  router.push("/vehicle-review");
+                } else if (!active && driver.drivingSession && driver.truck) {
+                  fleet.selectTruck(driver.truck);
+                  router.push("/vehicle-review");
+                } else router.push("/vehicles");
+              }}
             >
-              Refresh truck
-            </Button>
-          ) : (
-            <Button
-              disabled={!driver?.canConfirm}
-              onPress={() => void action.run(fleet.confirm)}
-              loading={action.busy}
-            >
-              Yes, this is my truck
+              {active
+                ? "Change vehicle"
+                : scheduled
+                  ? "Confirm today’s vehicle"
+                  : driver.drivingSession
+                    ? "Continue driving"
+                    : "Choose a vehicle"}
             </Button>
           )}
-          {fleet.device?.truck && (
+          {scheduled && !driver?.pendingDispute && (
+            <Button
+              secondary
+              onPress={() => {
+                fleet.selectTruck(scheduled.truck);
+                router.push("/schedule-mismatch");
+              }}
+            >
+              Report schedule mismatch
+            </Button>
+          )}
+          {driver?.pendingDispute && (
+            <Button secondary onPress={() => void action.run(fleet.refresh)}>
+              Refresh status
+            </Button>
+          )}
+          {driver?.drivingSession && (
             <Button
               secondary
               disabled={action.busy}
-              onPress={() => router.push("/mismatch")}
+              onPress={() => router.push("/release")}
             >
-              This is not my truck
+              Finish driving
             </Button>
           )}
+          {fleet.session?.permissions?.includes("admin.access") &&
+            fleet.session.permissions.includes("trucks.write") && (
+              <Button secondary onPress={() => router.push("/admin")}>
+                Needs attention
+              </Button>
+            )}
           <Button
             secondary
-            disabled={action.busy}
+            loading={action.busy}
             onPress={() => void action.run(fleet.logout)}
           >
             Sign out
@@ -58,48 +86,64 @@ export default function ConfirmTruck() {
         </>
       }
     >
-      <View style={{ gap: 20 }}>
-        <Emblem name={confirmed ? "check" : "truck"} />
-        <Heading
-          center
-          title={
-            missingSetup
-              ? "Device setup needed"
-              : confirmed
-                ? "Truck confirmed"
-                : "Is this your truck?"
-          }
-          detail={
-            missingSetup
-              ? "Ask an administrator to sign in and attach this device."
-              : confirmed
-                ? "Your registration has been confirmed."
-                : "Check the registration of the truck you are in."
-          }
-        />
-        {driver?.truck && <TruckCard truck={driver.truck} />}
-        {driver && (
-          <View style={styles.card}>
-            <Copy>{driver.driver.name}</Copy>
-            <Copy small>{driver.driver.identifier}</Copy>
-          </View>
-        )}
-        <TrackingCard />
+      <Heading
+        title={
+          active
+            ? "You’re driving"
+            : scheduled
+              ? "Today’s vehicle"
+              : "Your vehicle"
+        }
+      />
+      {!active && scheduled && (
+        <>
+          <Copy small>{scheduled.date}</Copy>
+          <TruckCard truck={scheduled.truck} meta="Scheduled" />
+        </>
+      )}
+      {driver?.pendingDispute && (
         <Notice
-          title="Check with your administrator"
-          message={driver?.reason ?? undefined}
+          title="Awaiting administrator"
+          message="Your schedule mismatch has been sent for review."
         />
-        <Notice message={action.error || fleet.error} />
-        {!driver && (
-          <Button
-            secondary
-            onPress={() => void action.run(fleet.refresh)}
-            loading={action.busy}
-          >
-            Refresh assigned truck
-          </Button>
-        )}
-      </View>
+      )}
+      {driver?.truck && (active || !scheduled) ? (
+        <TruckCard
+          truck={driver.truck}
+          meta={active ? "Driving now" : "Confirm to continue"}
+        />
+      ) : (
+        !fleet.error &&
+        !scheduled && (
+          <View style={styles.card}>
+            <Copy>No vehicle selected</Copy>
+            <Copy small>Choose the vehicle you are driving today.</Copy>
+          </View>
+        )
+      )}
+      {driver?.drivingSession && !active && (
+        <Notice
+          title="Confirm your vehicle"
+          message="Continue with this vehicle or finish driving."
+        />
+      )}
+      {driver && (
+        <Copy small>
+          {driver.driver.name} · {driver.driver.identifier}
+        </Copy>
+      )}
+      <Notice message={driver?.reason ?? undefined} />
+      <TrackingCard />
+      <Notice message={action.error || fleet.error} />
+      {!!fleet.error && !scheduled && (
+        <Button
+          secondary
+          loading={action.busy}
+          onPress={() => void action.run(fleet.refresh)}
+        >
+          Refresh
+        </Button>
+      )}
     </Screen>
   );
 }

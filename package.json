@@ -24,7 +24,8 @@
     "mobile:android": "pnpm --filter mobile android",
     "mobile:ios": "pnpm --filter mobile ios",
     "mobile:check": "pnpm --filter mobile lint && pnpm --filter mobile typecheck",
-    "mobile:reverse": "node scripts/android-reverse.mjs"
+    "mobile:reverse": "node scripts/android-reverse.mjs",
+    "test:schedules": "node scripts/test-schedules-stack.mjs"
   },
   "dependencies": {
     "@platformatic/runtime": "^3.72.0",

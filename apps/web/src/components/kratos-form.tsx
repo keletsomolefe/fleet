@@ -99,7 +99,7 @@ export function KratosForm({
             </h1>
             {!verification && (
               <p className="text-xs leading-[18px] text-muted-foreground">
-                Sign in to VHH Fleet.
+                Sign in to Fleet.
               </p>
             )}
           </div>

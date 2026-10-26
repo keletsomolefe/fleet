@@ -1,3 +1,10 @@
+import { SchedulingService } from '../scheduling/scheduling.service.js';
+import { OperationsEventsService } from '../operations/operations-events.service.js';
+import {
+  AdminSchedulesController,
+  AdminNotificationsController,
+  MobileSchedulesController,
+} from '../scheduling/scheduling.controller.js';
 import { MobileController } from '../mobile/mobile.controller.js';
 import {
   MobileTelemetryController,
@@ -6,7 +13,11 @@ import {
 import { TelemetryService } from '../telemetry/telemetry.service.js';
 import { FleetMqttService } from '../telemetry/mqtt.service.js';
 import { MobileAuthService } from '../mobile/mobile-auth.service.js';
-import { MobileDeviceService } from '../mobile/mobile-device.service.js';
+import { DrivingService } from '../mobile/driving.service.js';
+import {
+  DrivingController,
+  AdminVehicleDisputesController,
+} from '../mobile/driving.controller.js';
 import {
   TrucksController,
   DriversController,
@@ -49,7 +60,12 @@ import { RolesController } from '../rbac/roles.controller.js';
   ],
   controllers: [
     AuthController,
+    AdminSchedulesController,
+    AdminNotificationsController,
+    MobileSchedulesController,
     MobileController,
+    DrivingController,
+    AdminVehicleDisputesController,
     MobileTelemetryController,
     AdminTelemetryController,
     TrucksController,
@@ -60,8 +76,10 @@ import { RolesController } from '../rbac/roles.controller.js';
   ],
   providers: [
     AuthService,
+    SchedulingService,
+    OperationsEventsService,
     MobileAuthService,
-    MobileDeviceService,
+    DrivingService,
     TelemetryService,
     FleetMqttService,
     FleetService,

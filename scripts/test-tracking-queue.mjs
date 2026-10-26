@@ -125,6 +125,8 @@ try {
     ...stream,
     id: randomUUID(),
     driver_id: randomUUID(),
+    truck_id: randomUUID(),
+    driving_session_id: randomUUID(),
     started_at: clock,
   };
   await q.addStream(second);
@@ -141,6 +143,11 @@ try {
     1,
   );
   assert.equal((await q.active()).driver_id, second.driver_id);
+  assert.equal(
+    (await q.active()).driving_session_id,
+    second.driving_session_id,
+  );
+  assert.equal((await q.active()).truck_id, second.truck_id);
   await q.pruneAcknowledged();
   assert.ok(
     handle
@@ -188,6 +195,32 @@ try {
   );
   console.log(
     "PASS atomic sequence allocation rolls back a failed disk transaction without acknowledging or overwriting history",
+  );
+  await q.stop();
+  clock += 10000;
+  const dailyStream = { ...stream, id: randomUUID(), started_at: clock };
+  await q.addStream(dailyStream);
+  const dailyBoundary = clock + 5000;
+  clock += 10000;
+  await q.stop("daily_confirmation_required", dailyBoundary);
+  await q.locations([location(dailyBoundary - 1), location(dailyBoundary + 1)]);
+  const dailyStored = await db.first(
+    "SELECT stopped_at FROM tracking_streams WHERE id=?",
+    dailyStream.id,
+  );
+  assert.equal(dailyStored.stopped_at, dailyBoundary);
+  const lateDaily = await db.first(
+    "SELECT count(*) n FROM tracking_unattributed WHERE recorded_at=?",
+    dailyBoundary + 1,
+  );
+  assert.equal(lateDaily.n, 1);
+  const oldDaily = await db.first(
+    "SELECT count(*) n FROM tracking_events WHERE stream_id=? AND json_extract(payload,'$.kind')='location'",
+    dailyStream.id,
+  );
+  assert.equal(oldDaily.n, 1);
+  console.log(
+    "PASS offline daily cutoff retains late callbacks without assigning next-day points to an unconfirmed session",
   );
 } finally {
   handle.close();

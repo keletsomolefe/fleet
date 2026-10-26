@@ -5,7 +5,7 @@ import { useFleet } from "@/state/fleet";
 import { Button, Field, Heading, Logo, Notice, Screen, useAction } from "./ui";
 import { TrackingCard } from "./tracking-card";
 export function Login() {
-  const { login, device, refresh, error: contextError } = useFleet(),
+  const { login, refresh, error: contextError } = useFleet(),
     action = useAction();
   const [identifier, setIdentifier] = useState(""),
     [password, setPassword] = useState("");
@@ -41,9 +41,7 @@ export function Login() {
         <Logo />
         <Heading
           title="Sign in"
-          detail={
-            device?.truck ? "Continue with this truck." : "Sign in to continue."
-          }
+          detail="Sign in to continue."
         />
         <Field
           label="Email or Driver ID"

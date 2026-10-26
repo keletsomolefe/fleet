@@ -13,7 +13,7 @@ export interface Sql {
   transaction<T>(action: (db: Sql) => Promise<T>): Promise<T>;
 }
 export const schema = `PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
-CREATE TABLE IF NOT EXISTS tracking_streams (id TEXT PRIMARY KEY,device_id TEXT NOT NULL,driver_id TEXT NOT NULL,truck_id TEXT NOT NULL,association_id TEXT NOT NULL,started_at INTEGER NOT NULL,stopped_at INTEGER,next_sequence INTEGER NOT NULL DEFAULT 1,end_reported INTEGER NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS tracking_streams (id TEXT PRIMARY KEY,device_id TEXT NOT NULL,driver_id TEXT NOT NULL,truck_id TEXT NOT NULL,association_id TEXT NOT NULL,driving_session_id TEXT,started_at INTEGER NOT NULL,stopped_at INTEGER,next_sequence INTEGER NOT NULL DEFAULT 1,end_reported INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS tracking_events (event_id TEXT PRIMARY KEY,stream_id TEXT NOT NULL REFERENCES tracking_streams(id),sequence INTEGER NOT NULL,payload TEXT NOT NULL,created_at INTEGER NOT NULL,acknowledged_at INTEGER,blocked_reason TEXT,retry_after INTEGER NOT NULL DEFAULT 0,attempts INTEGER NOT NULL DEFAULT 0,UNIQUE(stream_id,sequence));
 CREATE INDEX IF NOT EXISTS idx_tracking_pending ON tracking_events (acknowledged_at,blocked_reason,retry_after,created_at);
 CREATE TABLE IF NOT EXISTS tracking_meta (key TEXT PRIMARY KEY,value TEXT NOT NULL);
@@ -74,13 +74,14 @@ export function queue(db: Sql, newId: () => string, now = Date.now) {
       if (current && current.id !== stream.id)
         throw new Error("Stop the current location sharing session first.");
       await tx.run(
-        "INSERT OR IGNORE INTO tracking_streams (id,device_id,driver_id,truck_id,association_id,started_at) VALUES (?,?,?,?,?,?)",
+        "INSERT OR IGNORE INTO tracking_streams (id,device_id,driver_id,truck_id,association_id,started_at,driving_session_id) VALUES (?,?,?,?,?,?,?)",
         stream.id,
         stream.device_id,
         stream.driver_id,
         stream.truck_id,
         stream.association_id,
         stream.started_at,
+        stream.driving_session_id ?? null,
       );
     });
   }
@@ -148,13 +149,16 @@ export function queue(db: Sql, newId: () => string, now = Date.now) {
       }
     });
   }
-  async function stop(reason = "driver_stopped") {
+  async function stop(reason = "driver_stopped", boundary?: number) {
     await db.transaction(async (tx) => {
       const stream = await tx.first<LocalStream>(
         "SELECT * FROM tracking_streams WHERE stopped_at IS NULL ORDER BY started_at DESC LIMIT 1",
       );
       if (!stream) return;
-      const at = now();
+      const at =
+        boundary === undefined
+          ? now()
+          : Math.max(stream.started_at, Math.min(now(), boundary));
       await append(tx, stream, "status", at, {
         code: "tracking_stopped",
         reason,

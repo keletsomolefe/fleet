@@ -14,10 +14,15 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'VHH Fleet · Operations',
+        title: 'Fleet · Operations',
       },
     ],
     links: [
+      {
+        rel: 'icon',
+        type: 'image/svg+xml',
+        href: '/brand/fleet-favicon.svg',
+      },
       {
         rel: 'stylesheet',
         href: appCss,

@@ -23,7 +23,7 @@ import { parseConfirmation, parseEnrollment } from './mobile.input.js';
 export function hashDeviceToken(token: string) {
   if (!/^[a-f0-9]{64}$/.test(token))
     throw new UnauthorizedException(
-      'Set up this device with a fleet administrator.',
+      'Location sharing access has ended. Start sharing again.',
     );
   return createHash('sha256').update(token).digest('hex');
 }

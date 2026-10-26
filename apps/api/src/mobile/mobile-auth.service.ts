@@ -11,6 +11,7 @@ import { KratosService, KratosError } from '../auth/kratos.service.js';
 import { RbacService } from '../rbac/rbac.service.js';
 import { DriverProfile } from '../fleet/fleet.entity.js';
 import { parseLogin } from './mobile.input.js';
+import { DrivingService } from './driving.service.js';
 
 @Injectable()
 export class MobileAuthService {
@@ -20,6 +21,7 @@ export class MobileAuthService {
     @Inject(KratosService) private readonly kratos: KratosService,
     @Inject(AuthService) private readonly auth: AuthService,
     @Inject(RbacService) private readonly rbac: RbacService,
+    @Inject(DrivingService) private readonly driving: DrivingService,
   ) {}
   async login(raw: unknown, remote: string) {
     const input = parseLogin(raw);
@@ -71,6 +73,7 @@ export class MobileAuthService {
       return {
         sessionToken: token,
         mode,
+        permissions: context.permissions,
         user: this.auth.profile(context.user),
         expiresAt: context.session.expires_at ?? null,
       };
@@ -79,28 +82,37 @@ export class MobileAuthService {
       throw error;
     }
   }
-  async resolveMode(context: AdminContext): Promise<'setup' | 'driver'> {
+  async resolveMode(context: AdminContext): Promise<'admin' | 'driver'> {
     // Mode is a navigation result, never an account type or a client-selected grant.
+    if (context.permissions.includes('driver.access')) {
+      const profile = await this.db
+        .getRepository(DriverProfile)
+        .findOneBy({ userId: context.user.id, status: 'active' });
+      if (profile) return 'driver';
+    }
     if (
       ['admin.access', 'trucks.read', 'trucks.write'].every((p) =>
         context.permissions.includes(p),
       )
     )
-      return 'setup';
+      return 'admin';
     this.rbac.require(context, 'driver.access');
-    const profile = await this.db
-      .getRepository(DriverProfile)
-      .findOneBy({ userId: context.user.id, status: 'active' });
-    if (!profile)
-      throw new ForbiddenException(
-        'Driver access is not active. Contact your fleet administrator.',
-      );
-    return 'driver';
-  }
-  requireSetup(context: AdminContext) {
-    this.rbac.require(context, 'admin.access', 'trucks.read', 'trucks.write');
+    throw new ForbiddenException(
+      'Driver access is not active. Contact your fleet administrator.',
+    );
   }
   async logout(token: string) {
+    try {
+      await this.driving.endForLogout(
+        await this.auth.authenticateNative(token),
+      );
+    } catch (error) {
+      if (!(
+        error instanceof UnauthorizedException ||
+        error instanceof ForbiddenException
+      ))
+        throw error;
+    }
     try {
       await this.kratos.revokeToken(token);
     } catch (error) {

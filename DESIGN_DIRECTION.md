@@ -1,6 +1,14 @@
-# VHH Fleet visual direction
+# Fleet visual direction
+
+Brand update, 26 October 2026: the active product is Fleet, using the SVG masters in `assets/brand/fleet`. Keep the existing monochrome palette, Montserrat typography and component styling. Original VHH artwork and the prototype history below are preserved as design references.
 
 Updated 16 October 2026. The user prefers the small typography and simple components in LinkAToday, with further refinement informed by Mobbin references. Mobile styling is **platform-neutral for Android and iOS**: use VHH headers, navigation, fields and panels rather than OS-specific controls, glass effects or imitation system chrome.
+
+## Personal-phone workflow, 26 October 2026
+
+The active mobile journey is [Personal phones and vehicle dispute review](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=214-5367). Users sign in on their own phones, search the vehicle list by registration/fleet number, review, start driving and explicitly finish/release. An occupied request is blocked and can be flagged; only an administrator resolves a dispute. Open flags continue to hold a vehicle after release until resolution. New selection requires connectivity. Keep the current Fleet SVG, monochrome colours, Montserrat, cards, input fields and large driver actions.
+
+The vehicle-as-selectable-row example was inspected in [Walmart's vehicle selection screen](https://mobbin.com/screens/1887e849-6925-4110-a679-48c1e21bbc1d). It informs the selectable vehicle row only; searchable fleet identifiers, occupancy, releases and administrator dispute handling come from Fleet's requirements. Grab Driver, Mercedes-Benz and Alexa results were inspected but did not show the personal-phone handover decisions and were not used as precedents for those decisions. The historical VHH and shared-device prototype records below remain for reference.
 
 ## Local reference inspected
 

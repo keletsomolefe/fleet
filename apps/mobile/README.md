@@ -1,6 +1,6 @@
-# VHH Fleet mobile
+# Fleet mobile
 
-Native Expo SDK 58 app with one email/Driver ID sign-in form for administrator device enrollment and driver access, with free native background location logging. See [location durability and deployment](../../docs/background-location.md). See [the setup, security and API guide](../../docs/mobile-device-setup.md).
+Native Expo SDK 58 app with one email/Driver ID sign-in form for personal-phone driving and administrator vehicle-conflict review, with free native background location logging. See [location durability and deployment](../../docs/background-location.md). See [the setup, security and API guide](../../docs/mobile-device-setup.md).
 
 Run all commands from the repository root:
 
@@ -19,7 +19,9 @@ For iOS, use `pnpm mobile:ios`. Configure the public `EXPO_PUBLIC_API_URL` in th
 
 Android builds were verified with Java 17. Set `JAVA_HOME` to a JDK 17 installation and `ANDROID_HOME` to the Android SDK. If Gradle exits under memory pressure, retry with `GRADLE_OPTS='-Dorg.gradle.workers.max=2 -Dorg.gradle.parallel=false' pnpm mobile:android`. Keep machine-specific JDK paths out of shared configuration.
 
-The application uses Expo Router, SecureStore, local Figma SVG assets, Montserrat and the VHH theme. Native projects are generated with `pnpm --filter mobile prebuild` and ignored by Git. Native settings belong in `app.json`, `app.config.ts` and config plugins. The reference `~/Dev/brocabs` workflow informed local native development commands; no application credentials or integrations were copied.
+The application uses Expo Router, SecureStore, local SVG assets, Montserrat and the existing monochrome theme. Fleet logos are exported from `assets/brand/fleet`; original VHH assets remain available. Native projects are generated with `pnpm --filter mobile prebuild` and ignored by Git. Native settings belong in `app.json`, `app.config.ts` and config plugins. The reference `~/Dev/brocabs` workflow informed local native development commands; no application credentials or integrations were copied.
+
+The display name, icons and splash screen use Fleet. The existing `com.vhhfleet.driver` application identifiers and `vhh-fleet` URL scheme are retained for installed-app compatibility, including saved sessions. The old installation credential is retained only to drain historical location records; new driving uses per-session upload credentials. Rebuild the native app with `pnpm mobile:android` or `pnpm mobile:ios` after changing launcher branding.
 
 Run `pnpm mobile:check`, `pnpm test:tracking-queue` and `pnpm test:mobile` before delivery. The latter requires the migrated local database, Kratos and gateway. The web target is a visual preview; credential flows require an installed native build.
 

@@ -130,9 +130,7 @@ async function sendMqtt(batch: Batch, deviceId: string): Promise<Receipt> {
   });
 }
 async function flushNow() {
-  const q = await outbox(),
-    token = await read(keys.device);
-  if (!token) return;
+  const q = await outbox();
   const network = await Network.getNetworkStateAsync();
   if (network.isConnected === false || network.isInternetReachable === false) {
     await q.meta("transport", "Offline");
@@ -144,15 +142,26 @@ async function flushNow() {
     if (!end) return;
   }
   // MQTT stays live while the app is running; a headless callback can always use HTTP immediately.
-  void connect(token).catch(() => undefined);
   for (let n = 0; n < (AppState.currentState === "active" ? 10 : 1); n++) {
     const batch = await q.batch();
     if (!batch) break;
+    // Each historical stream keeps its own upload capability across vehicle/account changes.
+    const token =
+      (await read(`fleet.tracking-token.${batch.streamId}`)) ??
+      (await read(keys.device));
+    if (!token) {
+      await q.failed(
+        batch,
+        "Location upload credential is missing. Records are retained.",
+      );
+      break;
+    }
+    void connect(token).catch(() => undefined);
     try {
       let r: Receipt | undefined;
       const stream =
         status.active?.id === batch.streamId ? status.active : null;
-      if (client?.connected) {
+      if (client?.connected && connectionKey.split(":")[1] === token) {
         const deviceId = stream?.device_id ?? connectionKey.split(":")[0];
         try {
           r = await sendMqtt(batch, deviceId);
@@ -260,9 +269,9 @@ export async function startTracking(session: Session, driver: DriverContext) {
   return exclusive(async () => {
     if (
       !driver.confirmedAt ||
-      !driver.canConfirm ||
+      !driver.canDrive ||
       !driver.truck ||
-      !driver.associationId
+      !driver.drivingSession?.onThisPhone
     )
       throw new Error("Confirm your truck before sharing location.");
     if (!(await Location.hasServicesEnabledAsync()))
@@ -277,14 +286,12 @@ export async function startTracking(session: Session, driver: DriverContext) {
     const background = await Location.requestBackgroundPermissionsAsync();
     if (background.status !== "granted")
       throw new Error("Allow location all the time in device settings.");
-    const token = await read(keys.device);
-    if (!token) throw new Error("Set up this device first.");
     const q = await outbox(),
       active = await q.active();
     if (active) {
       if (
         active.driver_id !== driver.driver.id ||
-        active.association_id !== driver.associationId
+        active.driving_session_id !== driver.drivingSession?.id
       )
         throw new Error("Stop the previous location sharing session first.");
       if (!(await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK)))
@@ -293,7 +300,7 @@ export async function startTracking(session: Session, driver: DriverContext) {
     }
     const intent = await readTrackingIntent(
       driver.driver.id,
-      driver.associationId,
+      driver.drivingSession!.id,
     );
     const stream = await request<{
       id: string;
@@ -304,16 +311,21 @@ export async function startTracking(session: Session, driver: DriverContext) {
     }>("telemetry/streams", {
       method: "POST",
       session: session.sessionToken,
-      device: token,
-      body: { streamId: intent },
+      body: {
+        streamId: intent.id,
+        drivingSessionId: driver.drivingSession!.id,
+        uploadToken: intent.uploadToken,
+      },
     });
+    await write(`fleet.tracking-token.${stream.id}`, intent.uploadToken);
     await q.addStream({
       id: stream.id,
       device_id: stream.deviceId,
       driver_id: stream.driverId,
       truck_id: driver.truck.id,
       association_id: stream.associationId,
-      started_at: Date.now(),
+      driving_session_id: driver.drivingSession!.id,
+      started_at: Math.max(Date.now(), Date.parse(stream.startedAt)),
     });
     await remove("fleet.tracking-start.v1");
     await q.statusEvent("tracking_started", { sampleIntervalMs: 10000 });
@@ -333,22 +345,50 @@ async function readTrackingIntent(driverId: string, associationId: string) {
   // A stable request ID makes a lost start response safe to retry.
   const key = "fleet.tracking-start.v1";
   const old = await read(key);
-  let value: { id: string; driverId: string; associationId: string } | null =
-    null;
+  let value: {
+    id: string;
+    driverId: string;
+    associationId: string;
+    uploadToken: string;
+  } | null = null;
   try {
     value = old ? JSON.parse(old) : null;
   } catch {}
   if (
     !value ||
     value.driverId !== driverId ||
-    value.associationId !== associationId
+    value.associationId !== associationId ||
+    !value.uploadToken
   )
-    value = { id: Crypto.randomUUID(), driverId, associationId };
+    value = {
+      id: Crypto.randomUUID(),
+      driverId,
+      associationId,
+      uploadToken: Array.from(await Crypto.getRandomBytesAsync(32), (b) =>
+        b.toString(16).padStart(2, "0"),
+      ).join(""),
+    };
   await write(key, JSON.stringify(value));
-  return value.id;
+  return value;
 }
 export async function capture(locations: Location.LocationObject[]) {
   const q = await outbox();
+  const current = await q.active();
+  if (current) {
+    // Johannesburg has no daylight-saving transition. End offline capture at the confirmed day's boundary.
+    const localStart = new Date(current.started_at + 2 * 3600000);
+    const cutoff =
+      Date.UTC(
+        localStart.getUTCFullYear(),
+        localStart.getUTCMonth(),
+        localStart.getUTCDate() + 1,
+      ) -
+      2 * 3600000;
+    if (Date.now() >= cutoff) {
+      await q.stop("daily_confirmation_required", cutoff);
+      await stopCapture("daily_confirmation_required");
+    }
+  }
   const records = locations as unknown as {
     timestamp: number;
     coords: Record<string, unknown>;
@@ -379,8 +419,8 @@ export async function reconcileDriverContext(driver: DriverContext) {
   if (
     active &&
     (active.driver_id !== driver.driver.id ||
-      active.association_id !== driver.associationId ||
-      !driver.canConfirm ||
+      active.driving_session_id !== driver.drivingSession?.id ||
+      !driver.canDrive ||
       !driver.confirmedAt)
   )
     await stopTracking("truck_context_changed");
@@ -415,6 +455,11 @@ let locationUnavailable = false;
 export async function reconcileTracking() {
   const q = await outbox(),
     active = await q.active();
+  if (active && !active.driving_session_id) {
+    await stopTracking("personal_phone_upgrade");
+    await flush();
+    return;
+  }
   if (active) {
     const permission = await Location.getBackgroundPermissionsAsync();
     if (

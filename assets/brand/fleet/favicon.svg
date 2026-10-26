@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Fleet</title>
+  <rect width="64" height="64" rx="14" fill="#ffffff"/>
+  <path fill="#111111" d="M8 56V18C8 12.477 12.477 8 18 8H56L47 22H22V30H47L39 42H22V56Z"/>
+</svg>

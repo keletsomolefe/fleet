@@ -25,6 +25,13 @@ export function outbox() {
   opening ??= (async () => {
     const db = await SQLite.openDatabaseAsync("fleet-location-v1.db");
     await db.execAsync(schema);
+    const columns = await db.getAllAsync<{ name: string }>(
+      "PRAGMA table_info(tracking_streams)",
+    );
+    if (!columns.some((column) => column.name === "driving_session_id"))
+      await db.execAsync(
+        "ALTER TABLE tracking_streams ADD COLUMN driving_session_id TEXT",
+      );
     return queue(adapter(db), Crypto.randomUUID);
   })().catch((error) => {
     opening = undefined;

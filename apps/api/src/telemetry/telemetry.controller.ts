@@ -36,7 +36,7 @@ export class MobileTelemetryController {
   @Header('Cache-Control', 'private, no-store')
   async start(@Req() req: Request, @Body() body: unknown) {
     const c = await this.auth.authenticateNative(bearer(req));
-    return this.telemetry.start(c, req.get('x-fleet-device-token') ?? '', body);
+    return this.telemetry.start(c, body);
   }
   @Post('batches')
   @HttpCode(200)

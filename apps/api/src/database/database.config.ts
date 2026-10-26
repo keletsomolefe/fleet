@@ -1,4 +1,8 @@
+import { DriverSchedule } from '../scheduling/schedule.entity.js';
+import { DriverSchedules1793102400000 } from './migrations/1793102400000-DriverSchedules.js';
 import { DriverTruckConfirmation } from '../mobile/mobile.entity.js';
+import { DrivingSession, VehicleDispute } from '../mobile/driving.entity.js';
+import { PersonalPhoneDriving1793016000000 } from './migrations/1793016000000-PersonalPhoneDriving.js';
 import {
   TrackingEvent,
   TrackingStream,
@@ -32,6 +36,9 @@ export function databaseOptions(maintenance = false): DataSourceOptions {
     entities: [
       ...fleetEntities,
       DriverTruckConfirmation,
+      DrivingSession,
+      DriverSchedule,
+      VehicleDispute,
       TrackingStream,
       TrackingEvent,
       User,
@@ -47,6 +54,8 @@ export function databaseOptions(maintenance = false): DataSourceOptions {
       FleetProfiles1792368003000,
       MobileDeviceEnrollment1792368004000,
       LocationTelemetry1792368005000,
+      PersonalPhoneDriving1793016000000,
+      DriverSchedules1793102400000,
     ],
     migrationsTableName: 'migrations',
     migrationsTransactionMode: 'each',

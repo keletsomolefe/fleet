@@ -1,3 +1,4 @@
+import { useAttention, type Attention } from "@/lib/use-attention";
 import {
   createContext,
   useCallback,
@@ -12,173 +13,117 @@ import * as Crypto from "expo-crypto";
 import {
   ApiError,
   request,
-  type DeviceContext,
   type DriverContext,
-  type Mode,
   type Session,
   type Truck,
 } from "@/lib/api";
 import { keys, read, remove, write } from "@/lib/storage";
 import { stopTracking, reconcileDriverContext } from "@/tracking/service";
 
+type Selection = {
+  truck: Truck;
+  id: string;
+  expectedOwnSessionId: string | null;
+};
 type FleetState = {
+  attention: Attention;
+  refreshAttention: () => Promise<void>;
+  reportMismatch: (
+    requestedTruckId: string | null,
+    note: string,
+  ) => Promise<void>;
   ready: boolean;
   session: Session | null;
-  device: DeviceContext | null;
   driver: DriverContext | null;
   error: string;
-  deviceName: string;
-  selection: { truck: Truck; identifier: string } | null;
-  selectTruck: (truck: Truck, identifier: string) => void;
-  refresh: () => Promise<DeviceContext | null>;
-  login: (
-    identifier: string,
-    password: string,
-  ) => Promise<"/setup" | "/setup/ready" | "/truck">;
+  selection: Selection | null;
+  selectTruck: (truck: Truck) => void;
+  refresh: () => Promise<void>;
+  login: (identifier: string, password: string) => Promise<"/truck" | "/admin">;
   logout: () => Promise<void>;
-  enroll: (
-    truck: Truck,
-    identifier: string,
-    replaceExisting: boolean,
-  ) => Promise<void>;
-  confirm: () => Promise<void>;
-  clearError: () => void;
+  startDriving: () => Promise<void>;
+  finishDriving: () => Promise<void>;
+  flagVehicle: () => Promise<void>;
 };
 const Context = createContext<FleetState | null>(null);
 export function FleetProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false),
     [session, setSession] = useState<Session | null>(null),
-    [device, setDevice] = useState<DeviceContext | null>(null),
     [driver, setDriver] = useState<DriverContext | null>(null),
     [error, setError] = useState(""),
-    [deviceName, setDeviceName] = useState("");
-  const [selection, setSelection] = useState<{
-    truck: Truck;
-    identifier: string;
-  } | null>(null);
-  const tokenRef = useRef<string | null>(null),
-    sessionRef = useRef<Session | null>(null),
+    [selection, setSelection] = useState<Selection | null>(null);
+  const { attention, refreshAttention } = useAttention(session);
+  const sessionRef = useRef<Session | null>(null),
     generation = useRef(0);
   const refresh = useCallback(async () => {
-    const ticket = generation.current,
-      token = tokenRef.current;
-    let current = sessionRef.current;
+    const current = sessionRef.current,
+      ticket = generation.current;
+    if (!current) return;
     try {
-      if (current) {
-        let access: { mode: Mode };
-        try {
-          access = await request<{ mode: Mode }>("auth/session", {
-            session: current.sessionToken,
-          });
-        } catch (cause) {
-          if (
-            ticket === generation.current &&
-            cause instanceof ApiError &&
-            [401, 403].includes(cause.status)
-          ) {
-            if (cause.status === 403) await stopTracking("access_changed");
-            await remove(keys.session);
-            sessionRef.current = null;
-            setSession(null);
-          }
-          throw cause;
-        }
-        if (ticket !== generation.current) return null;
-        if (access.mode !== current.mode) {
-          await stopTracking("access_changed");
-          current = { ...current, mode: access.mode };
-          await write(keys.session, JSON.stringify(current));
-          if (ticket !== generation.current) return null;
-          sessionRef.current = current;
-          setSession(current);
-          setSelection(null);
-        }
+      const access = await request<Omit<Session, "sessionToken">>(
+        "auth/session",
+        { session: current.sessionToken },
+      );
+      if (ticket !== generation.current) return;
+      const updated = { ...access, sessionToken: current.sessionToken };
+      await write(keys.session, JSON.stringify(updated));
+      if (ticket !== generation.current) return;
+      sessionRef.current = updated;
+      setSession(updated);
+      if (access.mode === "driver") {
+        const next = await request<DriverContext>("driver/context", {
+          session: current.sessionToken,
+        });
+        if (ticket !== generation.current) return;
+        await reconcileDriverContext(next);
+        if (ticket !== generation.current) return;
+        setDriver(next);
+      } else {
+        await stopTracking("access_changed");
+        setDriver(null);
       }
-      const next = token
-        ? await request<DeviceContext>("device", { device: token })
-        : null;
-      if (ticket !== generation.current) return null;
-      setDevice(next);
-      if (current?.mode === "driver" && token) {
-        let profile: DriverContext;
-        try {
-          profile = await request<DriverContext>("driver/truck", {
-            session: current.sessionToken,
-            device: token,
-          });
-        } catch (cause) {
-          if (
-            ticket === generation.current &&
-            cause instanceof ApiError &&
-            cause.status === 403
-          ) {
-            await stopTracking("driver_access_ended");
-            await remove(keys.session);
-            sessionRef.current = null;
-            setSession(null);
-          }
-          throw cause;
-        }
-        if (ticket === generation.current) {
-          await reconcileDriverContext(profile);
-          setDriver(profile);
-        }
-      } else if (ticket === generation.current) setDriver(null);
-      if (ticket === generation.current) setError("");
-      return next;
+      setError("");
     } catch (cause) {
-      if (ticket !== generation.current) return null;
+      if (ticket !== generation.current) return;
       setDriver(null);
-      setDevice(null);
+      if (cause instanceof ApiError && [401, 403].includes(cause.status)) {
+        await stopTracking("access_ended");
+        await remove(keys.session);
+        sessionRef.current = null;
+        setSession(null);
+        setSelection(null);
+        generation.current++;
+      }
       setError(
         cause instanceof Error
           ? cause.message
-          : "Could not refresh this device.",
+          : "Could not refresh your driving session.",
       );
-      return null;
     }
   }, []);
   useEffect(() => {
     let mounted = true;
-    const invalidateRequests = () => {
+    const invalidate = () => {
       generation.current++;
     };
     void (async () => {
       try {
         if (Platform.OS === "web") return;
-        const [stored, token, name, pending] = await Promise.all([
-          read(keys.session),
-          read(keys.device),
-          read(keys.name),
-          read(keys.pending),
-        ]);
+        const stored = await read(keys.session);
         if (!mounted) return;
-        tokenRef.current = token;
-        if (pending) {
-          try {
-            await request<DeviceContext>("device", { device: pending });
-            await write(keys.device, pending);
-            await remove(keys.pending);
-            tokenRef.current = pending;
-          } catch (cause) {
-            if (!(cause instanceof ApiError && cause.status === 401))
-              throw cause;
-          }
-        }
-        if (name) setDeviceName(name);
-        else {
-          const value = `VHH-TAB-${Crypto.randomUUID().slice(0, 8).toUpperCase()}`;
-          await write(keys.name, value);
-          if (mounted) setDeviceName(value);
-        }
         if (stored) {
-          const s = JSON.parse(stored) as Session;
-          if (!s.sessionToken || !["driver", "setup"].includes(s.mode))
-            throw new Error("Please sign in again.");
-          sessionRef.current = s;
-          setSession(s);
-        }
-        await refresh();
+          const raw = JSON.parse(stored) as Session & { mode: string };
+          const value: Session = {
+            ...raw,
+            mode: raw.mode === "driver" ? "driver" : "admin",
+            permissions: Array.isArray(raw.permissions) ? raw.permissions : [],
+          };
+          if (!value.sessionToken) throw new Error("Please sign in again.");
+          // Server refresh replaces any legacy setup mode; no phone-to-truck binding is restored.
+          sessionRef.current = value;
+          setSession(value);
+          await refresh();
+        } else await stopTracking("signed_out");
       } catch (cause) {
         if (mounted)
           setError(
@@ -190,55 +135,54 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         if (mounted) setReady(true);
       }
     })();
-    const subscription = AppState.addEventListener("change", (state) => {
+    const sub = AppState.addEventListener("change", (state) => {
       if (state === "active") void refresh();
-      else if (state === "background") {
-        setDriver(null);
-      }
     });
+    const timer = setInterval(() => {
+      if (AppState.currentState === "active") void refresh();
+    }, 20000);
     return () => {
       mounted = false;
-      invalidateRequests();
-      subscription.remove();
+      invalidate();
+      sub.remove();
+      clearInterval(timer);
     };
   }, [refresh]);
   async function login(identifier: string, password: string) {
-    const s = await request<Session>("auth/login", {
+    const next = await request<Session>("auth/login", {
       method: "POST",
       body: { identifier, password },
     });
     try {
       await stopTracking("account_changed");
-      await write(keys.session, JSON.stringify(s));
+      await write(keys.session, JSON.stringify(next));
     } catch (cause) {
       await request("auth/session", {
         method: "DELETE",
-        session: s.sessionToken,
+        session: next.sessionToken,
       }).catch(() => undefined);
       throw cause;
     }
     generation.current++;
-    sessionRef.current = s;
-    setSession(s);
+    sessionRef.current = next;
+    setSession(next);
+    setSelection(null);
     setDriver(null);
     setError("");
-    const assigned = await refresh();
-    const active = sessionRef.current;
-    if (!active) throw new Error("Please sign in again.");
-    return active.mode === "setup"
-      ? assigned?.truck
-        ? ("/setup/ready" as const)
-        : ("/setup" as const)
+    await refresh();
+    if (!sessionRef.current) throw new Error("Please sign in again.");
+    return sessionRef.current.mode === "admin"
+      ? ("/admin" as const)
       : ("/truck" as const);
   }
   async function logout() {
-    const s = sessionRef.current;
+    generation.current++;
     await stopTracking("signed_out");
-    // Keep the token available for a retry if server revocation is unavailable.
-    if (s)
+    const current = sessionRef.current;
+    if (current)
       await request("auth/session", {
         method: "DELETE",
-        session: s.sessionToken,
+        session: current.sessionToken,
       });
     await remove(keys.session);
     generation.current++;
@@ -248,96 +192,90 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     setSelection(null);
     setError("");
   }
-  async function enroll(
-    truck: Truck,
-    identifier: string,
-    replaceExisting: boolean,
-  ) {
-    const s = sessionRef.current;
-    if (!s || s.mode !== "setup")
-      throw new Error("Sign in as a fleet administrator.");
-    await stopTracking("device_setup");
-    const pending = await read(keys.pending),
-      token =
-        pending ??
-        Array.from(await Crypto.getRandomBytesAsync(32), (b) =>
-          b.toString(16).padStart(2, "0"),
-        ).join("");
-    await write(keys.pending, token);
-    let recovered: DeviceContext | null = null;
-    if (pending) {
-      try {
-        const existing = await request<DeviceContext>("device", {
-          device: token,
-        });
-        if (
-          existing.truck?.id === truck.id &&
-          existing.device.identifier === identifier.trim().toUpperCase()
-        )
-          recovered = existing;
-      } catch (cause) {
-        if (!(cause instanceof ApiError && cause.status === 401)) throw cause;
-      }
-    }
-    const next =
-      recovered ??
-      (await request<DeviceContext>("setup/device", {
-        method: "POST",
-        session: s.sessionToken,
-        body: {
-          truckId: truck.id,
-          deviceIdentifier: identifier,
-          deviceToken: token,
-          expectedDeviceId: truck.device?.id ?? null,
-          replaceExisting,
-        },
-      }));
-    // The pending key makes a successful-but-interrupted enrollment recoverable on restart.
-    await write(keys.device, token);
-    await write(keys.name, identifier.trim().toUpperCase());
-    await remove(keys.pending);
-    tokenRef.current = token;
+  async function startDriving() {
+    if (!sessionRef.current || !selection)
+      throw new Error("Choose a vehicle first.");
+    await stopTracking("vehicle_changed");
     generation.current++;
-    setDevice(next);
-    setDeviceName(identifier.trim().toUpperCase());
-    setDriver(null);
+    try {
+      const next = await request<DriverContext>("driver/driving-sessions", {
+        method: "POST",
+        session: sessionRef.current.sessionToken,
+        body: {
+          id: selection.id,
+          truckId: selection.truck.id,
+          expectedOwnSessionId: selection.expectedOwnSessionId,
+          expectedScheduleId: driver?.schedule?.id ?? null,
+        },
+      });
+      generation.current++;
+      setDriver(next);
+      setSelection(null);
+      setError("");
+    } catch (cause) {
+      await refresh();
+      throw cause;
+    }
+  }
+  async function finishDriving() {
+    if (!sessionRef.current || !driver?.drivingSession)
+      throw new Error("Refresh your driving session first.");
+    await stopTracking("driver_released");
+    generation.current++;
+    const next = await request<DriverContext>("driver/driving-sessions/end", {
+      method: "POST",
+      session: sessionRef.current.sessionToken,
+      body: { sessionId: driver.drivingSession.id },
+    });
+    generation.current++;
+    setDriver(next);
+    setSelection(null);
     setError("");
   }
-  async function confirm() {
-    const s = sessionRef.current,
-      token = tokenRef.current;
-    if (!s || !token || !driver?.associationId)
-      throw new Error("Refresh the assigned truck and try again.");
-    const result = await request<DeviceContext & { confirmedAt: string }>(
-      "driver/truck/confirm",
-      {
-        method: "POST",
-        session: s.sessionToken,
-        device: token,
-        body: { associationId: driver.associationId },
-      },
-    );
-    setDevice(result);
-    setDriver({ ...driver, ...result });
-    setError("");
+  async function flagVehicle() {
+    if (!sessionRef.current || !selection)
+      throw new Error("Choose a vehicle first.");
+    await request(`driver/vehicles/${selection.truck.id}/flag`, {
+      method: "POST",
+      session: sessionRef.current.sessionToken,
+      body: { sessionId: selection.truck.activeSession?.id },
+    });
+  }
+  async function reportMismatch(requestedTruckId: string | null, note: string) {
+    if (!driver?.schedule || !sessionRef.current)
+      throw new Error("Refresh your schedule first.");
+    await stopTracking("schedule_dispute");
+    generation.current++;
+    await request("driver/schedule-mismatch", {
+      method: "POST",
+      session: sessionRef.current.sessionToken,
+      body: { expectedScheduleId: driver.schedule.id, requestedTruckId, note },
+    });
+    await refresh();
   }
   return (
     <Context.Provider
       value={{
+        attention,
+        refreshAttention,
+        reportMismatch,
         ready,
         session,
-        device,
         driver,
         error,
-        deviceName,
         selection,
-        selectTruck: (truck, identifier) => setSelection({ truck, identifier }),
+        selectTruck: (truck) =>
+          setSelection({
+            truck,
+            id: Crypto.randomUUID(),
+            expectedOwnSessionId: driver?.drivingSession?.id ?? null,
+          }),
         refresh,
         login,
         logout,
-        enroll,
-        confirm,
-        clearError: () => setError(""),
+        startDriving,
+        finishDriving,
+        flagVehicle,
       }}
     >
       {children}

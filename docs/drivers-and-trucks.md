@@ -10,11 +10,11 @@ Create a profile for an existing active company user or create a new account ins
 
 Creating a new account additionally requires `users.create`. Kratos stores the credentials and requires email verification. New application users have no roles. Use **Manage account access** on the saved profile to grant the Driver role, or a combination of roles, through the existing access-management flow. The account card shows the actual Driver app permission separately from account status. Profile creation neither replaces existing roles nor grants administrative access.
 
-Driver status is operational profile status. Set it to Inactive and save to release the truck; account-wide status and role changes remain in user access management. The [native app](mobile-device-setup.md) checks active user, `driver.access`, profile status and eligibility for truck confirmation. It implements online Kratos sign-in and administrator device enrollment. Offline PIN credentials, password resets and shift records remain outside this phase.
+Driver status is operational profile status. Set it to Inactive and save to release the truck; account-wide status and role changes remain in user access management. The [native app](mobile-device-setup.md) checks active user, `driver.access`, profile status and eligibility for truck confirmation. It implements online Kratos sign-in, personal-phone vehicle selection, driving sessions and administrator conflict resolution. Administrative truck assignment remains separate from the vehicle currently being driven. Offline PIN credentials, password resets and shift records remain outside this phase.
 
 Assigning a truck requires an active profile, active user, active truck, unexpired licence and a complete, unexpired PrDP. These are operational checks, not a determination that a licence code legally permits a particular vehicle; record and verify licence suitability separately. Unassigned profiles may retain expired credentials so they can be renewed. Expired dates are labelled in the list/profile. Each truck has at most one current assigned driver. Historical assignment rows retain truck, driver, actor and start/end timestamps.
 
-## Trucks and devices
+## Vehicles and historical devices
 
 Required fields: identifier, registration, country, make, model, type, fuel, odometer and availability. Optional fields: year, VIN, engine number, transmission, axles, gross vehicle mass, tare, payload, tank capacity, licence disc/roadworthy/insurance expiries, insurer/policy, service interval/next service reading, device identifier/serial and notes. Mass, mileage and service readings are integer kg/km; fuel capacity is litres. VINs use 17 characters excluding I, O and Q. Registration, identifiers, VINs, licence numbers and device identifiers are normalized for case. VIN, registration, identifier, device identifier/serial and country+licence number conflicts are rejected.
 
@@ -45,4 +45,8 @@ PATCH inputs are complete editable form payloads. Unknown fields are rejected. U
 
 Run from the repository root: `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm test:e2e`, `pnpm test:admin`, `pnpm infra:test`, and `pnpm test:fleet`. Live checks require the migrated local stack and gateway. Fleet tests create random disposable data, use runtime-generated passwords, and remove their own application records, identities and mail. They cover account/profile atomicity, validation, duplicates, CSRF, concurrent assignment conflicts, device transfers, history, role-based write protection, and server-rendered routes.
 
-Confirmed drivers can explicitly start native [background location sharing](background-location.md), with a durable offline log and map-ready backend history. Device setup chooses trucks by registration/fleet search and retains the installation identity automatically.
+Drivers with an active driving session can explicitly start native [background location sharing](background-location.md), with a durable offline log and map-ready backend history. Drivers search active vehicles by registration or fleet number on their own phones; no device enrollment is required. The administrator screens show the current driving session separately from the planned driver assignment. Device inventory is retained as historical data.
+
+## Date-based plans
+
+Use [Driver scheduling](driver-scheduling.md) for weekly/monthly date plans, overrides and mismatch resolution. The former current-truck assignment is a profile/inventory record; daily schedules and confirmed driving sessions determine the personal-phone workflow.

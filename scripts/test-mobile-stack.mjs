@@ -1,28 +1,26 @@
 import assert from "node:assert/strict";
-import { randomBytes } from "node:crypto";
-import { testTelemetry } from "./test-telemetry-flow.mjs";
+import { randomBytes, randomUUID, createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { parseEnv } from "node:util";
-
 const root = new URL("../", import.meta.url),
   env = parseEnv(await readFile(new URL(".env", root), "utf8"));
 const require = createRequire(new URL("apps/api/package.json", root)),
   { Client } = require("pg");
 const db = new Client({ connectionString: env.DATABASE_URL });
-const tag = `MOBILE-${randomBytes(5).toString("hex").toUpperCase()}`,
+const tag = `PHONE-${randomBytes(5).toString("hex").toUpperCase()}`,
   password = randomBytes(24).toString("base64url");
-const truckIds = [],
+const users = [],
+  drivers = [],
+  trucks = [],
   identities = [],
-  userIds = [],
   tokens = [];
-let driverId;
 async function request(
   path,
   { method = "GET", body, token, device, headers = {} } = {},
   base = env.APP_URL,
 ) {
-  const response = await fetch(new URL(path, base), {
+  const r = await fetch(new URL(path, base), {
     method,
     signal: AbortSignal.timeout(15000),
     headers: {
@@ -32,73 +30,51 @@ async function request(
       ...(device ? { "X-Fleet-Device-Token": device } : {}),
       ...headers,
     },
-    body: body ? JSON.stringify(body) : undefined,
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
   return {
-    status: response.status,
-    body: await response.json().catch(() => null),
-    headers: response.headers,
+    status: r.status,
+    body: await r.json().catch(() => null),
+    headers: r.headers,
   };
 }
 const mobile = (path, options) => request(`api/mobile/${path}`, options);
-async function login(identifier, credential) {
-  return mobile("auth/login", {
+const login = async (identifier) => {
+  const r = await mobile("auth/login", {
     method: "POST",
-    body: { identifier, password: credential },
+    body: { identifier, password },
   });
-}
-const pass = (label) => console.log(`PASS ${label}`);
-await db.connect();
-try {
-  for (const header of ["Origin", "Cookie", "Sec-Fetch-Site"])
-    assert.equal(
-      (
-        await mobile("auth/login", {
-          method: "POST",
-          headers: { [header]: "browser" },
-          body: { identifier: "x", password: "x" },
-        })
-      ).status,
-      403,
-    );
-  assert.equal((await mobile("setup/trucks")).status, 401);
-  assert.equal((await mobile("device")).status, 401);
-  assert.equal(
-    (await login(env.BOOTSTRAP_ADMIN_EMAIL, "incorrect-password")).status,
-    401,
-  );
-  const admin = await login(
-    env.BOOTSTRAP_ADMIN_EMAIL,
-    env.BOOTSTRAP_ADMIN_PASSWORD,
-  );
-  assert.equal(admin.status, 200, JSON.stringify(admin.body));
-  const adminToken = admin.body.sessionToken;
-  tokens.push(adminToken);
-  assert.ok(adminToken);
-  assert.equal(admin.body.mode, "setup");
-  assert.match(admin.headers.get("cache-control"), /no-store/);
-  assert.equal(
-    (await mobile("auth/session", { token: adminToken })).status,
-    200,
-  );
-  assert.equal(
-    (await request("api/admin/trucks", { token: adminToken })).status,
-    401,
-    "Native bearer cannot replace browser cookie authorization",
-  );
-  pass(
-    "Native login, no-store sessions, browser rejection and browser/native credential separation",
-  );
-
-  const email = `${tag.toLowerCase()}@example.test`;
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  tokens.push(r.body.sessionToken);
+  return r.body;
+};
+const start = (
+  token,
+  truckId,
+  expectedOwnSessionId = null,
+  id = randomUUID(),
+) =>
+  mobile("driver/driving-sessions", {
+    method: "POST",
+    token,
+    body: { id, truckId, expectedOwnSessionId },
+  });
+const end = (token, sessionId) =>
+  mobile("driver/driving-sessions/end", {
+    method: "POST",
+    token,
+    body: { sessionId },
+  });
+const pass = (message) => console.log(`PASS ${message}`);
+async function fixture(n) {
+  const email = `${tag.toLowerCase()}-${n}@example.test`;
   const identity = await request(
     "admin/identities",
     {
       method: "POST",
       body: {
         schema_id: "fleet-user-v1",
-        state: "active",
-        traits: { email, name: { first: "Mobile", last: "Integration" } },
+        traits: { email, name: { first: "Personal", last: `Driver ${n}` } },
         credentials: { password: { config: { password } } },
         verifiable_addresses: [
           {
@@ -113,360 +89,496 @@ try {
     },
     env.KRATOS_ADMIN_URL,
   );
-  assert.equal(identity.status, 201, JSON.stringify(identity.body));
+  assert.equal(identity.status, 201);
   identities.push(identity.body.id);
   const user = (
     await db.query(
-      'INSERT INTO app.users ("kratosIdentityId",email,"firstName","lastName","isActive") VALUES ($1,$2,$3,$4,true) RETURNING id',
-      [identity.body.id, email, "Mobile", "Integration"],
+      'INSERT INTO app.users ("kratosIdentityId",email,"firstName","lastName","isActive") VALUES ($1,$2,\'Personal\',$3,true) RETURNING id',
+      [identity.body.id, email, `Driver ${n}`],
     )
   ).rows[0].id;
-  userIds.push(user);
+  users.push(user);
   await db.query(
     'INSERT INTO app.user_roles ("userId","roleId") SELECT $1,id FROM app.roles WHERE key=\'driver\'',
     [user],
   );
-  driverId = (
+  const id = (
     await db.query(
-      'INSERT INTO app.driver_profiles ("userId",identifier,phone,"licenceNumber","licenceCode","licenceCountry","licenceExpiresOn","prdpNumber","prdpExpiresOn",status) VALUES ($1,$2,$3,$4,\'EC\',\'ZA\',\'2099-01-01\',$4,\'2099-01-01\',\'active\') RETURNING id',
-      [user, `${tag}-D`, "+27 82 123 4567", tag],
+      'INSERT INTO app.driver_profiles ("userId",identifier,phone,"licenceNumber","licenceCode","licenceCountry","licenceExpiresOn","prdpNumber","prdpExpiresOn",status) VALUES ($1,$2,\'+27 82 123 4567\',$2,\'EC\',\'ZA\',\'2099-01-01\',$2,\'2099-01-01\',\'active\') RETURNING id',
+      [user, `${tag}-D${n}`],
     )
   ).rows[0].id;
-  for (let n = 1; n <= 2; n++)
-    truckIds.push(
+  drivers.push(id);
+  return { id, user, ...(await login(email)) };
+}
+await db.connect();
+try {
+  for (const name of ["Origin", "Cookie", "Sec-Fetch-Site"])
+    assert.equal(
+      (
+        await mobile("auth/login", {
+          method: "POST",
+          headers: { [name]: "browser" },
+          body: {},
+        })
+      ).status,
+      403,
+    );
+  assert.equal((await mobile("driver/vehicles")).status, 401);
+  assert.equal((await mobile("device")).status, 410);
+  const adminLogin = await mobile("auth/login", {
+    method: "POST",
+    body: {
+      identifier: env.BOOTSTRAP_ADMIN_EMAIL,
+      password: env.BOOTSTRAP_ADMIN_PASSWORD,
+    },
+  });
+  assert.equal(adminLogin.status, 200, JSON.stringify(adminLogin.body));
+  const admin = adminLogin.body.sessionToken;
+  tokens.push(admin);
+  assert.equal(adminLogin.body.mode, "admin");
+  const a = await fixture(1),
+    b = await fixture(2);
+  for (let n = 0; n < 3; n++)
+    trucks.push(
       (
         await db.query(
-          "INSERT INTO app.trucks (identifier,registration,\"registrationCountry\",make,model,category,\"fuelType\",\"odometerKm\",status) VALUES ($1,$1,'ZA','Volvo','FH','tractor','diesel',0,'active') RETURNING id",
-          [`${tag}-${n}`],
+          "INSERT INTO app.trucks (identifier,registration,\"registrationCountry\",make,model,category,\"fuelType\",\"odometerKm\",status) VALUES ($1,$1,'ZA','Volvo','FH','tractor','diesel',0,$2) RETURNING id",
+          [`${tag}-${n}`, n === 2 ? "maintenance" : "active"],
         )
       ).rows[0].id,
     );
-  const emailLogin = await login(email, password);
-  assert.equal(emailLogin.status, 200);
-  assert.equal(emailLogin.body.mode, "driver");
-  tokens.push(emailLogin.body.sessionToken);
-  const spoofed = await mobile("auth/login", {
-    method: "POST",
-    body: { identifier: email, password, mode: "setup" },
+  const list = await mobile(`driver/vehicles?q=${tag}`, {
+    token: a.sessionToken,
   });
-  assert.equal(spoofed.status, 200);
-  assert.equal(spoofed.body.mode, "driver");
-  tokens.push(spoofed.body.sessionToken);
-  const driverLogin = await login(`${tag}-D`, password);
-  assert.equal(driverLogin.status, 200);
-  assert.equal(driverLogin.body.mode, "driver");
-  const driverToken = driverLogin.body.sessionToken;
-  tokens.push(driverToken);
+  assert.equal(list.status, 200);
+  assert.equal(list.body.total, 2);
+  assert.ok(list.body.items.every((t) => !t.activeSession));
   assert.equal(
-    (await mobile("setup/trucks", { token: driverToken })).status,
-    403,
+    (await mobile("driver/context", { token: a.sessionToken })).body.truck,
+    null,
   );
+  assert.equal((await mobile("driver/vehicles", { token: admin })).status, 403);
+  assert.equal((await start(a.sessionToken, trucks[2])).status, 404);
+  pass(
+    "Personal-phone sign-in, permission boundaries and searchable active vehicles without enrollment",
+  );
+  const race = await Promise.all([
+    start(a.sessionToken, trucks[0]),
+    start(b.sessionToken, trucks[0]),
+  ]);
+  assert.deepEqual(race.map((r) => r.status).sort(), [200, 409]);
+  const winner = race[0].status === 200 ? a : b,
+    loser = winner === a ? b : a;
+  let session = race.find((r) => r.status === 200).body.drivingSession.id;
+  const flagged = await mobile("admin/vehicle-disputes", { token: admin });
+  assert.equal(flagged.status, 200);
+  let flag = flagged.body.items.find((d) => d.truck.id === trucks[0]);
+  assert.ok(flag);
   assert.equal(
     (
-      await mobile("setup/device", {
+      await mobile(`admin/vehicle-disputes/${flag.id}/resolve`, {
         method: "POST",
-        token: driverToken,
+        token: loser.sessionToken,
         body: {},
       })
     ).status,
     403,
   );
-  const list = await mobile(`setup/trucks?q=${tag}`, { token: adminToken });
-  assert.equal(list.status, 200);
-  assert.equal(list.body.total, 2);
-  assert.ok(list.body.items.every((t) => t.device === null));
-  const credential = randomBytes(32).toString("hex");
-  const enroll = {
-    truckId: truckIds[0],
-    deviceIdentifier: `${tag}-TAB`,
-    deviceToken: credential,
-    expectedDeviceId: null,
-    replaceExisting: false,
-  };
-  const enrolled = await mobile("setup/device", {
-    method: "POST",
-    token: adminToken,
-    body: enroll,
-  });
-  assert.equal(enrolled.status, 200, JSON.stringify(enrolled.body));
-  const deviceId = enrolled.body.device.id,
-    association = enrolled.body.associationId;
-  assert.ok(association);
-  assert.equal(enrolled.body.truck.id, truckIds[0]);
-  assert.ok(!JSON.stringify(enrolled.body).includes(credential));
-  const stored = (
-    await db.query(
-      'SELECT "credentialHash" FROM app.truck_devices WHERE id=$1',
-      [deviceId],
-    )
-  ).rows[0];
-  assert.notEqual(stored.credentialHash, credential);
-  assert.equal(stored.credentialHash.length, 64);
-  assert.equal((await mobile("device", { device: credential })).status, 200);
-  assert.equal(
-    (await mobile("device", { device: randomBytes(32).toString("hex") }))
-      .status,
-    401,
-  );
-  const context = await mobile("driver/truck", {
-    token: driverToken,
-    device: credential,
-  });
-  assert.equal(context.status, 200);
-  assert.equal(context.body.canConfirm, true);
-  assert.equal(context.body.confirmedAt, null);
-  const confirmed = await mobile("driver/truck/confirm", {
-    method: "POST",
-    token: driverToken,
-    device: credential,
-    body: { associationId: association },
-  });
-  assert.equal(confirmed.status, 200, JSON.stringify(confirmed.body));
-  assert.ok(confirmed.body.confirmedAt);
   assert.equal(
     (
-      await mobile("driver/truck/confirm", {
+      await mobile(`admin/vehicle-disputes/${flag.id}/resolve`, {
         method: "POST",
-        token: driverToken,
-        device: credential,
-        body: { associationId: association },
+        token: admin,
+        body: {
+          expectedActiveSessionId: randomUUID(),
+          resolution: "release_vehicle",
+          note: "Stale selection",
+        },
       })
-    ).body.confirmedAt,
-    confirmed.body.confirmedAt,
+    ).status,
+    409,
   );
+  assert.equal((await start(loser.sessionToken, trucks[0])).status, 409);
   assert.equal(
     (
       await db.query(
-        'SELECT count(*)::int n FROM app.driver_truck_confirmations WHERE "driverId"=$1',
-        [driverId],
+        'SELECT count(*)::int n FROM app.vehicle_disputes WHERE "truckId"=$1 AND "resolvedAt" IS NULL',
+        [trucks[0]],
       )
     ).rows[0].n,
     1,
-  );
-  assert.equal(
-    (
-      await db.query(
-        'SELECT "currentTruckId" FROM app.driver_profiles WHERE id=$1',
-        [driverId],
-      )
-    ).rows[0].currentTruckId,
-    null,
-    "Confirmation is not driver assignment or a shift",
   );
   pass(
-    "Verified Driver ID login, role checks, device enrollment, hashed credentials and idempotent registration confirmation",
+    "Concurrent requests allow one driver, persist a deduplicated flag and deny driver takeover/admin spoofing",
   );
-  await testTelemetry({
-    mobile,
-    request,
-    db,
-    env,
-    driverToken,
-    credential,
-    deviceId,
-    truckId: truckIds[0],
-    driverId,
-  });
-
-  const moved = { ...enroll, truckId: truckIds[1] };
+  assert.equal((await end(winner.sessionToken, session)).status, 200);
   assert.equal(
-    (
-      await mobile("setup/device", {
-        method: "POST",
-        token: adminToken,
-        body: moved,
-      })
-    ).status,
+    (await start(loser.sessionToken, trucks[0])).status,
     409,
-    "Moving a device requires explicit replacement",
+    "Open flags continue to require administrator resolution",
   );
-  const rebound = await mobile("setup/device", {
+  const clear = await mobile(`admin/vehicle-disputes/${flag.id}/resolve`, {
     method: "POST",
-    token: adminToken,
-    body: { ...moved, replaceExisting: true },
-  });
-  assert.equal(rebound.status, 200, JSON.stringify(rebound.body));
-  assert.notEqual(rebound.body.associationId, association);
-  assert.equal(
-    (
-      await mobile("driver/truck/confirm", {
-        method: "POST",
-        token: driverToken,
-        device: credential,
-        body: { associationId: association },
-      })
-    ).status,
-    409,
-    "Reject stale registration confirmation",
-  );
-  assert.equal(
-    (await mobile("driver/truck", { token: driverToken, device: credential }))
-      .body.confirmedAt,
-    null,
-  );
-  assert.equal(
-    (
-      await db.query(
-        'SELECT count(*)::int n FROM app.device_truck_associations WHERE "deviceId"=$1 AND "endedAt" IS NOT NULL',
-        [deviceId],
-      )
-    ).rows[0].n,
-    1,
-  );
-  const replacementCredential = randomBytes(32).toString("hex");
-  const replacement = {
-    ...moved,
-    deviceIdentifier: `${tag}-NEW`,
-    deviceToken: replacementCredential,
-    expectedDeviceId: deviceId,
-  };
-  assert.equal(
-    (
-      await mobile("setup/device", {
-        method: "POST",
-        token: adminToken,
-        body: { ...replacement, expectedDeviceId: null, replaceExisting: true },
-      })
-    ).status,
-    409,
-    "Reject stale inventory selection",
-  );
-  assert.equal(
-    (
-      await mobile("setup/device", {
-        method: "POST",
-        token: adminToken,
-        body: replacement,
-      })
-    ).status,
-    409,
-  );
-  const replaced = await mobile("setup/device", {
-    method: "POST",
-    token: adminToken,
-    body: { ...replacement, replaceExisting: true },
-  });
-  assert.equal(replaced.status, 200);
-  assert.equal(
-    (await mobile("device", { device: credential })).status,
-    401,
-    "Previous installation loses access",
-  );
-  assert.equal(
-    (await mobile("device", { device: replacementCredential })).status,
-    200,
-  );
-  const retry = await mobile("setup/device", {
-    method: "POST",
-    token: adminToken,
+    token: admin,
     body: {
-      ...replacement,
-      expectedDeviceId: replaced.body.device.id,
-      replaceExisting: true,
+      expectedActiveSessionId: null,
+      resolution: "release_vehicle",
+      note: "Both drivers contacted; vehicle is parked.",
     },
   });
-  assert.equal(retry.status, 200);
-  assert.equal(retry.body.associationId, replaced.body.associationId);
-  pass(
-    "Explicit device replacement, revoked old credentials, stale-state conflicts and immutable binding history",
+  assert.equal(clear.status, 200, JSON.stringify(clear.body));
+  const id = randomUUID();
+  let started = await start(loser.sessionToken, trucks[0], null, id);
+  assert.equal(started.status, 200);
+  session = started.body.drivingSession.id;
+  assert.equal(
+    (await start(loser.sessionToken, trucks[0], null, id)).body.drivingSession
+      .id,
+    session,
   );
-
+  assert.equal(
+    (await start(loser.sessionToken, trucks[1], randomUUID())).status,
+    409,
+  );
+  assert.equal(
+    (await start(loser.sessionToken, trucks[1], session)).status,
+    200,
+  );
+  const old = (
+    await db.query(
+      'SELECT "endedAt","endReason" FROM app.driving_sessions WHERE id=$1',
+      [session],
+    )
+  ).rows[0];
+  assert.ok(old.endedAt);
+  assert.equal(old.endReason, "vehicle_changed");
+  session = (await mobile("driver/context", { token: loser.sessionToken })).body
+    .drivingSession.id;
+  const successor = (
+    await db.query('SELECT "startedAt" FROM app.driving_sessions WHERE id=$1', [
+      session,
+    ])
+  ).rows[0];
+  assert.equal(
+    successor.startedAt.getTime(),
+    old.endedAt.getTime(),
+    "Vehicle switch uses one shared boundary",
+  );
+  pass(
+    "Driver release, administrator resolution, idempotent starts and atomic vehicle switching preserve history",
+  );
+  const streamId = randomUUID(),
+    credential = randomBytes(32).toString("hex");
+  const streamInput = {
+    streamId,
+    drivingSessionId: session,
+    uploadToken: credential,
+  };
+  const stream = await mobile("telemetry/streams", {
+    method: "POST",
+    token: loser.sessionToken,
+    body: streamInput,
+  });
+  assert.equal(stream.status, 200, JSON.stringify(stream.body));
+  assert.equal(
+    (
+      await mobile("telemetry/streams", {
+        method: "POST",
+        token: loser.sessionToken,
+        body: streamInput,
+      })
+    ).body.id,
+    streamId,
+  );
+  assert.equal(
+    (
+      await db.query(
+        'SELECT "uploadTokenHash" FROM app.tracking_streams WHERE id=$1',
+        [streamId],
+      )
+    ).rows[0].uploadTokenHash,
+    createHash("sha256").update(credential).digest("hex"),
+  );
+  const sample = (sequence, time = Date.now()) => ({
+    eventId: randomUUID(),
+    sequence,
+    kind: "location",
+    recordedAt: new Date(time).toISOString(),
+    data: {
+      coords: { latitude: -26.2, longitude: 28.04, accuracy: 5 },
+      mocked: false,
+    },
+  });
+  const config = await mobile("telemetry/config", { device: credential });
+  assert.equal(config.status, 200);
+  assert.equal(config.body.deviceId, streamId);
+  if (config.body.mqttUrl) {
+    const mqttRequire = createRequire(
+      new URL("apps/mobile/package.json", root),
+    );
+    const mqtt = mqttRequire("mqtt");
+    const socket = mqtt.connect(config.body.mqttUrl, {
+      username: streamId,
+      password: credential,
+      clientId: `fleet-${streamId}-test`,
+      reconnectPeriod: 0,
+    });
+    try {
+      await new Promise((resolve, reject) => {
+        const timer = setTimeout(
+          () => reject(new Error("MQTT connect timeout")),
+          10000,
+        );
+        socket.once("connect", () => {
+          clearTimeout(timer);
+          resolve();
+        });
+        socket.once("error", (error) => {
+          clearTimeout(timer);
+          reject(error);
+        });
+      });
+      await new Promise((resolve, reject) =>
+        socket.subscribe(
+          `fleet/devices/${streamId}/receipts`,
+          { qos: 1 },
+          (error) => (error ? reject(error) : resolve()),
+        ),
+      );
+      const mqttPoint = sample(100),
+        mqttBatch = { batchId: randomUUID(), streamId, events: [mqttPoint] };
+      const receipt = await new Promise((resolve, reject) => {
+        const timer = setTimeout(
+          () => reject(new Error("MQTT receipt timeout")),
+          10000,
+        );
+        socket.on("message", (_topic, payload) => {
+          const r = JSON.parse(payload.toString());
+          if (r.batchId === mqttBatch.batchId) {
+            clearTimeout(timer);
+            resolve(r);
+          }
+        });
+        socket.publish(
+          `fleet/devices/${streamId}/locations`,
+          JSON.stringify(mqttBatch),
+          { qos: 1, retain: false },
+        );
+      });
+      assert.deepEqual(receipt.acceptedIds, [mqttPoint.eventId]);
+    } finally {
+      await new Promise((resolve) => socket.end(true, resolve));
+    }
+    pass(
+      "Personal driving streams authenticate MQTT and receive database-committed receipts",
+    );
+  }
+  const point = sample(1),
+    batch = { batchId: randomUUID(), streamId, events: [point] };
+  let receipt = await mobile("telemetry/batches", {
+    method: "POST",
+    device: credential,
+    body: batch,
+  });
+  assert.equal(receipt.status, 200, JSON.stringify(receipt.body));
+  assert.deepEqual(receipt.body.acceptedIds, [point.eventId]);
+  assert.deepEqual(
+    (
+      await mobile("telemetry/batches", {
+        method: "POST",
+        device: credential,
+        body: batch,
+      })
+    ).body.acceptedIds,
+    [point.eventId],
+  );
+  const offlinePoint = sample(2);
+  assert.equal((await end(loser.sessionToken, session)).status, 200);
+  const cutoff = (
+    await db.query('SELECT "endedAt" FROM app.tracking_streams WHERE id=$1', [
+      streamId,
+    ])
+  ).rows[0].endedAt;
+  const afterRelease = sample(3, cutoff.getTime() + 1000);
+  receipt = await mobile("telemetry/batches", {
+    method: "POST",
+    device: credential,
+    body: {
+      batchId: randomUUID(),
+      streamId,
+      events: [offlinePoint, afterRelease],
+    },
+  });
+  assert.equal(receipt.status, 200, JSON.stringify(receipt.body));
+  assert.deepEqual(receipt.body.acceptedIds, [offlinePoint.eventId]);
+  assert.equal(receipt.body.rejected[0].eventId, afterRelease.eventId);
+  assert.equal(receipt.body.captureAllowed, false);
+  assert.equal(
+    (
+      await mobile("telemetry/batches", {
+        method: "POST",
+        device: randomBytes(32).toString("hex"),
+        body: batch,
+      })
+    ).status,
+    401,
+  );
+  pass(
+    "Per-session tracking credentials, durable receipts, duplicate retries and delayed uploads respect the release boundary",
+  );
+  const current = await start(a.sessionToken, trucks[0]);
+  assert.equal(current.status, 200);
+  const own = current.body.drivingSession.id;
+  assert.equal(
+    (
+      await mobile(`driver/vehicles/${trucks[0]}/flag`, {
+        method: "POST",
+        token: b.sessionToken,
+        body: { sessionId: randomUUID() },
+      })
+    ).status,
+    409,
+  );
+  assert.equal(
+    (
+      await mobile(`driver/vehicles/${trucks[0]}/flag`, {
+        method: "POST",
+        token: b.sessionToken,
+        body: { sessionId: own },
+      })
+    ).status,
+    200,
+  );
+  flag = (
+    await mobile("admin/vehicle-disputes", { token: admin })
+  ).body.items.find((d) => d.truck.id === trucks[0]);
+  const resolved = await mobile(`admin/vehicle-disputes/${flag.id}/resolve`, {
+    method: "POST",
+    token: admin,
+    body: {
+      expectedActiveSessionId: own,
+      resolution: "release_vehicle",
+      note: "Dispute investigated; current driver has left the vehicle.",
+    },
+  });
+  assert.equal(resolved.status, 200);
+  assert.ok(
+    (
+      await db.query('SELECT "endedAt" FROM app.driving_sessions WHERE id=$1', [
+        own,
+      ])
+    ).rows[0].endedAt,
+  );
+  assert.equal(
+    (await mobile("driver/context", { token: a.sessionToken })).body
+      .drivingSession,
+    null,
+  );
+  const audit = (
+    await db.query(
+      'SELECT "resolvedById",note FROM app.vehicle_disputes WHERE id=$1',
+      [flag.id],
+    )
+  ).rows[0];
+  assert.ok(audit.resolvedById);
+  assert.ok(audit.note);
   await db.query(
     "UPDATE app.driver_profiles SET \"licenceExpiresOn\"='2000-01-01' WHERE id=$1",
-    [driverId],
+    [a.id],
   );
-  const expired = await mobile("driver/truck", {
-    token: driverToken,
-    device: replacementCredential,
-  });
-  assert.equal(expired.body.canConfirm, false);
-  assert.equal(
-    (
-      await mobile("driver/truck/confirm", {
-        method: "POST",
-        token: driverToken,
-        device: replacementCredential,
-        body: { associationId: replaced.body.associationId },
-      })
-    ).status,
-    400,
-  );
+  assert.equal((await start(a.sessionToken, trucks[0])).status, 400);
   await db.query(
-    "UPDATE app.driver_profiles SET status='inactive' WHERE id=$1",
-    [driverId],
+    "UPDATE app.driver_profiles SET \"licenceExpiresOn\"='2099-01-01' WHERE id=$1",
+    [a.id],
+  );
+  const original = await start(b.sessionToken, trucks[0]);
+  assert.equal(original.status, 200);
+  const renewed = await login(`${tag}-D2`);
+  const resumed = await start(
+    renewed.sessionToken,
+    trucks[0],
+    original.body.drivingSession.id,
+  );
+  assert.equal(resumed.status, 200, JSON.stringify(resumed.body));
+  assert.notEqual(
+    resumed.body.drivingSession.id,
+    original.body.drivingSession.id,
   );
   assert.equal(
-    (
-      await mobile("driver/truck", {
-        token: driverToken,
-        device: replacementCredential,
-      })
-    ).status,
+    (await end(a.sessionToken, resumed.body.drivingSession.id)).status,
     403,
-  );
-  await db.query(
-    "UPDATE app.driver_profiles SET status='active',\"licenceExpiresOn\"='2099-01-01' WHERE id=$1",
-    [driverId],
-  );
-  await db.query('DELETE FROM app.user_roles WHERE "userId"=$1', [user]);
-  assert.equal(
-    (
-      await mobile("driver/truck", {
-        token: driverToken,
-        device: replacementCredential,
-      })
-    ).status,
-    403,
-  );
-  await db.query('UPDATE app.users SET "isActive"=false WHERE id=$1', [user]);
-  assert.equal(
-    (await mobile("auth/session", { token: driverToken })).status,
-    403,
+    "Another driver cannot release this vehicle",
   );
   assert.equal(
-    (await mobile("auth/session", { method: "DELETE", token: driverToken }))
+    (await mobile("auth/session", { method: "DELETE", token: b.sessionToken }))
       .status,
     204,
   );
   assert.equal(
-    (await mobile("auth/session", { token: driverToken })).status,
+    (
+      await db.query(
+        'SELECT count(*)::int n FROM app.driving_sessions WHERE "driverId"=$1 AND "endedAt" IS NULL',
+        [b.id],
+      )
+    ).rows[0].n,
+    1,
+    "Logout of an older sign-in cannot release its successor",
+  );
+  assert.equal(
+    (
+      await mobile("auth/session", {
+        method: "DELETE",
+        token: renewed.sessionToken,
+      })
+    ).status,
+    204,
+  );
+  assert.equal(
+    (
+      await db.query(
+        'SELECT count(*)::int n FROM app.driving_sessions WHERE "driverId"=$1 AND "endedAt" IS NULL',
+        [b.id],
+      )
+    ).rows[0].n,
+    0,
+  );
+  assert.equal(
+    (await mobile("auth/session", { token: b.sessionToken })).status,
     401,
   );
   pass(
-    "Expired eligibility, deactivation and role revocation take effect immediately; logout revokes the Kratos token",
+    "Administrator resolution is audited; current eligibility and logout release remain enforced",
   );
 } finally {
   for (const token of tokens)
     await mobile("auth/session", { method: "DELETE", token }).catch(
       () => undefined,
     );
-  if (driverId) {
+  if (drivers.length) {
     await db.query(
-      'DELETE FROM app.tracking_events WHERE "streamId" IN (SELECT id FROM app.tracking_streams WHERE "driverId"=$1)',
-      [driverId],
+      'DELETE FROM app.tracking_events WHERE "streamId" IN (SELECT id FROM app.tracking_streams WHERE "driverId"=ANY($1::uuid[]))',
+      [drivers],
     );
-    await db.query('DELETE FROM app.tracking_streams WHERE "driverId"=$1', [
-      driverId,
-    ]);
     await db.query(
-      'DELETE FROM app.driver_truck_confirmations WHERE "driverId"=$1',
-      [driverId],
+      'DELETE FROM app.tracking_streams WHERE "driverId"=ANY($1::uuid[])',
+      [drivers],
     );
-    await db.query("DELETE FROM app.driver_profiles WHERE id=$1", [driverId]);
-  }
-  if (truckIds.length) {
     await db.query(
-      'DELETE FROM app.device_truck_associations WHERE "truckId"=ANY($1::uuid[])',
-      [truckIds],
+      'DELETE FROM app.vehicle_disputes WHERE "truckId"=ANY($1::uuid[])',
+      [trucks],
     );
-    await db.query("DELETE FROM app.truck_devices WHERE identifier LIKE $1", [
-      `${tag}%`,
-    ]);
-    await db.query("DELETE FROM app.trucks WHERE id=ANY($1::uuid[])", [
-      truckIds,
+    await db.query(
+      'DELETE FROM app.driving_sessions WHERE "driverId"=ANY($1::uuid[])',
+      [drivers],
+    );
+    await db.query("DELETE FROM app.driver_profiles WHERE id=ANY($1::uuid[])", [
+      drivers,
     ]);
   }
-  for (const id of userIds)
+  if (trucks.length)
+    await db.query("DELETE FROM app.trucks WHERE id=ANY($1::uuid[])", [trucks]);
+  for (const id of users)
     await db.query("DELETE FROM app.users WHERE id=$1", [id]);
   for (const id of identities)
     await request(

@@ -24,8 +24,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     );
   return {
     ...config,
-    name: "VHH Fleet",
-    slug: "vhh-fleet",
+    name: "Fleet",
+    slug: "fleet",
     extra: { apiUrl },
     ios: {
       ...config.ios,

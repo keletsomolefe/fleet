@@ -1,9 +1,9 @@
-import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
+import { useState, type FormEvent } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -11,9 +11,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { PageError } from '@/components/page-error'
-import { can, type AdminSession } from '@/lib/auth'
+} from "@/components/ui/table";
+import { PageError } from "@/components/page-error";
+import { can, type AdminSession } from "@/lib/auth";
 import {
   expired,
   type Driver,
@@ -21,7 +21,7 @@ import {
   type FleetList as List,
   type FleetKind,
   type Search,
-} from '@/lib/fleet'
+} from "@/lib/fleet";
 
 export function FleetList({
   kind,
@@ -29,44 +29,44 @@ export function FleetList({
   session,
   search,
 }: {
-  kind: FleetKind
-  result: { data: List<Driver> | List<Truck> | null; error: string | null }
-  session: AdminSession
-  search: Search
+  kind: FleetKind;
+  result: { data: List<Driver> | List<Truck> | null; error: string | null };
+  session: AdminSession;
+  search: Search;
 }) {
-  const [q, setQ] = useState(search.q)
-  const navigate = useNavigate()
-  if (!result.data) return <PageError message={result.error!} />
-  const { items, total, page, pageSize } = result.data
-  const isDriver = kind === 'drivers'
-  const title = isDriver ? 'Drivers' : 'Trucks and devices'
+  const [q, setQ] = useState(search.q);
+  const navigate = useNavigate();
+  if (!result.data) return <PageError message={result.error!} />;
+  const { items, total, page, pageSize } = result.data;
+  const isDriver = kind === "drivers";
+  const title = isDriver ? "Drivers" : "Vehicles";
   const change = (s: Search) =>
     void navigate({
-      to: isDriver ? '/admin/drivers' : '/admin/trucks',
+      to: isDriver ? "/admin/drivers" : "/admin/trucks",
       search: s,
-    })
+    });
   function submit(e: FormEvent) {
-    e.preventDefault()
-    change({ ...search, q, page: 1 })
+    e.preventDefault();
+    change({ ...search, q, page: 1 });
   }
   return (
     <>
       <div className="flex min-h-[88px] flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
           <p className="text-[11px] text-muted-foreground uppercase">
-            {isDriver ? 'People & access' : 'Trucks & devices'}
+            {isDriver ? "People & access" : "Vehicles"}
           </p>
           <h1>{title}</h1>
           <p className="text-xs text-muted-foreground">
             {isDriver
-              ? 'Manage driver profiles and truck assignments'
-              : 'Manage fleet vehicles and their devices'}
+              ? "Manage driver profiles and truck assignments"
+              : "Manage fleet vehicles"}
           </p>
         </div>
         {can(session, `${kind}.write`) && (
           <Button asChild className="w-full sm:w-[248px]">
-            <Link to={isDriver ? '/admin/drivers/new' : '/admin/trucks/new'}>
-              + Add {isDriver ? 'driver' : 'truck / device'}
+            <Link to={isDriver ? "/admin/drivers/new" : "/admin/trucks/new"}>
+              + Add {isDriver ? "driver" : "vehicle"}
             </Link>
           </Button>
         )}
@@ -77,8 +77,8 @@ export function FleetList({
             aria-label={`Search ${kind}`}
             placeholder={
               isDriver
-                ? 'Search name, identifier or email'
-                : 'Search truck, registration or VIN'
+                ? "Search name, identifier or email"
+                : "Search truck, registration or VIN"
             }
             value={q}
             maxLength={200}
@@ -105,10 +105,10 @@ export function FleetList({
         <div className="overflow-hidden rounded-xl border">
           <div className="flex items-center justify-between gap-4 p-4">
             <h2 className="text-sm font-semibold">
-              {isDriver ? 'Drivers' : 'Fleet vehicles'}
+              {isDriver ? "Drivers" : "Fleet vehicles"}
             </h2>
             <p className="text-[11px] text-muted-foreground">
-              {total} {total === 1 ? 'record' : 'records'}
+              {total} {total === 1 ? "record" : "records"}
             </p>
           </div>
           <div className="divide-y sm:hidden">
@@ -118,10 +118,10 @@ export function FleetList({
             {!items.length && (
               <p className="p-8 text-center text-xs text-muted-foreground">
                 {search.q || search.status
-                  ? 'No matching records'
+                  ? "No matching records"
                   : isDriver
-                    ? 'No drivers yet'
-                    : 'No trucks yet'}
+                    ? "No drivers yet"
+                    : "No trucks yet"}
               </p>
             )}
           </div>
@@ -129,8 +129,14 @@ export function FleetList({
             <TableHeader className="bg-muted">
               <TableRow>
                 {(isDriver
-                  ? ['Driver', 'Identifier', 'Current truck', 'Status', '']
-                  : ['Truck', 'Registration', 'Device', 'Availability', '']
+                  ? ["Driver", "Identifier", "Assigned vehicle", "Status", ""]
+                  : [
+                      "Vehicle",
+                      "Registration",
+                      "Driving now",
+                      "Availability",
+                      "",
+                    ]
                 ).map((c, i) => (
                   <TableHead key={i} className="px-4 text-[11px] uppercase">
                     {c || <span className="sr-only">Open profile</span>}
@@ -155,10 +161,10 @@ export function FleetList({
                     className="h-40 text-center text-xs text-muted-foreground"
                   >
                     {search.q || search.status
-                      ? 'No matching records'
+                      ? "No matching records"
                       : isDriver
-                        ? 'No drivers yet'
-                        : 'No trucks yet'}
+                        ? "No drivers yet"
+                        : "No trucks yet"}
                   </TableCell>
                 </TableRow>
               )}
@@ -188,7 +194,7 @@ export function FleetList({
         </div>
       </Card>
     </>
-  )
+  );
 }
 function DriverRow({ driver: d }: { driver: Driver }) {
   return (
@@ -207,12 +213,12 @@ function DriverRow({ driver: d }: { driver: Driver }) {
       <TableCell className="px-4">
         {d.currentTruck
           ? `${d.currentTruck.identifier} · ${d.currentTruck.registration}`
-          : 'Unassigned'}
+          : "Unassigned"}
       </TableCell>
       <TableCell className="px-4">
         <div className="flex flex-col items-start gap-1">
           <Badge variant="outline">
-            {d.status === 'active' ? 'Active' : 'Inactive'}
+            {d.status === "active" ? "Active" : "Inactive"}
           </Badge>
           {!d.user.isActive && (
             <span className="text-[11px] text-destructive">
@@ -234,7 +240,7 @@ function DriverRow({ driver: d }: { driver: Driver }) {
         </Button>
       </TableCell>
     </>
-  )
+  );
 }
 function TruckRow({ truck: t }: { truck: Truck }) {
   return (
@@ -253,7 +259,7 @@ function TruckRow({ truck: t }: { truck: Truck }) {
       </TableCell>
       <TableCell className="px-4">{t.registration}</TableCell>
       <TableCell className="px-4">
-        {t.device?.identifier ?? 'Unbound'}
+        {t.currentDriving?.driverName ?? "No active driver"}
       </TableCell>
       <TableCell className="px-4">
         <Badge variant="outline">
@@ -277,25 +283,25 @@ function TruckRow({ truck: t }: { truck: Truck }) {
         </Button>
       </TableCell>
     </>
-  )
+  );
 }
 
 function MobileRecord({
   kind,
   item,
 }: {
-  kind: FleetKind
-  item: Driver | Truck
+  kind: FleetKind;
+  item: Driver | Truck;
 }) {
   const style =
-    'block space-y-3 p-4 text-xs hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring'
+    "block space-y-3 p-4 text-xs hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring";
   const badge = (
     <Badge variant="outline">
       {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
     </Badge>
-  )
-  if (kind === 'drivers') {
-    const d = item as Driver
+  );
+  if (kind === "drivers") {
+    const d = item as Driver;
     return (
       <Link
         to="/admin/drivers/$driverId"
@@ -313,7 +319,7 @@ function MobileRecord({
         <p>
           {d.currentTruck
             ? `${d.currentTruck.identifier} · ${d.currentTruck.registration}`
-            : 'Unassigned'}
+            : "Unassigned"}
         </p>
         {!d.user.isActive && (
           <p className="text-destructive">Account inactive</p>
@@ -322,9 +328,9 @@ function MobileRecord({
           <p className="text-destructive">Licence / PrDP expired</p>
         )}
       </Link>
-    )
+    );
   }
-  const t = item as Truck
+  const t = item as Truck;
   return (
     <Link
       to="/admin/trucks/$truckId"
@@ -340,7 +346,7 @@ function MobileRecord({
       </p>
       <p>{t.registration}</p>
       <p className="break-all text-muted-foreground">
-        Device: {t.device?.identifier ?? 'Unbound'}
+        Driving now: {t.currentDriving?.driverName ?? "No active driver"}
       </p>
       {[
         t.licenceDiscExpiresOn,
@@ -348,5 +354,5 @@ function MobileRecord({
         t.insuranceExpiresOn,
       ].some(expired) && <p className="text-destructive">Compliance expired</p>}
     </Link>
-  )
+  );
 }

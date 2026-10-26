@@ -41,7 +41,7 @@ export function TruckForm({
     try {
       const result = await saveFleet(
         'trucks',
-        { ...readFields(data, truckGroups), notes: data.get('notes') || null },
+        { ...readFields(data, truckGroups), deviceIdentifier: truck?.device?.identifier ?? null, deviceSerialNumber: truck?.device?.serialNumber ?? null, notes: data.get('notes') || null },
         session.csrfToken,
         truck?.id,
       )
@@ -72,17 +72,17 @@ export function TruckForm({
       <div className="flex min-h-[88px] flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
           <p className="text-[11px] text-muted-foreground uppercase">
-            Trucks & devices
+            Vehicles
           </p>
           <h1>
             {truck
               ? `${truck.identifier} · ${truck.registration}`
-              : 'Add truck and device'}
+              : 'Add vehicle'}
           </h1>
           <p className="text-xs text-muted-foreground">
             {truck
               ? `${truck.make} ${truck.model}`
-              : 'Vehicle details and device association'}
+              : 'Vehicle details'}
           </p>
         </div>
         <Button asChild variant="outline">
@@ -104,7 +104,7 @@ export function TruckForm({
       <form onSubmit={submit} className="space-y-4">
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
           <fieldset disabled={busy || !writable} className="min-w-0 space-y-4">
-            {truckGroups.map((g) => (
+            {truckGroups.filter(g => g.title !== 'Truck device').map((g) => (
               <FieldGroup key={g.title} title={g.title}>
                 {g.fields.map((f) => (
                   <FleetField
@@ -130,18 +130,8 @@ export function TruckForm({
           </fieldset>
           <aside className="space-y-4">
             <Card className="gap-4 rounded-xl p-5 shadow-none">
-              <h2 className="flex items-center gap-3 text-sm font-semibold">
-                <img src="/design/truck.svg" alt="" width={24} height={24} />
-                Truck device
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                {truck?.device?.identifier ?? 'No device bound'}
-              </p>
-              {truck?.device?.serialNumber && (
-                <p className="text-xs text-muted-foreground">
-                  Serial: {truck.device.serialNumber}
-                </p>
-              )}
+              <h2 className="text-sm font-semibold">Driving now</h2>
+              <p className="text-xs text-muted-foreground">{truck?.currentDriving?.driverName ?? 'No active driver'}</p>
             </Card>
             {truck && (
               <Card className="gap-4 rounded-xl p-5 shadow-none">
@@ -210,7 +200,7 @@ export function TruckForm({
       </form>
       {truck && (
         <Card className="gap-4 rounded-xl p-6 shadow-none">
-          <h2 className="text-sm font-semibold">Device binding history</h2>
+          <h2 className="text-sm font-semibold">Previous device history</h2>
           {truck.deviceHistory?.length ? (
             <ul className="divide-y">
               {truck.deviceHistory.map((h) => (

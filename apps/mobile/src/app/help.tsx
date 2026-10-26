@@ -19,8 +19,7 @@ export default function Help() {
       <View style={styles.card}>
         <Copy small>
           Ask your administrator to check your email or Driver ID, account
-          access or password. To attach or change the truck, an administrator
-          signs in here.
+          access or password. Vehicle conflicts are reviewed by your administrator.
         </Copy>
       </View>
     </Screen>

@@ -2,7 +2,7 @@
 
 Design source: [VHH Web Admin](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=3-3&m=dev).
 
-The web application uses shadcn/ui with Radix, Tailwind CSS 4, local Montserrat fonts and the VHH theme. Figma SVG exports are in `apps/web/public/design`. The desktop sidebar is 240px and the header is 64px. Small screens use a drawer; stacked authentication cards and branding are centred.
+The web application uses shadcn/ui with Radix, Tailwind CSS 4, local Montserrat fonts and the existing monochrome theme. The active product name is Fleet; its editable SVG logos are in `assets/brand/fleet`, with web copies in `apps/web/public/brand`. Original VHH artwork and Figma SVG exports remain in `apps/web/public/design`. The desktop sidebar is 240px and the header is 64px. Small screens use a drawer; stacked authentication cards and branding are centred.
 
 ## Account access
 
@@ -20,7 +20,7 @@ A user can hold several roles. Effective permissions are the union of their role
 | Driver | `driver.access` |
 | Terminal operator | `terminal.access` |
 
-The Driver role enables the [native driver sign-in and truck confirmation flow](mobile-device-setup.md). Terminal operator access remains reserved for its future surface. Neither role grants admin access on its own. For example, Driver + Administrator combines driving and administration permissions on one user.
+The Driver role enables the [personal-phone sign-in and vehicle selection flow](mobile-device-setup.md). Terminal operator access remains reserved for its future surface. Neither role grants admin access on its own. For example, Driver + Administrator combines driving and administration permissions on one user.
 
 `/admin/roles` displays the role bundles and their permission catalog. Initial bundles are maintained through explicit migrations; custom role editing and per-user permission overrides are not included. Add new capability keys only when their corresponding feature is introduced, and enforce them on its API as well as its UI. Role names are presentation; normal authorization checks permission keys.
 

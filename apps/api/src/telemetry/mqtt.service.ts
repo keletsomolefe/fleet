@@ -1,3 +1,4 @@
+import { OperationsEventsService } from '../operations/operations-events.service.js';
 import { createServer, type Server } from 'node:http';
 import {
   Inject,
@@ -19,9 +20,16 @@ export class FleetMqttService implements OnModuleInit, OnModuleDestroy {
     Client,
     { deviceId: string; token: string }
   >();
+  private readonly admins = new Map<
+    Client,
+    { userId: string; timer: ReturnType<typeof setTimeout> }
+  >();
+  private publishAttention?: () => void;
   private readonly logger = new Logger(FleetMqttService.name);
   constructor(
     @Inject(TelemetryService) private readonly telemetry: TelemetryService,
+    @Inject(OperationsEventsService)
+    private readonly events: OperationsEventsService,
   ) {}
   async onModuleInit() {
     if (process.env.MQTT_ENABLED !== 'true' || process.env.NODE_ENV === 'test')
@@ -36,6 +44,22 @@ export class FleetMqttService implements OnModuleInit, OnModuleDestroy {
     this.broker = broker;
     broker.authenticate = (client, username, password, done) => {
       const token = password?.toString() ?? '';
+      if (username?.startsWith('admin:')) {
+        void this.events
+          .authenticate(token, username)
+          .then((userId) => {
+            if (!client.id.startsWith(`fleet-admin-${userId}-`)) {
+              done(null, false);
+              return;
+            }
+            const timer = setTimeout(() => client.close(), 120000);
+            timer.unref();
+            this.admins.set(client, { userId, timer });
+            done(null, true);
+          })
+          .catch(() => done(null, false));
+        return;
+      }
       void this.telemetry
         .device(token)
         .then((d) => {
@@ -49,6 +73,16 @@ export class FleetMqttService implements OnModuleInit, OnModuleDestroy {
         .catch(() => done(null, false));
     };
     broker.authorizeSubscribe = (client, sub, done) => {
+      const admin = this.admins.get(client);
+      if (admin) {
+        done(
+          null,
+          sub.topic === `fleet/admin/${admin.userId}/attention` && sub.qos <= 1
+            ? sub
+            : null,
+        );
+        return;
+      }
       const identity = this.identities.get(client);
       done(
         null,
@@ -60,6 +94,11 @@ export class FleetMqttService implements OnModuleInit, OnModuleDestroy {
       );
     };
     broker.authorizeForward = (client, packet) => {
+      const admin = this.admins.get(client);
+      if (admin)
+        return packet.topic === `fleet/admin/${admin.userId}/attention`
+          ? packet
+          : null;
       const identity = this.identities.get(client);
       return identity &&
         packet.topic === `fleet/devices/${identity.deviceId}/receipts`
@@ -111,6 +150,30 @@ export class FleetMqttService implements OnModuleInit, OnModuleDestroy {
           client.close();
         });
     };
+    this.publishAttention = () => {
+      for (const topic of new Set(
+        [...this.admins.values()].map(
+          (a) => `fleet/admin/${a.userId}/attention`,
+        ),
+      ))
+        broker.publish(
+          {
+            cmd: 'publish',
+            qos: 1,
+            retain: false,
+            dup: false,
+            topic,
+            payload: Buffer.from('{"type":"attention.changed"}'),
+          },
+          () => undefined,
+        );
+    };
+    this.events.changes.on('changed', this.publishAttention);
+    broker.on('clientDisconnect', (client) => {
+      const a = this.admins.get(client);
+      if (a) clearTimeout(a.timer);
+      this.admins.delete(client);
+    });
     broker.on('clientError', () => undefined);
     broker.on('connectionError', () => undefined);
     const server = createServer((_req, res) => {
@@ -146,6 +209,10 @@ export class FleetMqttService implements OnModuleInit, OnModuleDestroy {
     );
   }
   async onModuleDestroy() {
+    if (this.publishAttention)
+      this.events.changes.off('changed', this.publishAttention);
+    for (const a of this.admins.values()) clearTimeout(a.timer);
+    this.admins.clear();
     for (const socket of this.sockets?.clients ?? []) socket.terminate();
     await new Promise<void>((resolve) =>
       this.broker ? this.broker.close(() => resolve()) : resolve(),

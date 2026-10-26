@@ -18,6 +18,7 @@ import {
   DriverTruckAssignment,
   DeviceTruckAssociation,
 } from './fleet.entity.js';
+import { DrivingSession } from '../mobile/driving.entity.js';
 import { parseDriver, parseSearch, parseTruck } from './fleet.input.js';
 
 @Injectable()
@@ -75,15 +76,37 @@ export class FleetService {
           })
           .getMany()
       : [];
+    const driving = items.length
+      ? await this.db
+          .getRepository(DrivingSession)
+          .createQueryBuilder('s')
+          .leftJoinAndSelect('s.driver', 'p')
+          .leftJoinAndSelect('p.user', 'u')
+          .where('s.truckId IN (:...ids)', { ids: items.map((t) => t.id) })
+          .andWhere('s.endedAt IS NULL')
+          .getMany()
+      : [];
     return {
       items: items.map((t) => ({
         ...t,
+        currentDriving: this.drivingView(
+          driving.find((s) => s.truckId === t.id) ?? null,
+        ),
         device: devices.find((d) => d.currentTruckId === t.id) ?? null,
       })),
       total,
       page: search.page,
       pageSize: 20,
     };
+  }
+  private drivingView(s: DrivingSession | null) {
+    return s
+      ? {
+          id: s.id,
+          driverName: `${s.driver.user.firstName} ${s.driver.user.lastName}`,
+          startedAt: s.startedAt,
+        }
+      : null;
   }
   async getTruck(id: string) {
     const truck = await this.db.getRepository(Truck).findOneBy({ id });
@@ -99,8 +122,15 @@ export class FleetService {
         order: { startedAt: 'DESC' },
       }),
     ]);
+    const currentDriving = await this.db
+      .getRepository(DrivingSession)
+      .findOne({
+        where: { truckId: id, endedAt: IsNull() },
+        relations: { driver: { user: true } },
+      });
     return {
       ...truck,
+      currentDriving: this.drivingView(currentDriving),
       device,
       driver: driver
         ? {
@@ -126,6 +156,14 @@ export class FleetService {
       )
         throw new ConflictException(
           'Unassign the driver before changing truck availability.',
+        );
+      if (
+        id &&
+        input.status !== 'active' &&
+        (await m.existsBy(DrivingSession, { truckId: id, endedAt: IsNull() }))
+      )
+        throw new ConflictException(
+          'Finish the driving session before changing vehicle availability.',
         );
       const truck = await m.save(
         Truck,

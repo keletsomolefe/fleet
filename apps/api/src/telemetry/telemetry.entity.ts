@@ -13,12 +13,13 @@ import {
   DriverProfile,
   TruckDevice,
 } from '../fleet/fleet.entity.js';
+import { DrivingSession } from '../mobile/driving.entity.js';
 
 @Entity({ name: 'tracking_streams' })
 @Index('idx_tracking_stream_device', ['deviceId', 'startedAt'])
 export class TrackingStream {
   @PrimaryColumn('uuid') id: string;
-  @Column('uuid') deviceId: string;
+  @Column({ type: 'uuid', nullable: true }) deviceId: string | null;
   @ManyToOne(() => TruckDevice, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'deviceId' })
   device: Relation<TruckDevice>;
@@ -26,10 +27,16 @@ export class TrackingStream {
   @ManyToOne(() => DriverProfile, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'driverId' })
   driver: Relation<DriverProfile>;
-  @Column('uuid') associationId: string;
+  @Column({ type: 'uuid', nullable: true }) associationId: string | null;
   @ManyToOne(() => DeviceTruckAssociation, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'associationId' })
   association: Relation<DeviceTruckAssociation>;
+  @Column({ type: 'uuid', nullable: true }) drivingSessionId: string | null;
+  @ManyToOne(() => DrivingSession, { nullable: true, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'drivingSessionId' })
+  drivingSession: Relation<DrivingSession> | null;
+  @Column({ type: 'varchar', length: 64, nullable: true, select: false })
+  uploadTokenHash: string | null;
   @Column('uuid') kratosSessionId: string;
   @CreateDateColumn({ type: 'timestamptz' }) startedAt: Date;
   @Column({ type: 'timestamptz', nullable: true }) endedAt: Date | null;

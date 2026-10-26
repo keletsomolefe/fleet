@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
@@ -136,7 +137,7 @@ export function Screen({
   actions?: ReactNode;
   registration?: string;
 }) {
-  const { device } = useFleet(),
+  const { driver, session, attention } = useFleet(),
     network = useNetworkState();
   const online =
     network.isConnected === true && network.isInternetReachable !== false;
@@ -157,44 +158,79 @@ export function Screen({
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <Image
-            source={require("../../assets/brand/monogram.svg")}
+            source={require("../../assets/brand/fleet-mark.svg")}
             contentFit="contain"
             contentPosition="center"
-            accessibilityLabel="VHH"
-            style={{ width: 34, height: 30, flexShrink: 0 }}
+            accessible={false}
+            style={{ width: 30, height: 30, flexShrink: 0 }}
           />
           <Text style={[styles.text, { fontFamily: "Montserrat_600SemiBold" }]}>
-            VHH FLEET
+            Fleet
           </Text>
         </View>
-        <View
-          accessibilityLabel={online ? "Online" : "Offline"}
-          style={{
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: 99,
-            paddingHorizontal: 10,
-            paddingVertical: 4,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 6,
-          }}
-        >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          {session?.permissions.includes("admin.access") &&
+            session.permissions.includes("trucks.write") && (
+              <Pressable
+                onPress={() => router.push("/admin")}
+                accessibilityRole="button"
+                accessibilityLabel={`${attention.count} items to resolve`}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: 8,
+                }}
+              >
+                <Icon name="alert" size={20} />
+                {attention.count > 0 && (
+                  <Text
+                    style={[
+                      styles.small,
+                      {
+                        backgroundColor: colors.danger,
+                        color: "#fff",
+                        borderRadius: 10,
+                        minWidth: 20,
+                        paddingHorizontal: 5,
+                        textAlign: "center",
+                      },
+                    ]}
+                  >
+                    {attention.count > 99 ? "99+" : attention.count}
+                  </Text>
+                )}
+              </Pressable>
+            )}
           <View
+            accessibilityLabel={online ? "Online" : "Offline"}
             style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: online ? colors.ink : colors.muted,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: 99,
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
             }}
-          />
-          <Copy small>
-            {online
-              ? "Online"
-              : network.isConnected === false
-                ? "Offline"
-                : "Connecting"}
-          </Copy>
+          >
+            <View
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: 3,
+                backgroundColor: online ? colors.ink : colors.muted,
+              }}
+            />
+            <Copy small>
+              {online
+                ? "Online"
+                : network.isConnected === false
+                  ? "Offline"
+                  : "Connecting"}
+            </Copy>
+          </View>
         </View>
       </View>
       <View
@@ -215,10 +251,10 @@ export function Screen({
           numberOfLines={1}
           style={[styles.small, { color: colors.ink, flex: 1 }]}
         >
-          {registration ?? device?.truck?.registration ?? "Device setup"}
+          {registration ?? driver?.truck?.registration ?? "No vehicle selected"}
         </Text>
         <Text numberOfLines={1} style={[styles.small, { flexShrink: 1 }]}>
-          {device?.truck?.identifier ?? "VHH Fleet"}
+          {driver?.truck?.identifier ?? "Fleet"}
         </Text>
       </View>
       <KeyboardAvoidingView
@@ -430,10 +466,15 @@ export function Emblem({ name }: { name: keyof typeof icons }) {
 export function Logo() {
   return (
     <Image
-      source={require("../../assets/brand/logo.svg")}
+      source={require("../../assets/brand/fleet-logo.svg")}
       contentFit="contain"
-      accessibilityLabel="VHH"
-      style={{ width: 280, height: 112, alignSelf: "center" }}
+      accessibilityLabel="Fleet"
+      style={{
+        width: 208,
+        height: 64,
+        alignSelf: "center",
+        marginVertical: 24,
+      }}
     />
   );
 }

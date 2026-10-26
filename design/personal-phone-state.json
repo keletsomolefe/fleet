@@ -1,0 +1,71 @@
+{
+  "updated": "2026-10-26",
+  "fileKey": "LEbt69of7SErhXVRHps0B3",
+  "section": "214:5367",
+  "screens": {
+    "login": "214:5368",
+    "vehicles": "214:5440",
+    "review": "214:5528",
+    "driving": "214:5601",
+    "release": "214:5677",
+    "released": "214:5750",
+    "occupied": "214:5813",
+    "flagged": "214:5886",
+    "empty": "214:5958",
+    "offline": "214:6025",
+    "adminFlags": "214:6092",
+    "adminReview": "214:6165",
+    "sharing": "214:6245",
+    "adminResolved": "219:5558"
+  },
+  "policy": [
+    "Personal phones are not bound to vehicles.",
+    "Searchable vehicle selection requires a connection.",
+    "One active driving session per vehicle and driver.",
+    "Occupied requests are blocked and flagged.",
+    "Open disputes hold the vehicle until administrator resolution.",
+    "Administrator resolution requires a note and a current-session snapshot.",
+    "Location capture and delayed uploads retain original driving-session ownership."
+  ],
+  "preserved": [
+    "Original VHH assets",
+    "Original shared-device Figma journeys",
+    "Monochrome palette",
+    "Montserrat typography",
+    "Legacy location and association history"
+  ],
+  "references": [
+    {
+      "app": "Walmart",
+      "url": "https://mobbin.com/screens/1887e849-6925-4110-a679-48c1e21bbc1d",
+      "usedFor": "Selectable vehicle row only. Search, occupancy and dispute rules come from Fleet requirements."
+    }
+  ],
+  "validation": {
+    "frames": 14,
+    "fontFamilies": [
+      "Montserrat"
+    ],
+    "staleBrandOrAssignedDeviceCopyInNewFrames": 0,
+    "apiUnitTests": 77,
+    "webUnitTests": 10,
+    "liveHttpAndMqtt": "passed",
+    "sqliteQueue": "passed",
+    "nativeBundles": "Android and iOS export passed",
+    "physicalDrivingAcceptance": "not run",
+    "browserSchedulingAndMqtt": "passed"
+  },
+  "captures": {
+    "before": "design/review/personal-phones/before.png",
+    "after": "design/review/personal-phones/after.png",
+    "journey": "design/review/personal-phones/journey.png",
+    "comparison": "design/review/personal-phones/comparison.html"
+  },
+  "development": "Pre-production; migrations may be rewritten and the local database reset.",
+  "scheduling": {
+    "implemented": "2026-10-26",
+    "documentation": "docs/driver-scheduling.md",
+    "designSnapshot": "The 14 Figma screens precede scheduling; current schedule and attention screens are implemented in code.",
+    "dispatch": "A daily driver/vehicle allocation can support several dispatch jobs; Dispatch remains a placeholder."
+  }
+}

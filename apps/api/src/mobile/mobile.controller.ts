@@ -1,19 +1,19 @@
 import {
+  All,
   Body,
   Controller,
   Delete,
   Get,
+  GoneException,
   Header,
   HttpCode,
   Inject,
   Post,
-  Query,
   Req,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthService } from '../auth/auth.service.js';
 import { MobileAuthService } from './mobile-auth.service.js';
-import { MobileDeviceService } from './mobile-device.service.js';
 import { bearer, nativeRequest } from './mobile.input.js';
 
 @Controller('mobile')
@@ -21,7 +21,6 @@ export class MobileController {
   constructor(
     @Inject(AuthService) private readonly auth: AuthService,
     @Inject(MobileAuthService) private readonly mobileAuth: MobileAuthService,
-    @Inject(MobileDeviceService) private readonly devices: MobileDeviceService,
   ) {}
   @Post('auth/login')
   @HttpCode(200)
@@ -47,42 +46,16 @@ export class MobileController {
       expiresAt: c.session.expires_at ?? null,
     };
   }
-  @Get('device')
+  @All([
+    'device',
+    'setup/trucks',
+    'setup/device',
+    'driver/truck',
+    'driver/truck/confirm',
+  ])
   @Header('Cache-Control', 'private, no-store')
-  device(@Req() req: Request) {
+  legacy(@Req() req: Request) {
     nativeRequest(req);
-    return this.devices.deviceContext(req.get('x-fleet-device-token') ?? '');
-  }
-  @Get('setup/trucks')
-  @Header('Cache-Control', 'private, no-store')
-  async trucks(
-    @Req() req: Request,
-    @Query('q') q?: string,
-    @Query('page') page?: string,
-  ) {
-    const c = await this.auth.authenticateNative(bearer(req));
-    this.mobileAuth.requireSetup(c);
-    return this.devices.trucks(q, page);
-  }
-  @Post('setup/device')
-  @HttpCode(200)
-  @Header('Cache-Control', 'private, no-store')
-  async enroll(@Req() req: Request, @Body() body: unknown) {
-    const c = await this.auth.authenticateNative(bearer(req));
-    this.mobileAuth.requireSetup(c);
-    return this.devices.enroll(body, c);
-  }
-  @Get('driver/truck')
-  @Header('Cache-Control', 'private, no-store')
-  async truck(@Req() req: Request) {
-    const c = await this.auth.authenticateNative(bearer(req));
-    return this.devices.driverContext(c, req.get('x-fleet-device-token') ?? '');
-  }
-  @Post('driver/truck/confirm')
-  @HttpCode(200)
-  @Header('Cache-Control', 'private, no-store')
-  async confirm(@Req() req: Request, @Body() body: unknown) {
-    const c = await this.auth.authenticateNative(bearer(req));
-    return this.devices.confirm(c, req.get('x-fleet-device-token') ?? '', body);
+    throw new GoneException('Update Fleet to choose a vehicle on your phone.');
   }
 }

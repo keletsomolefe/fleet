@@ -3,6 +3,7 @@ import type { DataSource } from 'typeorm';
 import { AuthService, type AdminContext } from '../auth/auth.service.js';
 import { KratosService } from '../auth/kratos.service.js';
 import { RbacService } from '../rbac/rbac.service.js';
+import type { DrivingService } from './driving.service.js';
 import { MobileAuthService } from './mobile-auth.service.js';
 
 describe('Unified native sign-in', () => {
@@ -37,6 +38,7 @@ describe('Unified native sign-in', () => {
         profile: () => ({ id: 'user-id' }),
       } as unknown as AuthService,
       { require: RbacService.prototype.require } as RbacService,
+      { endForLogout: vi.fn() } as unknown as DrivingService,
     );
   });
   it('resolves an administrator from authenticated permissions without a selected role', async () => {
@@ -46,7 +48,7 @@ describe('Unified native sign-in', () => {
         { identifier: 'Admin@example.test', password: 'test-only' },
         'source',
       ),
-    ).resolves.toMatchObject({ mode: 'setup' });
+    ).resolves.toMatchObject({ mode: 'admin' });
     expect(findOne).not.toHaveBeenCalled();
     expect(JSON.parse(request.mock.calls[1][1].body).identifier).toBe(
       'admin@example.test',
@@ -80,11 +82,16 @@ describe('Unified native sign-in', () => {
       ),
     ).resolves.toMatchObject({ mode: 'driver' });
   });
-  it('prefers device setup when an account has both sets of permissions', async () => {
+  it('opens driving when an account also has administrator permissions', async () => {
     context.permissions.push('admin.access', 'trucks.read', 'trucks.write');
-    await expect(service.resolveMode(context)).resolves.toBe('setup');
+    await expect(service.resolveMode(context)).resolves.toBe('driver');
     context.permissions = ['driver.access', 'admin.access', 'trucks.read'];
     await expect(service.resolveMode(context)).resolves.toBe('driver');
+  });
+  it('opens administration for an owner with driver permission but no driver profile', async () => {
+    context.permissions.push('admin.access', 'trucks.read', 'trucks.write');
+    findOneBy.mockResolvedValue(null);
+    await expect(service.resolveMode(context)).resolves.toBe('admin');
   });
   it('revokes the newly issued session when no mobile workflow is permitted', async () => {
     context.permissions = ['trucks.read'];
@@ -116,6 +123,15 @@ describe('Unified native sign-in', () => {
         'source',
       ),
     ).rejects.toThrow('Verify your email.');
+    expect(revokeToken).toHaveBeenCalledWith('native-session-token');
+  });
+  it('allows Kratos logout even when application access has already ended', async () => {
+    authenticateNative.mockRejectedValue(
+      new ForbiddenException('Account is inactive.'),
+    );
+    await expect(
+      service.logout('native-session-token'),
+    ).resolves.toBeUndefined();
     expect(revokeToken).toHaveBeenCalledWith('native-session-token');
   });
 });

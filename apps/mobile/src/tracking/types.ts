@@ -4,6 +4,7 @@ export interface LocalStream {
   driver_id: string;
   truck_id: string;
   association_id: string;
+  driving_session_id?: string | null;
   started_at: number;
   stopped_at: number | null;
   next_sequence: number;

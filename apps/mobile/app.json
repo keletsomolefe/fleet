@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "VHH Fleet",
-    "slug": "vhh-fleet",
+    "name": "Fleet",
+    "slug": "fleet",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/brand/app-icon.png",
+    "icon": "./assets/brand/fleet-app-icon.png",
     "scheme": "vhh-fleet",
     "userInterfaceStyle": "light",
     "ios": {
@@ -16,13 +16,13 @@
       "allowBackup": false,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
-        "foregroundImage": "./assets/brand/adaptive-icon.png",
-        "monochromeImage": "./assets/brand/adaptive-icon.png"
+        "foregroundImage": "./assets/brand/fleet-adaptive-icon.png",
+        "monochromeImage": "./assets/brand/fleet-adaptive-icon.png"
       }
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/brand/vhh-monogram-4096.png"
+      "favicon": "./assets/brand/fleet-favicon.png"
     },
     "plugins": [
       "expo-router",
@@ -43,7 +43,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#FFFFFF",
-          "image": "./assets/brand/vhh-monogram-4096.png",
+          "image": "./assets/brand/fleet-mark.png",
           "imageWidth": 76
         }
       ]

@@ -6,6 +6,8 @@ import {
 } from '@tanstack/react-start/server'
 
 export interface Truck {
+  currentDriving?: { id: string; driverName: string; startedAt: string } | null
+
   id: string
   identifier: string
   registration: string

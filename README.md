@@ -1,4 +1,4 @@
-# VHH Fleet POC
+# Fleet
 
 ## Development
 
@@ -60,7 +60,7 @@ Existing design documentation and assets remain at the repository root.
 
 Final agreed requirements, reconstructed brand assets and an editable Figma prototype for one fleet business. Updated 17 October 2026.
 
-Latest extension: [durable background location logging](docs/background-location.md) adds SQLite, MQTT with HTTP fallback and backend route history. Its [four editable sharing states](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=144-4641) accompany the searchable truck setup. The native app supports admin device enrollment, truck attachment/replacement, driver sign-in and registration confirmation. Its [12 new editable Figma states](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=140-5332) are recorded in [the native design ledger](design/mobile-device-setup-state.json). The preceding Customers and Locations extension remains recorded in [customer/location state](design/customer-location-state.json) and [its journey checks](design/customer-location-audit.json).
+Latest extension: [durable background location logging](docs/background-location.md) adds SQLite, MQTT with HTTP fallback and backend route history. Its [four editable sharing states](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=144-4641) accompany the searchable truck setup. The native app now supports personal-phone sign-in, searchable vehicle selection, driving/release sessions and administrator resolution of blocked vehicle conflicts. See the [current personal-phone journey](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=214-5367). Earlier device-enrollment screens remain historical references. Its [12 new editable Figma states](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=140-5332) are recorded in [the native design ledger](design/mobile-device-setup-state.json). The preceding Customers and Locations extension remains recorded in [customer/location state](design/customer-location-state.json) and [its journey checks](design/customer-location-audit.json).
 
 ## Documents
 
@@ -77,7 +77,7 @@ Latest extension: [durable background location logging](docs/background-location
 
 The 178 screens are grouped in 26 journey sections: 12 driver and 14 admin. The driver prototype has 14 named starting points; admin has 14. Read each row left to right, then continue on the next row; recovery states follow their main journey. The [organization baseline](design/organization-validation.json) records the earlier 19 passing journey checks. The [latest admin audit](design/customer-location-audit.json) covers the customer/location extension, with no invalid destinations, unreachable screens or overlapping frames.
 
-The driver checks the truck already assigned to the device by admin before a new session, then continues to clock-in. This does not select another truck. If the registration does not match the physical truck, the driver asks the fleet administrator to correct the device assignment. PIN unlock resumes an existing active session directly.
+Drivers use personal phones and select their vehicle from a searchable list. The previous driver must release it first. Occupied selections are blocked and flagged; administrators resolve the dispute with an audit note. See [the current workflow and API](docs/mobile-device-setup.md). The older prototype journeys below retain their original context.
 
 | Entry | Open prototype |
 | --- | --- |
@@ -102,12 +102,14 @@ The approved driver direction combines a Todoist-inspired Today list with clear 
 
 ## Brand and icons
 
+- [Fleet logo SVG](assets/brand/fleet/logo.svg) · [white logo SVG](assets/brand/fleet/logo-white.svg) · [Fleet mark SVG](assets/brand/fleet/mark.svg) · [brand assets and export notes](assets/brand/fleet/README.txt)
+- Fleet is the active web and mobile brand. The existing monochrome colours and Montserrat typography are retained. The original VHH artwork and prototype records below are preserved.
 - [Cropped logo SVG](assets/brand/vhh-lockup-vector.svg) · [transparent 4096px PNG](assets/brand/vhh-lockup-4096.png) · [white-background preview](assets/brand/vhh-lockup-preview.png)
 - [Monogram SVG](assets/brand/vhh-monogram-vector.svg) · [inverse SVG](assets/brand/vhh-inverse-vector.svg) · [original-canvas SVG](assets/brand/vhh-full-vector.svg)
 - [Original supplied image](assets/brand/vhh-reference.png) · [conversion record](assets/brand/CONVERSION.md)
 - [Editable SVG icon set](assets/icons/README.md)
 
-Logo lettering is outlined; the original typeface was not supplied, so the conversion record identifies the approximation. No font is needed to render the master SVGs.
+Logo lettering is outlined, so no font is needed to render the master SVGs. The Fleet wordmark uses Montserrat SemiBold. The original VHH typeface was not supplied; its conversion record identifies the approximation.
 
 ## Demonstrated scope
 
@@ -119,3 +121,5 @@ GPS, password validation, storage, syncing and exports are simulated prototype s
 
 Route optimization, item/barcode inventory, customer portals, automated messages, billing, OCR, maintenance, camera streaming, driver scoring and multiple companies remain excluded.
 
+
+Driver weekly/monthly plans, daily confirmations and MQTT administrator attention are described in [Driver scheduling](docs/driver-scheduling.md).
