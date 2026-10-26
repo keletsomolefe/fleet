@@ -44,6 +44,6 @@ ssh -L 18026:127.0.0.1:18026 root@nativesounds.co.za
 
 To deliver real email, update `SMTP_CONNECTION_URI` and `SMTP_FROM_ADDRESS` in `/opt/fleet/.env`, then recreate Kratos. Use the provider's TLS settings. This does not change Fleet's application credentials or migrate identities.
 
-For installed mobile builds, set the root `.env`'s `EXPO_PUBLIC_API_URL=https://fleet.nativesounds.co.za/api` before building. The deployed API supplies `wss://fleet.nativesounds.co.za/mqtt`; existing installed development binaries continue using the endpoint they were built with.
+For installed staging mobile builds, run `pnpm mobile:build:staging --platform android` (or `ios`) from the repository root. The `staging` EAS profile sets `APP_ENV=staging`, which fixes the public API to `https://fleet.nativesounds.co.za/api` without changing local development's root `.env`. EAS login, project linking and signing must be configured for the first cloud build. Other release profiles require an HTTPS `EXPO_PUBLIC_API_URL`. The deployed API supplies `wss://fleet.nativesounds.co.za/mqtt`; existing installed binaries retain their previous endpoint until rebuilt.
 
 Reference configuration was checked against [Caddy Docker Proxy](https://github.com/lucaslorentz/caddy-docker-proxy), the pinned [Kratos UI source](https://github.com/ory/kratos-selfservice-ui-node/blob/v26.2.0/src/index.ts), and [GitHub Actions triggers](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow).

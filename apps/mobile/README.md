@@ -25,4 +25,14 @@ The display name, icons and splash screen use Fleet. The existing `com.vhhfleet.
 
 Run `pnpm mobile:check`, `pnpm test:tracking-queue` and `pnpm test:mobile` before delivery. The latter requires the migrated local database, Kratos and gateway. The web target is a visual preview; credential flows require an installed native build.
 
-Production builds must supply an HTTPS `EXPO_PUBLIC_API_URL`. The development EAS profile builds a development client; preview/production profiles are available for signing and distribution configuration. No EAS project or cloud build is created by this change.
+Build a staging app from the repository root:
+
+```sh
+pnpm mobile:build:staging --platform android
+# Or for registered iOS devices:
+pnpm mobile:build:staging --platform ios
+```
+
+The `staging` EAS profile sets `APP_ENV=staging` and always uses `https://fleet.nativesounds.co.za/api`, including when the root `.env` points to a local gateway. Android produces an installable release APK; iOS uses internal device distribution. Both require HTTPS and run without a development server. EAS login, project linking and signing setup are required on the first build. These commands start a cloud build; no build is started by configuring the profile.
+
+Local development still uses `EXPO_PUBLIC_API_URL` from the environment or root `.env`. The development EAS profile builds a development client. Other release profiles must supply an HTTPS `EXPO_PUBLIC_API_URL`.

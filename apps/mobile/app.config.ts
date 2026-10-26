@@ -9,24 +9,30 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const rootEnv = existsSync(rootEnvPath)
     ? parseEnv(readFileSync(rootEnvPath, "utf8"))
     : {};
-  const apiUrl =
-    process.env.EXPO_PUBLIC_API_URL ??
-    rootEnv.EXPO_PUBLIC_API_URL ??
-    "http://127.0.0.1:3042/api";
+  // APP_ENV is also available while EAS resolves this config on the local machine.
+  const staging =
+    process.env.APP_ENV === "staging" ||
+    process.env.EAS_BUILD_PROFILE === "staging";
+  const apiUrl = staging
+    ? "https://fleet.nativesounds.co.za/api"
+    : (process.env.EXPO_PUBLIC_API_URL ??
+      rootEnv.EXPO_PUBLIC_API_URL ??
+      "http://127.0.0.1:3042/api");
   if (apiUrl && !/^https?:\/\//.test(apiUrl))
     throw new Error("EXPO_PUBLIC_API_URL must be an HTTP(S) URL.");
   const development =
+    !staging &&
     process.env.NODE_ENV !== "production" &&
     !["preview", "production"].includes(process.env.EAS_BUILD_PROFILE ?? "");
   if (!development && (!apiUrl || !apiUrl.startsWith("https://")))
     throw new Error(
-      "Production mobile builds require an HTTPS EXPO_PUBLIC_API_URL.",
+      "Release mobile builds require an HTTPS EXPO_PUBLIC_API_URL.",
     );
   return {
     ...config,
     name: "Fleet",
     slug: "fleet",
-    extra: { apiUrl },
+    extra: { ...config.extra, apiUrl },
     ios: {
       ...config.ios,
       infoPlist: {
