@@ -1,4 +1,13 @@
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+export function CreateAction({
+  className,
+  ...props
+}: ComponentProps<typeof Button>) {
+  return <Button {...props} className={cn("w-full sm:w-[248px]", className)} />;
+}
 
 export function PageHeader({
   title,

@@ -13,7 +13,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PageError } from "@/components/page-error";
-import { PageHeader } from "@/components/page-header";
+import { CreateAction, PageHeader } from "@/components/page-header";
+import { Plus } from "lucide-react";
 import { can, type AdminSession } from "@/lib/auth";
 import {
   expired,
@@ -62,11 +63,11 @@ export function FleetList({
         }
         actions={
           can(session, `${kind}.write`) && (
-            <Button asChild className="w-full sm:w-[248px]">
+            <CreateAction asChild>
               <Link to={isDriver ? "/admin/drivers/new" : "/admin/trucks/new"}>
-                + Add {isDriver ? "driver" : "vehicle"}
+                <Plus /> Add {isDriver ? "driver" : "vehicle"}
               </Link>
-            </Button>
+            </CreateAction>
           )
         }
       />

@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { PageHeader } from "@/components/page-header";
+import { CreateAction, PageHeader } from "@/components/page-header";
+import { Plus } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -169,9 +170,10 @@ export function TransportPage({
         <AlertDescription>{data.error}</AlertDescription>
       </Alert>
     );
-  return (
-    <div className="flex w-full min-w-0 flex-col gap-6">
+  const renderHeader: RenderHeader = (actions) => (
+    <>
       <PageHeader
+        actions={actions}
         group={
           ["earnings", "activities"].includes(section)
             ? "Review & records"
@@ -205,8 +207,15 @@ export function TransportPage({
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+    </>
+  );
+  return (
+    <div className="flex w-full min-w-0 flex-col gap-6">
+      {!["customers", "locations", "products", "dispatch"].includes(section) &&
+        renderHeader()}
       {["customers", "locations", "products"].includes(section) && (
         <MasterPage
+          renderHeader={renderHeader}
           key={section}
           section={section}
           catalogue={data.catalogue}
@@ -226,6 +235,7 @@ export function TransportPage({
       )}
       {section === "dispatch" && data.jobs && (
         <Jobs
+          renderHeader={renderHeader}
           catalogue={data.catalogue}
           jobs={data.jobs}
           session={session}
@@ -247,13 +257,16 @@ export function TransportPage({
   );
 }
 type Save = (path: string, body: unknown, method?: string) => Promise<unknown>;
+type RenderHeader = (actions?: ReactNode) => ReactNode;
 function MasterPage({
+  renderHeader,
   section,
   catalogue,
   session,
   save,
   busy,
 }: {
+  renderHeader: RenderHeader;
   section: string;
   catalogue: Catalogue;
   session: AdminSession;
@@ -296,6 +309,23 @@ function MasterPage({
   }
   return (
     <>
+      {renderHeader(
+        write && (
+          <CreateAction
+            onClick={() => {
+              setEditing(null);
+              setOpen(true);
+            }}
+          >
+            <Plus /> Add{" "}
+            {section === "customers"
+              ? "customer"
+              : section === "locations"
+                ? "location"
+                : "product"}
+          </CreateAction>
+        ),
+      )}
       <Frame>
         <div className="flex flex-wrap gap-3">
           <Input
@@ -305,21 +335,6 @@ function MasterPage({
             onChange={(e) => setQuery(e.target.value)}
             className="w-full sm:max-w-sm"
           />
-          {write && (
-            <Button
-              onClick={() => {
-                setEditing(null);
-                setOpen(true);
-              }}
-            >
-              Add{" "}
-              {section === "customers"
-                ? "customer"
-                : section === "locations"
-                  ? "location"
-                  : "product"}
-            </Button>
-          )}
         </div>
         <Table>
           <TableHeader>
@@ -796,12 +811,14 @@ function Rates({
   );
 }
 function Jobs({
+  renderHeader,
   catalogue,
   jobs,
   session,
   save,
   busy,
 }: {
+  renderHeader: RenderHeader;
   catalogue: Catalogue;
   jobs: NonNullable<TransportPageData["jobs"]>;
   session: AdminSession;
@@ -860,10 +877,14 @@ function Jobs({
   }
   return (
     <>
+      {renderHeader(
+        can(session, "dispatch.write") && (
+          <CreateAction onClick={() => setJob(fresh())}>
+            <Plus /> Plan a job
+          </CreateAction>
+        ),
+      )}
       <Frame>
-        {can(session, "dispatch.write") && (
-          <Button onClick={() => setJob(fresh())}>Plan a job</Button>
-        )}
         <Table>
           <TableHeader>
             <TableRow>

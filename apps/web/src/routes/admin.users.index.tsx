@@ -1,4 +1,4 @@
-import { PageHeader } from '@/components/page-header'
+import { CreateAction, PageHeader } from '@/components/page-header'
 import { useState, type FormEvent } from 'react'
 import {
   createFileRoute,
@@ -61,12 +61,12 @@ function Users() {
         group="Company"
         actions={
           can(session, 'users.create') && (
-            <Button asChild>
+            <CreateAction asChild>
               <Link to="/admin/users/new">
                 <Plus />
                 Create user
               </Link>
-            </Button>
+            </CreateAction>
           )
         }
       />
