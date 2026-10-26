@@ -148,15 +148,19 @@ export function Screen({
     >
       <View
         style={{
-          height: 48,
+          minHeight: 48,
+          paddingVertical: 8,
           paddingHorizontal: 20,
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
+          gap: 12,
           backgroundColor: colors.surface,
         }}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View
+          style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8 }}
+        >
           <Image
             source={require("../../assets/brand/monogram.svg")}
             contentFit="contain"
@@ -164,11 +168,23 @@ export function Screen({
             accessible={false}
             style={{ width: 30, height: 30, flexShrink: 0 }}
           />
-          <Text style={[styles.text, { fontFamily: "Montserrat_600SemiBold" }]}>
+          <Text
+            style={[
+              styles.text,
+              { flex: 1, fontFamily: "Montserrat_600SemiBold" },
+            ]}
+          >
             VHH Fleet
           </Text>
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <View
+          style={{
+            flexShrink: 0,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
           {session?.permissions.includes("admin.access") &&
             session.permissions.includes("trucks.write") && (
               <Pressable
@@ -314,6 +330,9 @@ export function Button({
         style={[
           styles.text,
           {
+            // Measure against the available width; Android can clip words
+            // when a custom-font label uses its intrinsic row width.
+            flex: 1,
             fontFamily: "Montserrat_600SemiBold",
             color: secondary ? colors.ink : colors.surface,
             textAlign: "center",
