@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import * as Crypto from "expo-crypto";
 import {
   Button,
@@ -22,6 +22,7 @@ import {
 import { useFleet } from "@/state/fleet";
 
 export default function Issues() {
+  const router = useRouter();
   const { driver, session } = useFleet(),
     action = useAction(),
     token = session?.sessionToken;

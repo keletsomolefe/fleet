@@ -1,6 +1,7 @@
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import { Button, Emblem, Heading, Screen } from "@/components/ui";
 export default function Help() {
+  const router = useRouter();
   return (
     <Screen
       actions={

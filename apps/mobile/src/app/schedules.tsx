@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { View } from "react-native";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import {
   Button,
   Copy,
@@ -32,6 +32,7 @@ const day = () =>
     day: "2-digit",
   }).format(new Date());
 export default function Schedules() {
+  const router = useRouter();
   const fleet = useFleet(),
     action = useAction(),
     token = fleet.session?.sessionToken;

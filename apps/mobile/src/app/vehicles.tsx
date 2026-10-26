@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import {
   Button,
   Copy,
@@ -14,6 +14,7 @@ import { request, type Truck, type TruckList } from "@/lib/api";
 import { useFleet } from "@/state/fleet";
 
 export default function ChooseVehicle() {
+  const router = useRouter();
   const fleet = useFleet();
   const [query, setQuery] = useState(""),
     [page, setPage] = useState(1),

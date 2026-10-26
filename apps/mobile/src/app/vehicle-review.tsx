@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View } from "react-native";
-import { Redirect, router } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import {
   Button,
   Copy,
@@ -14,6 +14,7 @@ import {
 import { useFleet } from "@/state/fleet";
 
 export default function ReviewVehicle() {
+  const router = useRouter();
   const fleet = useFleet(),
     action = useAction(),
     [flagged, setFlagged] = useState(false);

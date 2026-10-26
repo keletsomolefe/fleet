@@ -45,6 +45,8 @@ Local builds require Java 17 and the Android SDK, run the native Gradle build on
 
 Before publishing, install the signed release APK on an Android test device with `adb -s <serial> install -r <apk>`, then run `pnpm mobile:test:startup <serial> <version-code>`. The check confirms the installed release version and performs two cold starts without clearing app data. Inspect the visible sign-in screen as well. A successful build and signature check do not prove the app can start.
 
+With a signed-in driver, check that **Jobs & activity** opens the activity screen after a cold start and after increasing and restoring Android's text size. Screen handlers use `useRouter()` from their current navigation context. The module-level imperative router can become unbound during Android configuration changes in SDK 58 and throw when a visible button is pressed. Check the actual rendered labels: Android's accessibility tree can contain a full label even when custom-font text is clipped visually.
+
 The Android build properties retain the public no-argument constructor of `androidx.work.impl.WorkDatabase_Impl`. Android's background scheduler creates that database through Room reflection; R8 full mode otherwise removes the constructor and the release app exits before its first screen. Keep this narrow rule when updating SDKs, and repeat the signed-release startup check.
 
 Local development still uses `EXPO_PUBLIC_API_URL` from the environment or root `.env`. The development EAS profile builds a development client. Other release profiles must supply an HTTPS `EXPO_PUBLIC_API_URL`.

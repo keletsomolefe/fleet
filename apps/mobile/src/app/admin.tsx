@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import {
   Button,
   Copy,
@@ -17,6 +17,7 @@ import { type DriverIssue, issueLabels } from "@/lib/issues";
 import { useFleet } from "@/state/fleet";
 
 export default function VehicleFlags() {
+  const router = useRouter();
   const fleet = useFleet(),
     action = useAction(),
     token = fleet.session?.sessionToken;

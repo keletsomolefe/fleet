@@ -1,5 +1,5 @@
 import { View } from "react-native";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import {
   Button,
   Copy,
@@ -14,6 +14,7 @@ import { useFleet } from "@/state/fleet";
 import { TrackingCard } from "@/components/tracking-card";
 
 export default function Driving() {
+  const router = useRouter();
   const fleet = useFleet(),
     action = useAction(),
     driver = fleet.driver;

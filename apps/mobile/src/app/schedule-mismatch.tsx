@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import {
   Button,
   Copy,
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui";
 import { useFleet } from "@/state/fleet";
 export default function ScheduleMismatch() {
+  const router = useRouter();
   const fleet = useFleet(),
     action = useAction(),
     [note, setNote] = useState("");

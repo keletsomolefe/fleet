@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { View } from "react-native";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import { useFleet } from "@/state/fleet";
 import { Button, Field, Heading, Logo, Notice, Screen, useAction } from "./ui";
 import { TrackingCard } from "./tracking-card";
 export function Login() {
+  const router = useRouter();
   const { login, refresh, error: contextError } = useFleet(),
     action = useAction();
   const [identifier, setIdentifier] = useState(""),

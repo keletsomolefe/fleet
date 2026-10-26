@@ -1,4 +1,4 @@
-import { Redirect, router } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import {
   Button,
   Copy,
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui";
 import { useFleet } from "@/state/fleet";
 export default function ReleaseVehicle() {
+  const router = useRouter();
   const fleet = useFleet(),
     action = useAction();
   if (!fleet.driver?.truck || !fleet.driver.drivingSession)
