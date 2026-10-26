@@ -9,6 +9,7 @@ x-kratos-env: &kratos-env
 
 x-app-env: &app-env
   NODE_ENV: production
+  AUTH_REQUIRE_VERIFIED_EMAIL: "false"
   PLT_SERVER_LOGGER_LEVEL: info
   PLT_SERVER_HOSTNAME: 0.0.0.0
   PLT_MANAGEMENT_API: "false"
@@ -42,7 +43,7 @@ services:
       KRATOS_DB_PASSWORD: ${KRATOS_DB_PASSWORD:?}
     volumes:
       - postgres_data:/var/lib/postgresql
-      - ./postgres:/docker-entrypoint-initdb.d:ro
+      - /opt/fleet/config/postgres:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: [CMD-SHELL, pg_isready -U fleet_admin -d fleet]
       interval: 5s
@@ -70,7 +71,7 @@ services:
         --read-from-env,
         --yes,
       ]
-    volumes: [./kratos:/etc/config/kratos:ro]
+    volumes: [/opt/fleet/config/kratos:/etc/config/kratos:ro]
     profiles: [tools]
 
   kratos:
@@ -88,7 +89,7 @@ services:
         --watch-courier,
       ]
     volumes:
-      - ./kratos:/etc/config/kratos:ro
+      - /opt/fleet/config/kratos:/etc/config/kratos:ro
       - /opt/fleet/private/kratos.local.json:/etc/fleet/kratos.local.json:ro
     healthcheck:
       test: [CMD, kratos, remote, status, --endpoint, http://127.0.0.1:4434]
@@ -132,7 +133,7 @@ services:
     image: caddy:2.11.7-alpine
     restart: unless-stopped
     mem_limit: 64m
-    volumes: [./Caddyfile:/etc/caddy/Caddyfile:ro]
+    volumes: [/opt/fleet/config/Caddyfile:/etc/caddy/Caddyfile:ro]
     networks: [default, caddy]
     labels:
       caddy: fleet.nativesounds.co.za

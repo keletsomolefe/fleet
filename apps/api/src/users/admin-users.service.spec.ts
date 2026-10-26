@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   ConflictException,
   ServiceUnavailableException,
 } from '@nestjs/common';
@@ -127,5 +128,81 @@ describe('User provisioning', () => {
       'created-identity',
     );
     expect(users.save).not.toHaveBeenCalled();
+  });
+});
+
+describe('Administrator setup links', () => {
+  afterEach(() => vi.unstubAllEnvs());
+  function fixture(permissionKeys: string[], owner = false, active = true) {
+    const actor = { id: 'actor', isActive: true },
+      target = { id: 'target', isActive: active, kratosIdentityId: 'identity' };
+    const manager = {
+      query: vi.fn(),
+      findOneBy: vi.fn((_entity, where) =>
+        Promise.resolve(where.id === 'actor' ? actor : target),
+      ),
+      find: vi.fn((_entity, options) =>
+        Promise.resolve(
+          options.where.userId === 'actor'
+            ? [
+                {
+                  role: {
+                    grants: permissionKeys.map((key) => ({
+                      permission: { key },
+                    })),
+                  },
+                },
+              ]
+            : owner
+              ? [{ role: { key: 'owner' } }]
+              : [],
+        ),
+      ),
+    };
+    const request = vi.fn().mockResolvedValue({
+      recovery_link:
+        'https://fleet.example/auth/self-service/recovery?token=secret',
+      expires_at: '2026-10-26T13:30:00Z',
+    });
+    vi.stubEnv('KRATOS_PUBLIC_URL', 'https://fleet.example/auth/');
+    const service = new AdminUsersService(
+      {} as Repository<User>,
+      { request } as unknown as KratosService,
+      { transaction: vi.fn((work) => work(manager)) } as unknown as DataSource,
+      {} as RbacService,
+    );
+    return { service, request };
+  }
+  it('prevents administrators without owner-management permission from resetting owner credentials', async () => {
+    const { service, request } = fixture(
+      ['admin.access', 'users.access'],
+      true,
+    );
+    await expect(service.accountLink('actor', 'target')).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+    expect(request).not.toHaveBeenCalled();
+  });
+  it('requires account management permission and an active target', async () => {
+    for (const [grants, active] of [
+      [['admin.access'], true],
+      [['admin.access', 'users.access'], false],
+    ] as const) {
+      const { service, request } = fixture([...grants], false, active);
+      await expect(service.accountLink('actor', 'target')).rejects.toThrow();
+      expect(request).not.toHaveBeenCalled();
+    }
+  });
+  it('creates a bounded Kratos link without changing roles or storing a password', async () => {
+    const { service, request } = fixture(
+      ['admin.access', 'users.access', 'users.owners'],
+      true,
+    );
+    const result = await service.accountLink('actor', 'target');
+    expect(result.url).toContain('https://fleet.example/auth/');
+    expect(JSON.parse(request.mock.calls[0][1].body)).toEqual({
+      identity_id: 'identity',
+      expires_in: '30m',
+    });
   });
 });

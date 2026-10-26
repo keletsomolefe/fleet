@@ -195,6 +195,74 @@ export class AdminUsersService {
     return { ...this.profile(user), ...(await this.rbac.access(id)) };
   }
 
+  async accountLink(actorId: string, targetId: string) {
+    return this.database.transaction(async (manager) => {
+      await manager.query(
+        "SELECT pg_advisory_xact_lock(hashtext('fleet-user-access-v1'))",
+      );
+      const actor = await manager.findOneBy(User, { id: actorId });
+      const actorRoles = await manager.find(UserRole, {
+        where: { userId: actorId },
+        relations: { role: { grants: { permission: true } } },
+      });
+      const permissions = new Set(
+        actorRoles.flatMap(({ role }) =>
+          role.grants.map((g) => g.permission.key),
+        ),
+      );
+      if (
+        !actor?.isActive ||
+        !permissions.has('admin.access') ||
+        !permissions.has('users.access')
+      )
+        throw new ForbiddenException('Account management access is required.');
+      const target = await manager.findOneBy(User, { id: targetId });
+      if (!target) throw new NotFoundException('User not found.');
+      if (!target.isActive)
+        throw new BadRequestException(
+          'Activate the account before creating a setup link.',
+        );
+      const roles = await manager.find(UserRole, {
+        where: { userId: targetId },
+        relations: { role: true },
+      });
+      if (
+        roles.some((r) => r.role.key === 'owner') &&
+        !permissions.has('users.owners')
+      )
+        throw new ForbiddenException(
+          'You do not have permission to manage owners.',
+        );
+      const result = await this.kratos.request<{
+        recovery_link: string;
+        expires_at: string;
+      }>(
+        'admin/recovery/link',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            identity_id: target.kratosIdentityId,
+            expires_in: '30m',
+          }),
+        },
+        true,
+      );
+      const link = new URL(result.recovery_link),
+        base = new URL(process.env.KRATOS_PUBLIC_URL!);
+      if (
+        link.origin !== base.origin ||
+        !link.pathname.startsWith(base.pathname)
+      )
+        throw new ServiceUnavailableException(
+          'The setup link could not be generated.',
+        );
+      this.logger.log(
+        `Account setup link created for user ${target.id} by ${actor.id}`,
+      );
+      return { url: link.toString(), expiresAt: result.expires_at };
+    });
+  }
+
   async setAccess(actorId: string, targetId: string, raw: unknown) {
     const input = parseAccessInput(raw);
     await this.database.transaction(async (manager) => {

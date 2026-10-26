@@ -1,5 +1,6 @@
 import {
   Body,
+  BadRequestException,
   Controller,
   Get,
   Header,
@@ -31,7 +32,11 @@ export class AdminUsersController {
   async create(@Body() input: unknown, @Req() request: AdminRequest) {
     this.auth.verifyCsrf(request);
     const user = await this.users.create(input, request.adminContext!.user);
-    return { user: this.auth.profile(user), requiresEmailVerification: true };
+    return {
+      user: this.auth.profile(user),
+      requiresEmailVerification:
+        process.env.AUTH_REQUIRE_VERIFIED_EMAIL !== 'false',
+    };
   }
 
   @Get()
@@ -46,6 +51,25 @@ export class AdminUsersController {
   @RequirePermissions('users.read')
   get(@Param('id', ParseUUIDPipe) id: string) {
     return this.users.get(id);
+  }
+
+  @Post(':id/account-link')
+  @Header('Cache-Control', 'private, no-store')
+  @RequirePermissions('users.access')
+  accountLink(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: unknown,
+    @Req() request: AdminRequest,
+  ) {
+    this.auth.verifyCsrf(request);
+    if (
+      !body ||
+      typeof body !== 'object' ||
+      Array.isArray(body) ||
+      Object.keys(body).length
+    )
+      throw new BadRequestException('Invalid setup-link request.');
+    return this.users.accountLink(request.adminContext!.user.id, id);
   }
 
   @Patch(':id/access')

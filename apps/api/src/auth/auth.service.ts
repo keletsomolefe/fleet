@@ -74,6 +74,7 @@ export class AuthService {
       throw new UnauthorizedException('Please sign in.');
     const email = session.identity.traits.email.toLowerCase();
     if (
+      process.env.AUTH_REQUIRE_VERIFIED_EMAIL !== 'false' &&
       !session.identity.verifiable_addresses?.some(
         (a) =>
           a.verified && a.via === 'email' && a.value.toLowerCase() === email,

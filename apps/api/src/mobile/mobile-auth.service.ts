@@ -63,7 +63,9 @@ export class MobileAuthService {
     } catch (error) {
       if (error instanceof KratosError)
         throw new UnauthorizedException(
-          'Check your identifier and password, and verify your email.',
+          process.env.AUTH_REQUIRE_VERIFIED_EMAIL === 'false'
+            ? 'Check your identifier and password.'
+            : 'Check your identifier and password, and verify your email.',
         );
       throw error;
     }

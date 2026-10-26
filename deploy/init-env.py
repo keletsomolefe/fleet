@@ -25,7 +25,6 @@ values.update(INITIAL_OWNER_EMAIL=a.owner_email,INITIAL_OWNER_FIRST_NAME=a.owner
 private=root/'private'
 private.mkdir(mode=0o700,exist_ok=True)
 hook={'selfservice':{'flows':{'login':{'after':{'password':{'hooks':[
-  {'hook':'require_verified_address'},
   {'hook':'web_hook','config':{'url':'http://app:3042/api/internal/kratos/after-login','method':'POST','body':'file:///etc/config/kratos/after-login.jsonnet','auth':{'type':'api_key','config':{'name':'X-Kratos-Hook-Secret','value':values['KRATOS_HOOK_SECRET'],'in':'header'}},'can_interrupt':False,'response':{'ignore':True,'parse':False}}}
 ]}}}}}}
 # The containing directory is root-only; this single file is mounted read-only for Kratos UID 10000.

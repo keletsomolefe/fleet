@@ -22,7 +22,7 @@ selfservice:
   methods:
     password:
       enabled: true
-    code:
+    link:
       enabled: true
   flows:
     error:
@@ -30,9 +30,6 @@ selfservice:
     login:
       ui_url: https://fleet.nativesounds.co.za/login
       lifespan: 10m
-      after:
-        hooks:
-          - hook: require_verified_address
     registration:
       ui_url: https://fleet.nativesounds.co.za/account/registration
       lifespan: 10m
@@ -46,11 +43,11 @@ selfservice:
     recovery:
       enabled: true
       ui_url: https://fleet.nativesounds.co.za/account/recovery
-      use: code
+      use: link
     verification:
       enabled: true
       ui_url: https://fleet.nativesounds.co.za/verify-email
-      use: code
+      use: link
       after:
         default_browser_return_url: https://fleet.nativesounds.co.za/login
     logout:

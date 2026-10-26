@@ -75,3 +75,7 @@ Both `http://127.0.0.1:3042` and `http://localhost:3042` work in development. Se
 - `POST /api/internal/kratos/after-login`: secret-authenticated profile synchronization.
 
 Run `pnpm typecheck`, `pnpm build`, `pnpm test`, `pnpm test:e2e`, `pnpm test:admin` and `pnpm infra:test`. The live tests require the local infrastructure, migrations and gateway to be running. They remove only their own temporary identities, application rows and emails. UI copy guidance is maintained in the root `AGENTS.md`.
+
+## Deployed setup links
+
+The hosted Fleet configuration currently uses administrator-provisioned accounts without email OTP. Administrators with account-management permission can generate and copy a single-use 30-minute Kratos setup/reset link on the user profile. Owner accounts additionally require owner-management permission. The production flag `AUTH_REQUIRE_VERIFIED_EMAIL=false` changes only the email-verification gate; current application account status and permissions still control access. Development retains its existing verification policy.

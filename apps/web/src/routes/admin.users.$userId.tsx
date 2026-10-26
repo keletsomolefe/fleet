@@ -1,42 +1,43 @@
-import { useState, type FormEvent } from 'react'
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
-import { ArrowLeft, LoaderCircle } from 'lucide-react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { PageError } from '@/components/page-error'
-import { can, type AdminSession } from '@/lib/auth'
+import { useState, type FormEvent } from "react";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { ArrowLeft, LoaderCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { PageError } from "@/components/page-error";
+import { can, type AdminSession } from "@/lib/auth";
 import {
   getUser,
   getRoles,
   updateAccess,
   type CompanyUser,
   type RoleDefinition,
-} from '@/lib/users'
+} from "@/lib/users";
 
-export const Route = createFileRoute('/admin/users/$userId')({
+export const Route = createFileRoute("/admin/users/$userId")({
   loader: async ({ params }) => {
     const [user, roles] = await Promise.all([
       getUser({ data: params.userId }),
       getRoles(),
-    ])
-    return { user, roles }
+    ]);
+    return { user, roles };
   },
   staleTime: 0,
   gcTime: 0,
   component: UserDetail,
-})
+});
 
 function UserDetail() {
-  const { user, roles } = Route.useLoaderData()
-  const { session } = Route.useRouteContext()
+  const { user, roles } = Route.useLoaderData();
+  const { session } = Route.useRouteContext();
   if (!user.data || !roles.data)
-    return <PageError message={user.error ?? roles.error!} />
+    return <PageError message={user.error ?? roles.error!} />;
   return (
     <AccessForm
       key={user.data.id}
@@ -44,7 +45,7 @@ function UserDetail() {
       roles={roles.data}
       session={session}
     />
-  )
+  );
 }
 
 function AccessForm({
@@ -52,19 +53,52 @@ function AccessForm({
   roles,
   session,
 }: {
-  user: CompanyUser
-  roles: RoleDefinition[]
-  session: AdminSession
+  user: CompanyUser;
+  roles: RoleDefinition[];
+  session: AdminSession;
 }) {
-  const router = useRouter()
-  const [roleIds, setRoleIds] = useState(user.roles.map((role) => role.id))
-  const [active, setActive] = useState(user.isActive)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const [saved, setSaved] = useState(false)
-  const owner = user.roles.some((role) => role.key === 'owner')
+  const router = useRouter();
+  const [roleIds, setRoleIds] = useState(user.roles.map((role) => role.id));
+  const [active, setActive] = useState(user.isActive);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false);
+  const owner = user.roles.some((role) => role.key === "owner");
   const editable =
-    can(session, 'users.access') && (!owner || can(session, 'users.owners'))
+    can(session, "users.access") && (!owner || can(session, "users.owners"));
+  const [accountLink, setAccountLink] = useState<{
+      url: string;
+      expiresAt: string;
+    } | null>(null),
+    [linkBusy, setLinkBusy] = useState(false),
+    [linkError, setLinkError] = useState(""),
+    [copied, setCopied] = useState(false);
+  async function createLink() {
+    setLinkBusy(true);
+    setLinkError("");
+    setAccountLink(null);
+    setCopied(false);
+    try {
+      const r = await fetch(`/api/admin/users/${user.id}/account-link`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": session.csrfToken,
+        },
+        body: "{}",
+      });
+      const data = await r.json();
+      if (!r.ok)
+        throw new Error(data.message ?? "Could not create setup link.");
+      setAccountLink(data);
+    } catch (e) {
+      setLinkError(
+        e instanceof Error ? e.message : "Could not create setup link.",
+      );
+    } finally {
+      setLinkBusy(false);
+    }
+  }
   const selectedPermissions = [
     ...new Map(
       roles
@@ -72,23 +106,23 @@ function AccessForm({
         .flatMap((role) => role.permissions)
         .map((permission) => [permission.key, permission]),
     ).values(),
-  ].sort((a, b) => a.name.localeCompare(b.name))
+  ].sort((a, b) => a.name.localeCompare(b.name));
   async function submit(event: FormEvent) {
-    event.preventDefault()
-    if (busy) return
-    setBusy(true)
-    setError('')
-    setSaved(false)
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    setSaved(false);
     try {
-      await updateAccess(user.id, roleIds, active, session.csrfToken)
-      await router.invalidate()
-      setSaved(true)
+      await updateAccess(user.id, roleIds, active, session.csrfToken);
+      await router.invalidate();
+      setSaved(true);
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : 'Could not save access.',
-      )
+        cause instanceof Error ? cause.message : "Could not save access.",
+      );
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
   }
   return (
@@ -96,7 +130,7 @@ function AccessForm({
       <div className="space-y-4 py-2">
         <Link
           to="/admin/users"
-          search={{ q: '', page: 1 }}
+          search={{ q: "", page: 1 }}
           className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
@@ -124,21 +158,68 @@ function AccessForm({
               </p>
             </div>
             <Badge variant="outline">
-              {user.isActive ? 'Active' : 'Inactive'}
+              {user.isActive ? "Active" : "Inactive"}
             </Badge>
             <dl className="space-y-4 border-t pt-5 text-xs">
               <div className="space-y-1">
                 <dt className="text-muted-foreground">Last sign in</dt>
                 <dd>
                   {user.lastLoginAt
-                    ? new Intl.DateTimeFormat('en-ZA', {
-                        dateStyle: 'medium',
-                        timeZone: 'Africa/Johannesburg',
+                    ? new Intl.DateTimeFormat("en-ZA", {
+                        dateStyle: "medium",
+                        timeZone: "Africa/Johannesburg",
                       }).format(new Date(user.lastLoginAt))
-                    : 'Never'}
+                    : "Never"}
                 </dd>
               </div>
             </dl>
+            {editable && user.isActive && (
+              <div className="space-y-3 border-t pt-4">
+                <h2 className="text-sm font-semibold">Account setup</h2>
+                <Button
+                  variant="outline"
+                  disabled={linkBusy}
+                  onClick={() => void createLink()}
+                >
+                  {linkBusy ? "Creating…" : "Generate setup link"}
+                </Button>
+                {accountLink && (
+                  <>
+                    <Label htmlFor="account-link">Setup link</Label>
+                    <Input
+                      id="account-link"
+                      readOnly
+                      value={accountLink.url}
+                      onFocus={(e) => e.currentTarget.select()}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Valid for 30 minutes. Use once.
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        void navigator.clipboard
+                          .writeText(accountLink.url)
+                          .then(() => {
+                            setCopied(true);
+                            setLinkError("");
+                          })
+                          .catch(() =>
+                            setLinkError("Select and copy the link above."),
+                          );
+                      }}
+                    >
+                      {copied ? "Copied" : "Copy link"}
+                    </Button>
+                  </>
+                )}
+                {linkError && (
+                  <p role="alert" className="text-xs text-destructive">
+                    {linkError}
+                  </p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card className="shadow-none">
@@ -153,8 +234,8 @@ function AccessForm({
                     checked={active}
                     disabled={!editable || user.id === session.user.id || busy}
                     onCheckedChange={(value) => {
-                      setActive(value)
-                      setSaved(false)
+                      setActive(value);
+                      setSaved(false);
                     }}
                   />
                 </div>
@@ -180,15 +261,15 @@ function AccessForm({
                       id={`role-${role.id}`}
                       checked={roleIds.includes(role.id)}
                       disabled={
-                        role.key === 'owner' && !can(session, 'users.owners')
+                        role.key === "owner" && !can(session, "users.owners")
                       }
                       onCheckedChange={(checked) => {
                         setRoleIds((ids) =>
                           checked === true
                             ? [...ids, role.id]
                             : ids.filter((id) => id !== role.id),
-                        )
-                        setSaved(false)
+                        );
+                        setSaved(false);
                       }}
                     />
                     <Label
@@ -198,10 +279,10 @@ function AccessForm({
                       {role.name}
                     </Label>
                     <span className="text-[11px] text-muted-foreground">
-                      {role.permissions.length}{' '}
+                      {role.permissions.length}{" "}
                       {role.permissions.length === 1
-                        ? 'permission'
-                        : 'permissions'}
+                        ? "permission"
+                        : "permissions"}
                     </span>
                   </div>
                 ))}
@@ -227,5 +308,5 @@ function AccessForm({
         </Card>
       </div>
     </>
-  )
+  );
 }

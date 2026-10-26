@@ -1,79 +1,85 @@
-import { useState, type FormEvent } from 'react'
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { Check, LoaderCircle } from 'lucide-react'
-import { FormField } from '@/components/form-field'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { PageError } from '@/components/page-error'
-import { can } from '@/lib/auth'
-import { deniedPage } from '@/lib/users'
+import { useState, type FormEvent } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Check, LoaderCircle } from "lucide-react";
+import { FormField } from "@/components/form-field";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageError } from "@/components/page-error";
+import { can } from "@/lib/auth";
+import { deniedPage } from "@/lib/users";
 
-export const Route = createFileRoute('/admin/users/new')({
+export const Route = createFileRoute("/admin/users/new")({
   loader: ({ context }) =>
-    can(context.session, 'users.create') ? { denied: false } : deniedPage(),
+    can(context.session, "users.create") ? { denied: false } : deniedPage(),
   staleTime: 0,
   gcTime: 0,
   component: CreateUser,
-})
+});
 
 function CreateUser() {
-  const { session } = Route.useRouteContext()
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const [created, setCreated] = useState<{ email: string; id: string } | null>(
-    null,
-  )
+  const { session } = Route.useRouteContext();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [created, setCreated] = useState<{
+    email: string;
+    id: string;
+    requiresEmailVerification: boolean;
+  } | null>(null);
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (busy) return
-    const form = event.currentTarget
-    const data = new FormData(form)
-    setError('')
-    if (data.get('password') !== data.get('confirmation')) {
-      setError('Passwords do not match.')
-      return
+    event.preventDefault();
+    if (busy) return;
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    setError("");
+    if (data.get("password") !== data.get("confirmation")) {
+      setError("Passwords do not match.");
+      return;
     }
-    setBusy(true)
+    setBusy(true);
     try {
-      const response = await fetch('/api/admin/users', {
-        method: 'POST',
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': session.csrfToken,
+          "Content-Type": "application/json",
+          "X-CSRF-Token": session.csrfToken,
         },
         body: JSON.stringify({
-          firstName: data.get('firstName'),
-          lastName: data.get('lastName'),
-          email: data.get('email'),
-          password: data.get('password'),
+          firstName: data.get("firstName"),
+          lastName: data.get("lastName"),
+          email: data.get("email"),
+          password: data.get("password"),
         }),
-      })
+      });
       if (response.status === 401) {
-        window.location.assign('/login')
-        return
+        window.location.assign("/login");
+        return;
       }
-      const body = await response.json()
+      const body = await response.json();
       if (!response.ok)
         throw new Error(
-          typeof body.message === 'string'
+          typeof body.message === "string"
             ? body.message
-            : 'Could not create the user.',
-        )
-      setCreated({ email: body.user.email, id: body.user.id })
-      form.reset()
+            : "Could not create the user.",
+        );
+      setCreated({
+        email: body.user.email,
+        id: body.user.id,
+        requiresEmailVerification: body.requiresEmailVerification,
+      });
+      form.reset();
     } catch (cause) {
       setError(
         cause instanceof Error
           ? cause.message
-          : 'Could not connect. Please try again.',
-      )
+          : "Could not connect. Please try again.",
+      );
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
   }
-  if (!can(session, 'users.create'))
-    return <PageError message="You do not have access to this page." />
+  if (!can(session, "users.create"))
+    return <PageError message="You do not have access to this page." />;
   return (
     <>
       <div className="space-y-1 py-2">
@@ -91,9 +97,11 @@ function CreateUser() {
               <p className="text-xs leading-5 text-muted-foreground">
                 {created.email}
               </p>
-              <p className="text-xs text-muted-foreground">
-                Email verification pending
-              </p>
+              {created.requiresEmailVerification && (
+                <p className="text-xs text-muted-foreground">
+                  Email verification pending
+                </p>
+              )}
               <div className="flex flex-wrap gap-3">
                 <Button
                   className="justify-start text-left"
@@ -185,7 +193,7 @@ function CreateUser() {
                     variant="outline"
                     className="justify-start text-left"
                   >
-                    <Link to="/admin/users" search={{ q: '', page: 1 }}>
+                    <Link to="/admin/users" search={{ q: "", page: 1 }}>
                       Cancel
                     </Link>
                   </Button>
@@ -196,5 +204,5 @@ function CreateUser() {
         </CardContent>
       </Card>
     </>
-  )
+  );
 }

@@ -11,6 +11,7 @@ The key's server-side `authorized_keys` entry has `restrict` and a forced `/usr/
 - `/opt/fleet/.env`: root-only runtime credentials and initial owner credentials; generated once by `deploy/init-env.py`.
 - `/opt/fleet/private/kratos.local.json`: secret-bearing hook configuration in a root-only directory; mounted individually read-only for Kratos UID 10000.
 - `/opt/fleet/releases/<SHA>/`: deployment files downloaded from that exact GitHub commit.
+- `/opt/fleet/config/`: stable bind-mount paths; unchanged pushes do not restart Postgres or Kratos just because the release directory changed.
 - `/opt/fleet/current`: last deployment that passed container and public HTTPS checks.
 - Docker project `fleet`: application, edge router, Postgres, Kratos, fallback account UI and private test email inbox.
 
@@ -34,7 +35,7 @@ bash /opt/fleet/releases/"$sha"/deploy.sh "$sha"
 
 The initial owner uses the email configured during server initialization. Its generated password is available only to the server operator in `/opt/fleet/.env` as `INITIAL_OWNER_PASSWORD`; retrieve it over your existing administrative SSH access and change it through account settings. It is never printed by the deployment.
 
-Emails currently go to the private Mailpit inbox. Access it through an administrative SSH tunnel:
+Email OTP is disabled for this deployment (`AUTH_REQUIRE_VERIFIED_EMAIL=false`). Administrators provision users and copy a one-time 30-minute setup/reset link from the user profile. `users.access` is required; owner accounts also require `users.owners`. Active local users and role permissions remain mandatory. Kratos owns the link, password update and session. Optional emails currently go to the private Mailpit inbox. Access it through an administrative SSH tunnel:
 
 ```bash
 ssh -L 18026:127.0.0.1:18026 root@nativesounds.co.za

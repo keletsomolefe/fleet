@@ -156,3 +156,41 @@ describe('Administrator sessions', () => {
     ).not.toBe(token);
   });
 });
+
+describe('Administrator-provisioned sign-in without email OTP', () => {
+  afterEach(() => vi.unstubAllEnvs());
+  it('allows an unverified identity only when the explicit policy is off and local access remains active', async () => {
+    vi.stubEnv('AUTH_REQUIRE_VERIFIED_EMAIL', 'false');
+    const whoami = vi
+      .fn()
+      .mockResolvedValue({
+        id: 's',
+        active: true,
+        identity: {
+          id: 'i',
+          state: 'active',
+          traits: { email: 'managed@example.test' },
+          verifiable_addresses: [],
+        },
+      });
+    const user = { id: 'u', isActive: true };
+    const findOneBy = vi.fn().mockResolvedValue(user);
+    const auth = new AuthService(
+      { whoami } as unknown as KratosService,
+      { findOneBy } as unknown as Repository<User>,
+      {
+        access: vi
+          .fn()
+          .mockResolvedValue({ permissions: ['admin.access'], roles: [] }),
+        require: RbacService.prototype.require,
+      } as unknown as RbacService,
+    );
+    await expect(auth.authenticate('cookie')).resolves.toMatchObject({
+      user: { id: 'u' },
+    });
+    findOneBy.mockResolvedValue(null);
+    await expect(auth.authenticate('cookie')).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+  });
+});
