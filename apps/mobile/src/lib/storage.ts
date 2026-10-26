@@ -14,7 +14,7 @@ export async function read(key: string) {
 }
 export async function write(key: string, value: string) {
   if (Platform.OS === "web")
-    throw new Error("Open the installed Fleet app to continue.");
+    throw new Error("Open the installed VHH Fleet app to continue.");
   await SecureStore.setItemAsync(key, value, options);
 }
 export async function remove(key: string) {

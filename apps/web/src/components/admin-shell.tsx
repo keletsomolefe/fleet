@@ -161,14 +161,14 @@ function Navigation({ session }: { session: AdminSession }) {
       <SidebarHeader className="px-4 pt-4 pb-2">
         <div className="flex h-[88px] items-center gap-3 px-2">
           <img
-            src="/brand/fleet-mark.svg"
+            src="/design/monogram.svg"
             alt=""
             width={48}
             height={48}
             className="shrink-0"
           />
           <div className="space-y-1">
-            <p className="text-sm font-semibold">Fleet</p>
+            <p className="text-sm font-semibold">VHH Fleet</p>
             <p className="text-[11px] leading-4 text-muted-foreground">
               Fleet management
             </p>
@@ -363,13 +363,13 @@ export function AdminShell({
           <div className="flex min-w-0 items-center gap-3">
             <SidebarTrigger className="md:hidden" />
             <p className="truncate text-xs text-muted-foreground">
-              Fleet / {title}
+              VHH Fleet / {title}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
             <AttentionMenu session={session} />
             <span className="hidden text-[11px] text-muted-foreground sm:block">
-              Fleet
+              VHH Fleet
             </span>
             <Avatar className="size-8">
               <AvatarFallback className="bg-muted text-xs">

@@ -51,3 +51,22 @@ To deliver real email, update `SMTP_CONNECTION_URI` and `SMTP_FROM_ADDRESS` in `
 For installed staging mobile builds, run `pnpm mobile:build:staging --platform android` (or `ios`) from the repository root. The `staging` EAS profile sets `APP_ENV=staging`, which fixes the public API to `https://fleet.nativesounds.co.za/api` without changing local development's root `.env`. EAS login, project linking and signing must be configured for the first cloud build. Other release profiles require an HTTPS `EXPO_PUBLIC_API_URL`. The deployed API supplies `wss://fleet.nativesounds.co.za/mqtt`; existing installed binaries retain their previous endpoint until rebuilt.
 
 Reference configuration was checked against [Caddy Docker Proxy](https://github.com/lucaslorentz/caddy-docker-proxy), the pinned [Kratos UI source](https://github.com/ory/kratos-selfservice-ui-node/blob/v26.2.0/src/index.ts), and [GitHub Actions triggers](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow).
+
+## Android APK download
+
+The public, fixed download endpoint is `https://fleet.nativesounds.co.za/downloads/android/latest.apk`. The sign-in page links to it. Caddy serves the APK from `/opt/fleet/downloads` through a read-only mount, supporting HEAD and byte-range requests. Responses use the Android package content type, an attachment filename, and `Cache-Control: no-cache` so clients revalidate the latest build. Other download paths are not exposed. Installing the app does not grant application access; users still sign in.
+
+Build with `pnpm mobile:build:staging --platform android` from the repository root. Download the completed, signed EAS APK and verify its Android package, release signature, VHH branding and staging API URL before publishing. Keep APKs and signing credentials outside Git. To publish as the normal server operator:
+
+```bash
+apk=/absolute/path/vhh-fleet-staging.apk
+digest=$(shasum -a 256 "$apk" | cut -d ' ' -f 1)
+ssh root@nativesounds.co.za 'install -d -m 0700 /opt/fleet/downloads/incoming'
+scp "$apk" "root@nativesounds.co.za:/opt/fleet/downloads/incoming/$digest.apk"
+ssh root@nativesounds.co.za "bash /opt/fleet/current/publish-android.sh $digest"
+curl --fail --head https://fleet.nativesounds.co.za/downloads/android/latest.apk
+```
+
+The publisher checks the upload checksum and archive signature, stores an immutable file named by its SHA-256, and atomically updates the latest symlink. It keeps the previous build available on disk if the next upload fails. Files persist across web/API releases. Android updates must continue to use the same signing key; phones with an earlier debug-signed development build may require uninstalling that build first.
+
+Run `pnpm test:downloads` to check atomic publication, checksum rejection, response headers, HEAD and resumable requests in an isolated local Caddy container.

@@ -2,7 +2,7 @@
 
 Design source: [VHH Web Admin](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=3-3&m=dev).
 
-The web application uses shadcn/ui with Radix, Tailwind CSS 4, local Montserrat fonts and the existing monochrome theme. The active product name is Fleet; its editable SVG logos are in `assets/brand/fleet`, with web copies in `apps/web/public/brand`. Original VHH artwork and Figma SVG exports remain in `apps/web/public/design`. The desktop sidebar is 240px and the header is 64px. Small screens use a drawer; stacked authentication cards and branding are centred.
+The web application uses shadcn/ui with Radix, Tailwind CSS 4, local Montserrat fonts and the existing monochrome theme. The product name is VHH Fleet. The active VHH artwork and Figma SVG exports are in `apps/web/public/design`; editable source artwork is in `assets/brand`. Earlier Fleet artwork remains available in `assets/brand/fleet` and `apps/web/public/brand`. The desktop sidebar is 240px and the header is 64px. Small screens use a drawer; stacked authentication cards and branding are centred.
 
 ## Account access
 

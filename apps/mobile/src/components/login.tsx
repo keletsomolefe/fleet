@@ -39,7 +39,7 @@ export function Login() {
     >
       <View style={{ gap: 20 }}>
         <Logo />
-        <Heading title="Welcome to Fleet" />
+        <Heading title="Welcome to VHH Fleet" />
         <Field
           label="Email or driver ID"
           value={identifier}

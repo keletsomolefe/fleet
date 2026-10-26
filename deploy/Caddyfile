@@ -5,6 +5,14 @@
 :8080 {
   @internal path /api/internal /api/internal/*
   respond @internal 404
+  handle /downloads/android/latest.apk {
+    root * /srv/downloads
+    rewrite * /android/latest.apk
+    header Content-Type application/vnd.android.package-archive
+    header Content-Disposition "attachment; filename=vhh-fleet-staging.apk"
+    header Cache-Control "no-cache"
+    file_server
+  }
   handle_path /auth/* {
     reverse_proxy kratos:4433 {
       header_up X-Forwarded-Proto https

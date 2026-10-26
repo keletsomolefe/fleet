@@ -39,6 +39,6 @@ ENV NODE_ENV=production
 ARG RELEASE_SHA=development
 ENV FLEET_RELEASE_SHA=$RELEASE_SHA
 LABEL org.opencontainers.image.source=https://github.com/keletsomolefe/fleet org.opencontainers.image.revision=$RELEASE_SHA org.opencontainers.image.title=Fleet
-HEALTHCHECK --interval=20s --timeout=10s --start-period=40s --retries=5 CMD node -e "Promise.all(['/api/','/brand/fleet-mark.svg'].map(p=>fetch('http://127.0.0.1:3042'+p))).then(rs=>process.exit(rs.every(r=>r.ok)?0:1)).catch(()=>process.exit(1))"
+HEALTHCHECK --interval=20s --timeout=10s --start-period=40s --retries=5 CMD node -e "Promise.all(['/api/','/design/monogram.svg'].map(p=>fetch('http://127.0.0.1:3042'+p))).then(rs=>process.exit(rs.every(r=>r.ok)?0:1)).catch(()=>process.exit(1))"
 EXPOSE 3042 1884
 CMD ["node_modules/.bin/wattpm", "start"]

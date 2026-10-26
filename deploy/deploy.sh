@@ -20,6 +20,8 @@ stage_config() {
   install -m 0644 "$source"/postgres/*.sql /opt/fleet/config/postgres/
 }
 compose config --quiet
+install -d -m 0755 /opt/fleet/downloads/android/releases
+install -d -m 0700 /opt/fleet/downloads/incoming
 stage_config "$release"
 compose up -d --wait --wait-timeout 120 postgres mailpit
 compose run --rm -T kratos-migrate
@@ -41,7 +43,7 @@ rollout() {
   else
     compose up -d --wait --wait-timeout 120 edge || return 1
   fi
-  curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors https://fleet.nativesounds.co.za/brand/fleet-mark.svg -o /dev/null || return 1
+  curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors https://fleet.nativesounds.co.za/design/monogram.svg -o /dev/null || return 1
   curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors https://fleet.nativesounds.co.za/api/ -o /dev/null || return 1
 }
 if ! rollout; then

@@ -158,14 +158,14 @@ export function Screen({
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <Image
-            source={require("../../assets/brand/fleet-mark.svg")}
+            source={require("../../assets/brand/monogram.svg")}
             contentFit="contain"
             contentPosition="center"
             accessible={false}
             style={{ width: 30, height: 30, flexShrink: 0 }}
           />
           <Text style={[styles.text, { fontFamily: "Montserrat_600SemiBold" }]}>
-            Fleet
+            VHH Fleet
           </Text>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -254,7 +254,7 @@ export function Screen({
           {registration ?? driver?.truck?.registration ?? "No vehicle selected"}
         </Text>
         <Text numberOfLines={1} style={[styles.small, { flexShrink: 1 }]}>
-          {driver?.truck?.identifier ?? "Fleet"}
+          {driver?.truck?.identifier ?? "VHH Fleet"}
         </Text>
       </View>
       <KeyboardAvoidingView
@@ -466,12 +466,12 @@ export function Emblem({ name }: { name: keyof typeof icons }) {
 export function Logo() {
   return (
     <Image
-      source={require("../../assets/brand/fleet-logo.svg")}
+      source={require("../../assets/brand/logo.svg")}
       contentFit="contain"
-      accessibilityLabel="Fleet"
+      accessibilityLabel="VHH Fleet"
       style={{
         width: 208,
-        height: 64,
+        height: 82,
         alignSelf: "center",
         marginVertical: 24,
       }}

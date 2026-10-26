@@ -5,7 +5,7 @@ x-kratos-env: &kratos-env
   SECRETS_CIPHER: ${KRATOS_CIPHER_SECRET:?}
   COURIER_SMTP_CONNECTION_URI: ${SMTP_CONNECTION_URI:?}
   COURIER_SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS:?}
-  COURIER_SMTP_FROM_NAME: Fleet
+  COURIER_SMTP_FROM_NAME: VHH Fleet
 
 x-app-env: &app-env
   NODE_ENV: production
@@ -134,7 +134,9 @@ services:
     image: caddy:2.11.7-alpine
     restart: unless-stopped
     mem_limit: 64m
-    volumes: [/opt/fleet/config/Caddyfile:/etc/caddy/Caddyfile:ro]
+    volumes:
+      - /opt/fleet/config/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/fleet/downloads:/srv/downloads:ro
     networks: [default, caddy]
     labels:
       caddy: fleet.nativesounds.co.za

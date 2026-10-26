@@ -249,9 +249,9 @@ async function activate() {
     showsBackgroundLocationIndicator: true,
     activityType: Location.ActivityType.AutomotiveNavigation,
     foregroundService: {
-      notificationTitle: "Fleet location sharing",
+      notificationTitle: "VHH Fleet location sharing",
       notificationBody:
-        "Recording this truck’s route. Open Fleet to stop sharing.",
+        "Recording this truck’s route. Open VHH Fleet to stop sharing.",
       notificationColor: "#0B0B0B",
       killServiceOnDestroy: false,
     },
@@ -388,7 +388,7 @@ export async function capture(locations: Location.LocationObject[]) {
           await Location.stopLocationUpdatesAsync(LOCATION_TASK);
         await recordError(
           new Error(
-            `Could not save ${records.length} GPS records. Free device storage and reopen Fleet.`,
+            `Could not save ${records.length} GPS records. Free device storage and reopen VHH Fleet.`,
           ),
         );
         throw cause;

@@ -8,7 +8,7 @@ export async function getTrackingStatus(): Promise<TrackingStatus> {
   return emptyStatus;
 }
 export async function startTracking(_session: Session, _driver: DriverContext) {
-  throw new Error("Location sharing requires the installed Fleet app.");
+  throw new Error("Location sharing requires the installed VHH Fleet app.");
 }
 export async function stopTracking(_reason?: string) {}
 export async function reconcileDriverContext(_driver: DriverContext) {}

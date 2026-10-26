@@ -1,10 +1,14 @@
 {
   "expo": {
-    "name": "Fleet",
+    "name": "VHH Fleet",
     "slug": "fleet",
+    "owner": "patrickkeletso",
+    "extra": {
+      "eas": { "projectId": "ba087554-366f-4c7f-8e72-81fc184b6d1d" }
+    },
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/brand/fleet-app-icon.png",
+    "icon": "./assets/brand/app-icon.png",
     "scheme": "vhh-fleet",
     "userInterfaceStyle": "light",
     "ios": {
@@ -16,13 +20,13 @@
       "allowBackup": false,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
-        "foregroundImage": "./assets/brand/fleet-adaptive-icon.png",
-        "monochromeImage": "./assets/brand/fleet-adaptive-icon.png"
+        "foregroundImage": "./assets/brand/adaptive-icon.png",
+        "monochromeImage": "./assets/brand/adaptive-icon.png"
       }
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/brand/fleet-favicon.png"
+      "favicon": "./assets/brand/app-icon.png"
     },
     "plugins": [
       "expo-router",
@@ -32,8 +36,8 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Fleet to record this truck’s route while you share location.",
-          "locationAlwaysAndWhenInUsePermission": "Allow Fleet to record this truck’s route in the background while location sharing is on.",
+          "locationWhenInUsePermission": "Allow VHH Fleet to record this truck’s route while you share location.",
+          "locationAlwaysAndWhenInUsePermission": "Allow VHH Fleet to record this truck’s route in the background while location sharing is on.",
           "isIosBackgroundLocationEnabled": true,
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
@@ -43,7 +47,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#FFFFFF",
-          "image": "./assets/brand/fleet-mark.png",
+          "image": "./assets/brand/vhh-monogram-4096.png",
           "imageWidth": 76
         }
       ]

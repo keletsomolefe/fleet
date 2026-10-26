@@ -11,7 +11,7 @@ export async function refreshActivities(_session: Session, _driverId: string) {}
 export async function stopRecording() {}
 export async function syncActivities(_force = false) {}
 export async function saveActivity(_id: string, _data: Data) {
-  throw new Error("Open the installed Fleet app to continue.");
+  throw new Error("Open the installed VHH Fleet app to continue.");
 }
 export function watchActivities() {
   return () => {};

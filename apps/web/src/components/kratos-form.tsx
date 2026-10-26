@@ -95,7 +95,7 @@ export function KratosForm({
     <AuthLayout>
       <Card className="gap-0 rounded-xl py-0 shadow-none">
         <CardContent className="space-y-6 p-6 sm:p-8">
-          <h1>{verification ? "Verify your email" : "Welcome to Fleet"}</h1>
+          <h1>{verification ? "Verify your email" : "Welcome to VHH Fleet"}</h1>
           {denied && (
             <Alert variant="destructive">
               <AlertDescription>
@@ -137,7 +137,7 @@ export function KratosForm({
             </div>
           ) : denied ? null : alreadyAuthenticated ? (
             <Button asChild className="w-full">
-              <a href="/admin">Open Fleet</a>
+              <a href="/admin">Open VHH Fleet</a>
             </Button>
           ) : flow ? (
             <form onSubmit={submit} className="space-y-6">
@@ -246,6 +246,11 @@ export function KratosForm({
               onClick={() => void initialize()}
             >
               {busy && <LoaderCircle className="animate-spin" />}Try again
+            </Button>
+          )}
+          {!verification && (
+            <Button asChild variant="outline" className="w-full">
+              <a href="/downloads/android/latest.apk">Download Android app</a>
             </Button>
           )}
           {verification && (

@@ -93,7 +93,7 @@ export async function request<T>(
 ): Promise<T> {
   // The web target is a visual preview. Native session credentials never enter browser storage.
   if (Platform.OS === "web")
-    throw new ApiError(400, "Open the installed Fleet app to continue.");
+    throw new ApiError(400, "Open the installed VHH Fleet app to continue.");
   let response: Response;
   try {
     response = await fetch(`${apiUrl}/mobile/${path}`, {

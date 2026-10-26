@@ -23,3 +23,9 @@ docker/kratos/kratos.local.json
 
 # macOS files
 .DS_Store
+
+# Mobile release artifacts and signing credentials
+*.apk
+*.aab
+*.jks
+credentials.json

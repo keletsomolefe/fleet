@@ -1,7 +1,11 @@
 {
+  "cli": { "appVersionSource": "remote" },
   "build": {
     "development": { "developmentClient": true, "distribution": "internal", "ios": { "simulator": true } },
     "staging": {
+      "autoIncrement": true,
+      "node": "24.22.1",
+      "pnpm": "12.14.0",
       "distribution": "internal",
       "environment": "preview",
       "env": { "APP_ENV": "staging" },

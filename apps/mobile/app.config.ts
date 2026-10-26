@@ -30,7 +30,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     );
   return {
     ...config,
-    name: "Fleet",
+    name: "VHH Fleet",
     slug: "fleet",
     extra: { ...config.extra, apiUrl },
     ios: {

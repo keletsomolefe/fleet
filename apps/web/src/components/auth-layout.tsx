@@ -6,10 +6,10 @@ export function AuthLayout({ children }: { children: ReactNode }) {
       <aside className="flex flex-col items-center justify-between gap-8 bg-black p-6 text-white lg:min-h-svh lg:items-start lg:p-12">
         <div className="flex h-[85px] w-[216px] max-w-full shrink-0 items-center lg:h-32 lg:w-80">
           <img
-            src="/brand/fleet-logo-white.svg"
-            alt="Fleet"
-            width={208}
-            height={64}
+            src="/design/brand-white.svg"
+            alt="VHH Fleet"
+            width={300}
+            height={117}
             className="h-auto w-[216px] max-w-full lg:w-72"
           />
         </div>
@@ -30,11 +30,11 @@ export function AuthLayout({ children }: { children: ReactNode }) {
           </p>
         </div>
         <p className="hidden text-[11px] leading-4 lg:block">
-          Fleet
+          VHH Fleet
         </p>
       </aside>
       <section
-        aria-label="Fleet account"
+        aria-label="VHH Fleet account"
         className="flex items-center justify-center bg-muted p-5 sm:p-10 lg:justify-start lg:p-12"
       >
         <div className="w-full max-w-[556px]">{children}</div>
