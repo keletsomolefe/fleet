@@ -31,6 +31,8 @@ Build a staging app from the repository root:
 
 ```sh
 pnpm mobile:build:staging --platform android
+# Build on this machine with the same signing key, without a cloud queue:
+pnpm mobile:build:staging:local --platform android --output /absolute/path/vhh-fleet-staging.apk
 # Or for registered iOS devices:
 pnpm mobile:build:staging --platform ios
 ```
@@ -38,5 +40,7 @@ pnpm mobile:build:staging --platform ios
 The `staging` EAS profile sets `APP_ENV=staging` and always uses `https://fleet.nativesounds.co.za/api`, including when the root `.env` points to a local gateway. Android produces an installable release APK; iOS uses internal device distribution. Both require HTTPS and run without a development server. The project is linked to `@patrickkeletso/fleet`; EAS manages Android signing credentials and increments staging build numbers. Signing keys stay outside Git. The root build command runs EAS inside the mobile workspace.
 
 The latest published APK is available at `https://fleet.nativesounds.co.za/downloads/android/latest.apk` and through **Download Android app** on the sign-in page. See [publishing an Android build](../../docs/deployment.md#android-apk-download) for the operator procedure.
+
+Local builds require Java 17 and the Android SDK, run the native Gradle build on this machine, and retrieve the existing signing credentials from EAS. Use the root `pnpm-lock.yaml`; do not add an npm lockfile, which can make EAS choose npm instead of pnpm.
 
 Local development still uses `EXPO_PUBLIC_API_URL` from the environment or root `.env`. The development EAS profile builds a development client. Other release profiles must supply an HTTPS `EXPO_PUBLIC_API_URL`.

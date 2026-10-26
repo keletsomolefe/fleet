@@ -860,10 +860,10 @@ function Jobs({
   }
   return (
     <>
-      {can(session, "dispatch.write") && (
-        <Button onClick={() => setJob(fresh())}>Plan a job</Button>
-      )}
       <Frame>
+        {can(session, "dispatch.write") && (
+          <Button onClick={() => setJob(fresh())}>Plan a job</Button>
+        )}
         <Table>
           <TableHeader>
             <TableRow>
@@ -1205,13 +1205,14 @@ function Activities({
     setSelected((s) => (s ? { ...s, data: { ...s.data, [k]: v } } : s));
   return (
     <>
-      <Input
-        placeholder="Search activities…"
-        aria-label="Search activities"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
       <Frame>
+        <Input
+          placeholder="Search activities…"
+          aria-label="Search activities"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="w-full sm:max-w-sm"
+        />
         <Table>
           <TableHeader>
             <TableRow>

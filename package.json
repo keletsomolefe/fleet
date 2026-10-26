@@ -24,6 +24,7 @@
     "mobile:android": "pnpm --filter mobile android",
     "mobile:ios": "pnpm --filter mobile ios",
     "mobile:build:staging": "pnpm --filter mobile exec pnpm dlx eas-cli@latest build --profile staging",
+    "mobile:build:staging:local": "pnpm --filter mobile exec pnpm dlx eas-cli@latest build --profile staging --local",
     "mobile:check": "pnpm --filter mobile lint && pnpm --filter mobile typecheck",
     "mobile:reverse": "node scripts/android-reverse.mjs",
     "test:schedules": "node scripts/test-schedules-stack.mjs",

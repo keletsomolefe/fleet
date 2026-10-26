@@ -222,6 +222,7 @@ function Schedules() {
             </Button>
             <Input
               aria-label="Schedule date"
+              className="w-auto"
               type="date"
               value={anchor}
               onChange={(e) => {
