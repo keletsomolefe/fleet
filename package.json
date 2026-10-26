@@ -26,6 +26,7 @@
     "mobile:build:staging": "pnpm --filter mobile exec pnpm dlx eas-cli@latest build --profile staging",
     "mobile:build:staging:local": "pnpm --filter mobile exec pnpm dlx eas-cli@latest build --profile staging --local",
     "mobile:check": "pnpm --filter mobile lint && pnpm --filter mobile typecheck",
+    "mobile:test:startup": "node scripts/test-android-startup.mjs",
     "mobile:reverse": "node scripts/android-reverse.mjs",
     "test:schedules": "node scripts/test-schedules-stack.mjs",
     "test:issues": "node scripts/test-driver-issues-stack.mjs",

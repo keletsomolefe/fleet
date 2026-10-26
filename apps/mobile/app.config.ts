@@ -51,7 +51,16 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ...(config.plugins ?? []),
       [
         "expo-build-properties",
-        { android: { usesCleartextTraffic: development } },
+        {
+          android: {
+            usesCleartextTraffic: development,
+            // Room creates WorkManager's database by reflection. Its upstream
+            // class-only keep rule lets R8 full mode remove the constructor.
+            extraProguardRules: `-keep class androidx.work.impl.WorkDatabase_Impl {
+    public <init>();
+}`,
+          },
+        },
       ],
     ],
   };
