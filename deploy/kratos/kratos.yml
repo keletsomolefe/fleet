@@ -1,0 +1,94 @@
+# HTTPS configuration for fleet.nativesounds.co.za; secrets are supplied separately.
+# DSN and secrets must come from the environment; there is no memory fallback.
+serve:
+  public:
+    base_url: https://fleet.nativesounds.co.za/auth/
+    cors:
+      enabled: true
+      allow_credentials: true
+      allowed_origins:
+        - https://fleet.nativesounds.co.za
+      allowed_methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+      allowed_headers: [Authorization, Content-Type, Cookie, X-CSRF-Token]
+      exposed_headers: [Content-Type, Set-Cookie]
+  admin:
+    base_url: http://kratos:4434/
+
+selfservice:
+  default_browser_return_url: https://fleet.nativesounds.co.za/admin
+  allowed_return_urls:
+    - https://fleet.nativesounds.co.za/account/
+    - https://fleet.nativesounds.co.za/
+  methods:
+    password:
+      enabled: true
+    code:
+      enabled: true
+  flows:
+    error:
+      ui_url: https://fleet.nativesounds.co.za/account/error
+    login:
+      ui_url: https://fleet.nativesounds.co.za/login
+      lifespan: 10m
+      after:
+        hooks:
+          - hook: require_verified_address
+    registration:
+      ui_url: https://fleet.nativesounds.co.za/account/registration
+      lifespan: 10m
+      after:
+        password:
+          hooks:
+            - hook: show_verification_ui
+    settings:
+      ui_url: https://fleet.nativesounds.co.za/account/settings
+      privileged_session_max_age: 15m
+    recovery:
+      enabled: true
+      ui_url: https://fleet.nativesounds.co.za/account/recovery
+      use: code
+    verification:
+      enabled: true
+      ui_url: https://fleet.nativesounds.co.za/verify-email
+      use: code
+      after:
+        default_browser_return_url: https://fleet.nativesounds.co.za/login
+    logout:
+      after:
+        default_browser_return_url: https://fleet.nativesounds.co.za/login
+
+session:
+  lifespan: 24h
+  cookie:
+    name: fleet_kratos_session
+    same_site: Lax
+    path: /
+
+cookies:
+  same_site: Lax
+
+log:
+  level: info
+  format: json
+  leak_sensitive_values: false
+
+ciphers:
+  algorithm: xchacha20-poly1305
+
+hashers:
+  algorithm: argon2
+
+identity:
+  default_schema_id: fleet-user-v1
+  schemas:
+    - id: fleet-user-v1
+      url: file:///etc/config/kratos/identity.schema.json
+
+courier:
+  smtp:
+    connection_uri: smtp://mailpit:1025/?disable_starttls=true
+    from_address: no-reply@nativesounds.co.za
+    from_name: Fleet
+
+feature_flags:
+  use_continue_with_transitions: true

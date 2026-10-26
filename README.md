@@ -123,3 +123,5 @@ Route optimization, item/barcode inventory, customer portals, automated messages
 
 
 Driver weekly/monthly plans, daily confirmations and MQTT administrator attention are described in [Driver scheduling](docs/driver-scheduling.md).
+
+Push-to-main deployment to `fleet.nativesounds.co.za` is configured in [Deployment](docs/deployment.md). Runtime credentials remain on the server.

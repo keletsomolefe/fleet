@@ -1,0 +1,147 @@
+name: fleet
+x-kratos-env: &kratos-env
+  DSN: ${KRATOS_DSN:?Initialize /opt/fleet/.env}
+  SECRETS_COOKIE: ${KRATOS_COOKIE_SECRET:?}
+  SECRETS_CIPHER: ${KRATOS_CIPHER_SECRET:?}
+  COURIER_SMTP_CONNECTION_URI: ${SMTP_CONNECTION_URI:?}
+  COURIER_SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS:?}
+  COURIER_SMTP_FROM_NAME: Fleet
+
+x-app-env: &app-env
+  NODE_ENV: production
+  PLT_SERVER_LOGGER_LEVEL: info
+  PLT_SERVER_HOSTNAME: 0.0.0.0
+  PLT_MANAGEMENT_API: "false"
+  GATEWAY_PORT: "3042"
+  APP_URL: https://fleet.nativesounds.co.za/
+  APP_CSRF_SECRET: ${APP_CSRF_SECRET:?}
+  DATABASE_SCHEMA: app
+  DATABASE_URL: ${DATABASE_URL:?}
+  KRATOS_PUBLIC_URL: https://fleet.nativesounds.co.za/auth/
+  KRATOS_ADMIN_URL: http://kratos:4434/
+  KRATOS_UI_URL: https://fleet.nativesounds.co.za/account/
+  KRATOS_HOOK_SECRET: ${KRATOS_HOOK_SECRET:?}
+  MQTT_ENABLED: "true"
+  MQTT_BIND_HOST: 0.0.0.0
+  MQTT_WS_PORT: "1884"
+  MQTT_PUBLIC_URL: wss://fleet.nativesounds.co.za/mqtt
+
+services:
+  postgres:
+    image: postgres:18.6-alpine
+    restart: unless-stopped
+    mem_limit: 384m
+    command: [postgres, -c, shared_buffers=64MB, -c, max_connections=50]
+    environment:
+      POSTGRES_DB: fleet
+      POSTGRES_USER: fleet_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      APP_DB_USER: fleet_app
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?}
+      KRATOS_DB_USER: fleet_kratos
+      KRATOS_DB_PASSWORD: ${KRATOS_DB_PASSWORD:?}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U fleet_admin -d fleet]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  mailpit:
+    image: axllent/mailpit:v1.31.6
+    restart: unless-stopped
+    mem_limit: 64m
+    volumes: [mail_data:/data]
+    environment:
+      MP_DATABASE: /data/mailpit.db
+    ports: [127.0.0.1:18026:8025]
+
+  kratos-migrate:
+    image: oryd/kratos:v26.2.0
+    environment: *kratos-env
+    command:
+      [
+        migrate,
+        sql,
+        --config,
+        /etc/config/kratos/kratos.yml,
+        --read-from-env,
+        --yes,
+      ]
+    volumes: [./kratos:/etc/config/kratos:ro]
+    profiles: [tools]
+
+  kratos:
+    image: oryd/kratos:v26.2.0
+    restart: unless-stopped
+    mem_limit: 192m
+    environment: *kratos-env
+    command:
+      [
+        serve,
+        --config,
+        /etc/config/kratos/kratos.yml,
+        --config,
+        /etc/fleet/kratos.local.json,
+        --watch-courier,
+      ]
+    volumes:
+      - ./kratos:/etc/config/kratos:ro
+      - /opt/fleet/private/kratos.local.json:/etc/fleet/kratos.local.json:ro
+    healthcheck:
+      test: [CMD, kratos, remote, status, --endpoint, http://127.0.0.1:4434]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  kratos-ui:
+    image: oryd/kratos-selfservice-ui-node:v26.2.0
+    restart: unless-stopped
+    mem_limit: 128m
+    environment:
+      PORT: "4455"
+      BASE_PATH: /account
+      BASE_URL: https://fleet.nativesounds.co.za/account/
+      KRATOS_PUBLIC_URL: http://kratos:4433/
+      KRATOS_BROWSER_URL: https://fleet.nativesounds.co.za/auth/
+      COOKIE_SECRET: ${KRATOS_UI_COOKIE_SECRET:?}
+      CSRF_COOKIE_NAME: __Host-fleet_ui_csrf
+      CSRF_COOKIE_SECRET: ${KRATOS_UI_CSRF_SECRET:?}
+
+  app:
+    image: ${FLEET_IMAGE:?Deployment image is required}
+    restart: unless-stopped
+    init: true
+    mem_limit: 768m
+    environment: *app-env
+
+  owner-bootstrap:
+    image: ${FLEET_IMAGE:?}
+    environment:
+      <<: *app-env
+      INITIAL_OWNER_EMAIL: ${INITIAL_OWNER_EMAIL:?}
+      INITIAL_OWNER_FIRST_NAME: ${INITIAL_OWNER_FIRST_NAME:-Fleet}
+      INITIAL_OWNER_LAST_NAME: ${INITIAL_OWNER_LAST_NAME:-Owner}
+      INITIAL_OWNER_PASSWORD: ${INITIAL_OWNER_PASSWORD:?}
+    command: [node, deploy/bootstrap-owner.mjs]
+    profiles: [tools]
+
+  edge:
+    image: caddy:2.11.7-alpine
+    restart: unless-stopped
+    mem_limit: 64m
+    volumes: [./Caddyfile:/etc/caddy/Caddyfile:ro]
+    networks: [default, caddy]
+    labels:
+      caddy: fleet.nativesounds.co.za
+      caddy.reverse_proxy: "{{upstreams 8080}}"
+      caddy_ingress_network: caddy
+
+volumes:
+  postgres_data:
+  mail_data:
+networks:
+  caddy:
+    external: true
