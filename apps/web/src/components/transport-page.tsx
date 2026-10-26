@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/page-header";
 import {
   Table,
   TableBody,
@@ -126,8 +127,8 @@ function Pick({
 }
 function Frame({ children }: { children: ReactNode }) {
   return (
-    <Card>
-      <CardContent className="space-y-5 pt-6">{children}</CardContent>
+    <Card className="gap-5 p-4 shadow-none sm:p-6">
+      <CardContent className="space-y-5 p-0">{children}</CardContent>
     </Card>
   );
 }
@@ -169,21 +170,36 @@ export function TransportPage({
       </Alert>
     );
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 p-6 lg:p-8">
-      <div>
-        <p className="text-xs text-muted-foreground">
-          {section === "earnings" ? "Review & records" : "Fleet"}
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold">
-          {section === "pricing"
+    <div className="flex w-full min-w-0 flex-col gap-6">
+      <PageHeader
+        group={
+          ["earnings", "activities"].includes(section)
+            ? "Review & records"
+            : section === "dispatch"
+              ? "Operations"
+              : "People & assets"
+        }
+        title={
+          section === "pricing"
             ? "Transport rates"
             : section === "earnings"
               ? "Truck earnings"
               : section === "activities"
                 ? "Activities & review"
-                : title(section)}
-        </h1>
-      </div>
+                : title(section)
+        }
+        description={
+          {
+            customers: "Manage customers and suppliers",
+            locations: "Manage collection and delivery sites",
+            products: "Manage products and measurement units",
+            pricing: "Manage transport agreements",
+            dispatch: "Plan collections and deliveries",
+            activities: "Review driver activity",
+            earnings: "Review revenue and fuel purchases",
+          }[section]
+        }
+      />
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -280,30 +296,31 @@ function MasterPage({
   }
   return (
     <>
-      <div className="flex gap-3">
-        <Input
-          aria-label="Search"
-          placeholder="Search…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        {write && (
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setOpen(true);
-            }}
-          >
-            Add{" "}
-            {section === "customers"
-              ? "customer"
-              : section === "locations"
-                ? "location"
-                : "product"}
-          </Button>
-        )}
-      </div>
       <Frame>
+        <div className="flex flex-wrap gap-3">
+          <Input
+            aria-label="Search"
+            placeholder="Search…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full sm:max-w-sm"
+          />
+          {write && (
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setOpen(true);
+              }}
+            >
+              Add{" "}
+              {section === "customers"
+                ? "customer"
+                : section === "locations"
+                  ? "location"
+                  : "product"}
+            </Button>
+          )}
+        </div>
         <Table>
           <TableHeader>
             <TableRow>

@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/page-header";
 import { useState, type FormEvent } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check, LoaderCircle } from "lucide-react";
@@ -82,10 +83,7 @@ function CreateUser() {
     return <PageError message="You do not have access to this page." />;
   return (
     <>
-      <div className="space-y-1 py-2">
-        <p className="text-[11px] text-muted-foreground uppercase">Company</p>
-        <h1>Create user</h1>
-      </div>
+      <PageHeader title="Create user" group="Company" />
       <Card className="w-full max-w-[640px] self-start rounded-xl py-0 text-left shadow-none">
         <CardContent className="space-y-6 p-6 sm:p-8">
           {created ? (

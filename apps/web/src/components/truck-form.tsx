@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/page-header'
 import { useState, type FormEvent } from 'react'
 import { Link, useRouter } from '@tanstack/react-router'
 import { Card } from '@/components/ui/card'
@@ -41,7 +42,12 @@ export function TruckForm({
     try {
       const result = await saveFleet(
         'trucks',
-        { ...readFields(data, truckGroups), deviceIdentifier: truck?.device?.identifier ?? null, deviceSerialNumber: truck?.device?.serialNumber ?? null, notes: data.get('notes') || null },
+        {
+          ...readFields(data, truckGroups),
+          deviceIdentifier: truck?.device?.identifier ?? null,
+          deviceSerialNumber: truck?.device?.serialNumber ?? null,
+          notes: data.get('notes') || null,
+        },
         session.csrfToken,
         truck?.id,
       )
@@ -69,28 +75,20 @@ export function TruckForm({
   }
   return (
     <>
-      <div className="flex min-h-[88px] flex-wrap items-center justify-between gap-4">
-        <div className="space-y-1">
-          <p className="text-[11px] text-muted-foreground uppercase">
-            Vehicles
-          </p>
-          <h1>
-            {truck
-              ? `${truck.identifier} · ${truck.registration}`
-              : 'Add vehicle'}
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            {truck
-              ? `${truck.make} ${truck.model}`
-              : 'Vehicle details'}
-          </p>
-        </div>
-        <Button asChild variant="outline">
-          <Link to="/admin/trucks" search={searchDefaults}>
-            Back to trucks
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        group="Vehicles"
+        title={
+          truck ? `${truck.identifier} · ${truck.registration}` : 'Add vehicle'
+        }
+        description={truck ? `${truck.make} ${truck.model}` : 'Vehicle details'}
+        actions={
+          <Button asChild variant="outline">
+            <Link to="/admin/trucks" search={searchDefaults}>
+              Back to trucks
+            </Link>
+          </Button>
+        }
+      />
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -104,17 +102,19 @@ export function TruckForm({
       <form onSubmit={submit} className="space-y-4">
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
           <fieldset disabled={busy || !writable} className="min-w-0 space-y-4">
-            {truckGroups.filter(g => g.title !== 'Truck device').map((g) => (
-              <FieldGroup key={g.title} title={g.title}>
-                {g.fields.map((f) => (
-                  <FleetField
-                    key={f.name}
-                    definition={f}
-                    value={values[f.name] as string | number | null}
-                  />
-                ))}
-              </FieldGroup>
-            ))}
+            {truckGroups
+              .filter((g) => g.title !== 'Truck device')
+              .map((g) => (
+                <FieldGroup key={g.title} title={g.title}>
+                  {g.fields.map((f) => (
+                    <FleetField
+                      key={f.name}
+                      definition={f}
+                      value={values[f.name] as string | number | null}
+                    />
+                  ))}
+                </FieldGroup>
+              ))}
             <Card className="gap-2 rounded-xl p-6 shadow-none">
               <Label htmlFor="notes" className="text-xs">
                 Notes
@@ -131,7 +131,9 @@ export function TruckForm({
           <aside className="space-y-4">
             <Card className="gap-4 rounded-xl p-5 shadow-none">
               <h2 className="text-sm font-semibold">Driving now</h2>
-              <p className="text-xs text-muted-foreground">{truck?.currentDriving?.driverName ?? 'No active driver'}</p>
+              <p className="text-xs text-muted-foreground">
+                {truck?.currentDriving?.driverName ?? 'No active driver'}
+              </p>
             </Card>
             {truck && (
               <Card className="gap-4 rounded-xl p-5 shadow-none">

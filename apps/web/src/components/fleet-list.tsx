@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PageError } from "@/components/page-error";
+import { PageHeader } from "@/components/page-header";
 import { can, type AdminSession } from "@/lib/auth";
 import {
   expired,
@@ -51,26 +52,24 @@ export function FleetList({
   }
   return (
     <>
-      <div className="flex min-h-[88px] flex-wrap items-center justify-between gap-4">
-        <div className="space-y-1">
-          <p className="text-[11px] text-muted-foreground uppercase">
-            {isDriver ? "People & access" : "Vehicles"}
-          </p>
-          <h1>{title}</h1>
-          <p className="text-xs text-muted-foreground">
-            {isDriver
-              ? "Manage driver profiles and truck assignments"
-              : "Manage fleet vehicles"}
-          </p>
-        </div>
-        {can(session, `${kind}.write`) && (
-          <Button asChild className="w-full sm:w-[248px]">
-            <Link to={isDriver ? "/admin/drivers/new" : "/admin/trucks/new"}>
-              + Add {isDriver ? "driver" : "vehicle"}
-            </Link>
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title={title}
+        group={isDriver ? "People & access" : "Vehicles"}
+        description={
+          isDriver
+            ? "Manage driver profiles and truck assignments"
+            : "Manage fleet vehicles"
+        }
+        actions={
+          can(session, `${kind}.write`) && (
+            <Button asChild className="w-full sm:w-[248px]">
+              <Link to={isDriver ? "/admin/drivers/new" : "/admin/trucks/new"}>
+                + Add {isDriver ? "driver" : "vehicle"}
+              </Link>
+            </Button>
+          )
+        }
+      />
       <Card className="gap-5 rounded-xl p-4 shadow-none sm:p-6">
         <form onSubmit={submit} role="search" className="flex flex-wrap gap-3">
           <Input

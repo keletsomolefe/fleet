@@ -1,4 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card'
+import { PageHeader } from '@/components/page-header'
 
 export function EmptyPage({
   title,
@@ -11,12 +12,7 @@ export function EmptyPage({
 }) {
   return (
     <>
-      <div className="space-y-1 py-2">
-        <p className="text-[11px] leading-4 text-muted-foreground uppercase">
-          {group}
-        </p>
-        <h1>{title}</h1>
-      </div>
+      <PageHeader title={title} group={group} />
       <Card className="rounded-xl py-0 shadow-none">
         <CardContent className="flex min-h-[320px] flex-col items-center justify-center gap-4 p-8 text-center">
           <div className="flex size-14 items-center justify-center rounded-full border bg-muted">

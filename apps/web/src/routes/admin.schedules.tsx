@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/page-header";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
@@ -80,7 +81,9 @@ function Schedules() {
     [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false);
   const [from, to] = range(anchor, mode);
-  const [selectedDriver, setSelectedDriver] = useState<ComboboxOption | null>(null),
+  const [selectedDriver, setSelectedDriver] = useState<ComboboxOption | null>(
+      null,
+    ),
     [selectedTruck, setSelectedTruck] = useState<ComboboxOption | null>(null),
     [start, setStart] = useState(from),
     [end, setEnd] = useState(to),
@@ -200,31 +203,34 @@ function Schedules() {
   );
   return (
     <>
-      <div className="flex min-h-[88px] flex-wrap items-center justify-between gap-3">
-        <h1>Driver schedule</h1>
-        <div className="flex items-center gap-2">
-          <Button
-            variant={mode === "week" ? "default" : "outline"}
-            onClick={() => setMode("week")}
-          >
-            Week
-          </Button>
-          <Button
-            variant={mode === "month" ? "default" : "outline"}
-            onClick={() => setMode("month")}
-          >
-            Month
-          </Button>
-          <Input
-            aria-label="Schedule date"
-            type="date"
-            value={anchor}
-            onChange={(e) => {
-              if (e.target.value) setAnchor(e.target.value);
-            }}
-          />
-        </div>
-      </div>
+      <PageHeader
+        title="Driver schedule"
+        group="People & assets"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant={mode === "week" ? "default" : "outline"}
+              onClick={() => setMode("week")}
+            >
+              Week
+            </Button>
+            <Button
+              variant={mode === "month" ? "default" : "outline"}
+              onClick={() => setMode("month")}
+            >
+              Month
+            </Button>
+            <Input
+              aria-label="Schedule date"
+              type="date"
+              value={anchor}
+              onChange={(e) => {
+                if (e.target.value) setAnchor(e.target.value);
+              }}
+            />
+          </div>
+        }
+      />
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -235,7 +241,7 @@ function Schedules() {
           <AlertDescription>{saved}</AlertDescription>
         </Alert>
       )}
-      <div className="mt-4 grid items-start gap-6 xl:grid-cols-[1fr_360px]">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <Card className="gap-0 overflow-hidden shadow-none">
           <div className="flex items-center justify-between border-b p-4">
             <p className="text-sm font-semibold">

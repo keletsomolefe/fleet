@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/page-header";
 import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import {
@@ -91,18 +92,21 @@ function Page() {
   }
   return (
     <>
-      <div className="flex min-h-[88px] items-center justify-between gap-4">
-        <h1>Needs attention</h1>
-        <Button
-          variant="outline"
-          onClick={() => {
-            setSelected(null);
-            void router.invalidate();
-          }}
-        >
-          Refresh
-        </Button>
-      </div>
+      <PageHeader
+        title="Needs attention"
+        group="Review & records"
+        actions={
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSelected(null);
+              void router.invalidate();
+            }}
+          >
+            Refresh
+          </Button>
+        }
+      />
       {(error || data.error) && (
         <Alert variant="destructive">
           <AlertDescription>{error || data.error}</AlertDescription>

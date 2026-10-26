@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageError } from '@/components/page-error'
+import { PageHeader } from '@/components/page-header'
 import { getRoles } from '@/lib/users'
 
 export const Route = createFileRoute('/admin/roles')({
@@ -14,11 +15,8 @@ function Roles() {
   if (!result.data) return <PageError message={result.error!} />
   return (
     <>
-      <div className="space-y-1 py-2">
-        <p className="text-[11px] text-muted-foreground uppercase">Company</p>
-        <h1>Roles & permissions</h1>
-      </div>
-      <div className="grid items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
+      <PageHeader title="Roles & permissions" group="Company" />
+      <div className="grid items-start gap-6 md:grid-cols-2 xl:grid-cols-3">
         {result.data.map((role) => (
           <Card key={role.id} className="shadow-none">
             <CardContent className="space-y-5">

@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/page-header'
 import { useCallback, useState, type FormEvent } from 'react'
 import { Link, useRouter } from '@tanstack/react-router'
 import { Card } from '@/components/ui/card'
@@ -50,26 +51,33 @@ export function DriverForm({
     status: 'active',
     ...driver,
   }
-  const loadUsers = useCallback(async (query: string) => {
-    const result = await getDriverOptions({
-      data: { kind: 'users', q: query, driverId: driver?.id },
-    })
-    if (!result.data) throw new Error(result.error ?? 'Could not load users.')
-    return result.data.map((user) => ({
-      value: user.id,
-      label: `${user.firstName} ${user.lastName} · ${user.email}`,
-    }))
-  }, [driver?.id])
-  const loadTrucks = useCallback(async (query: string) => {
-    const result = await getDriverOptions({
-      data: { kind: 'trucks', q: query, driverId: driver?.id },
-    })
-    if (!result.data) throw new Error(result.error ?? 'Could not load vehicles.')
-    return result.data.map((truck) => ({
-      value: truck.id,
-      label: `${truck.identifier} · ${truck.registration}`,
-    }))
-  }, [driver?.id])
+  const loadUsers = useCallback(
+    async (query: string) => {
+      const result = await getDriverOptions({
+        data: { kind: 'users', q: query, driverId: driver?.id },
+      })
+      if (!result.data) throw new Error(result.error ?? 'Could not load users.')
+      return result.data.map((user) => ({
+        value: user.id,
+        label: `${user.firstName} ${user.lastName} · ${user.email}`,
+      }))
+    },
+    [driver?.id],
+  )
+  const loadTrucks = useCallback(
+    async (query: string) => {
+      const result = await getDriverOptions({
+        data: { kind: 'trucks', q: query, driverId: driver?.id },
+      })
+      if (!result.data)
+        throw new Error(result.error ?? 'Could not load vehicles.')
+      return result.data.map((truck) => ({
+        value: truck.id,
+        label: `${truck.identifier} · ${truck.registration}`,
+      }))
+    },
+    [driver?.id],
+  )
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (busy) return
@@ -139,24 +147,22 @@ export function DriverForm({
   }
   return (
     <>
-      <div className="flex min-h-[88px] flex-wrap items-center justify-between gap-4">
-        <div className="space-y-1">
-          <p className="text-[11px] text-muted-foreground uppercase">
-            People & access
-          </p>
-          <h1>{driver ? 'Driver profile' : 'Add a driver'}</h1>
-          <p className="text-xs text-muted-foreground">
-            {driver
-              ? `${driver.user.firstName} ${driver.user.lastName} · ${driver.identifier}`
-              : 'Personal details, licence and truck assignment'}
-          </p>
-        </div>
-        <Button asChild variant="outline">
-          <Link to="/admin/drivers" search={searchDefaults}>
-            Back to drivers
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        title={driver ? 'Driver profile' : 'Add a driver'}
+        group="People & access"
+        description={
+          driver
+            ? `${driver.user.firstName} ${driver.user.lastName} · ${driver.identifier}`
+            : 'Personal details, licence and truck assignment'
+        }
+        actions={
+          <Button asChild variant="outline">
+            <Link to="/admin/drivers" search={searchDefaults}>
+              Back to drivers
+            </Link>
+          </Button>
+        }
+      />
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -283,7 +289,8 @@ export function DriverForm({
                       value={driverStatus}
                       onChange={(e) => {
                         setDriverStatus(e.target.value)
-                        if (e.target.value === 'inactive') setSelectedTruck(null)
+                        if (e.target.value === 'inactive')
+                          setSelectedTruck(null)
                       }}
                     />
                   ) : (

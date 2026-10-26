@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/page-header";
 import { useState, type FormEvent } from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, LoaderCircle } from "lucide-react";
@@ -127,19 +128,20 @@ function AccessForm({
   }
   return (
     <>
-      <div className="space-y-4 py-2">
-        <Link
-          to="/admin/users"
-          search={{ q: "", page: 1 }}
-          className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" />
-          Users
-        </Link>
-        <h1>
-          {user.firstName} {user.lastName}
-        </h1>
-      </div>
+      <PageHeader
+        title={`${user.firstName} ${user.lastName}`}
+        group="Company"
+        actions={
+          <Link
+            to="/admin/users"
+            search={{ q: "", page: 1 }}
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" />
+            Users
+          </Link>
+        }
+      />
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(240px,320px)_minmax(0,640px)]">
         <Card className="shadow-none">
           <CardContent className="space-y-5">

@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/page-header'
 import { useState, type FormEvent } from 'react'
 import {
   createFileRoute,
@@ -55,20 +56,20 @@ function Users() {
   const { items, total, page, pageSize } = result.data
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-4 py-2">
-        <div className="space-y-1">
-          <p className="text-[11px] text-muted-foreground uppercase">Company</p>
-          <h1>Users</h1>
-        </div>
-        {can(session, 'users.create') && (
-          <Button asChild>
-            <Link to="/admin/users/new">
-              <Plus />
-              Create user
-            </Link>
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Users"
+        group="Company"
+        actions={
+          can(session, 'users.create') && (
+            <Button asChild>
+              <Link to="/admin/users/new">
+                <Plus />
+                Create user
+              </Link>
+            </Button>
+          )
+        }
+      />
       <Card className="gap-0 overflow-hidden py-0 shadow-none">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b p-5">
           <form
