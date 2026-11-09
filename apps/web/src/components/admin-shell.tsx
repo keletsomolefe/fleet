@@ -105,12 +105,13 @@ export const navigation = [
   {
     label: "Review & records",
     items: [
+      { title: "Completed repairs", section: "repairs", icon: "wrench", permission: "issues.read" },
       { title: "Truck earnings", section: "earnings", icon: "overview", permission: "revenue.read" },
       {
         title: "Needs attention",
         section: "vehicle-disputes",
         icon: "alert",
-        permission: "trucks.write",
+        permission: "issues.read",
       },
       {
         title: "Activities & proof",

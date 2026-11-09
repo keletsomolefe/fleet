@@ -54,6 +54,10 @@ describe('Unified native sign-in', () => {
       'admin@example.test',
     );
   });
+  it('opens the issue inbox for a mechanic without fleet-management permissions', async () => {
+    context.permissions = ['admin.access', 'issues.read', 'issues.resolve'];
+    await expect(service.resolveMode(context)).resolves.toBe('admin');
+  });
   it('resolves a Driver ID through Kratos and validates the authenticated user profile', async () => {
     findOne.mockResolvedValue({ user: { email: 'driver@example.test' } });
     await expect(

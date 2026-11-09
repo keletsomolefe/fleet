@@ -26,6 +26,13 @@ x-app-env: &app-env
   MQTT_BIND_HOST: 0.0.0.0
   MQTT_WS_PORT: "1884"
   MQTT_PUBLIC_URL: wss://fleet.nativesounds.co.za/mqtt
+  WHATSAPP_ENABLED: ${WHATSAPP_ENABLED:-false}
+  OPENWA_URL: ${OPENWA_URL:-http://openwa:2785}
+  OPENWA_API_KEY: ${OPENWA_API_KEY:-}
+  OPENWA_SESSION_ID: ${OPENWA_SESSION_ID:-}
+  OPENWA_MECHANICS_GROUP_ID: ${OPENWA_MECHANICS_GROUP_ID:-}
+  REPAIR_LINK_SECRET: ${REPAIR_LINK_SECRET:-}
+  REPAIR_DATA_DIR: /app/.fleet-data/repairs
 
 services:
   postgres:
@@ -118,6 +125,7 @@ services:
     init: true
     mem_limit: 768m
     environment: *app-env
+    volumes: [repair_data:/app/.fleet-data]
 
   owner-bootstrap:
     image: ${FLEET_IMAGE:?}
@@ -146,6 +154,7 @@ services:
 volumes:
   postgres_data:
   mail_data:
+  repair_data:
 networks:
   caddy:
     external: true

@@ -11,6 +11,8 @@ import { drivingId } from '../mobile/driving.input.js';
 import { OperationsEventsService } from '../operations/operations-events.service.js';
 import { DriverIssue } from './issue.entity.js';
 import { parseIssue, parseIssueResolution } from './issue.input.js';
+import { requireIssues } from '../rbac/issue-access.js';
+import { OpenWaService } from './openwa.service.js';
 
 @Injectable()
 export class IssuesService {
@@ -19,6 +21,7 @@ export class IssuesService {
     @Inject(DrivingService) private readonly driving: DrivingService,
     @Inject(OperationsEventsService)
     private readonly events: OperationsEventsService,
+    @Inject(OpenWaService) private readonly whatsapp: OpenWaService,
   ) {}
   private view(i: DriverIssue) {
     return {
@@ -81,14 +84,17 @@ export class IssuesService {
       );
       return { id: v.id, created: true };
     });
-    if (result.created) this.events.changed();
+    if (result.created) {
+      this.events.changed();
+      await this.whatsapp.enqueue(result.id);
+    }
     return { id: result.id };
   }
   async list(c: AdminContext, own = false) {
     const driverId = own
       ? (await this.driving.context(c)).driver.id
       : undefined;
-    if (!own) this.events.require(c);
+    if (!own) requireIssues(c);
     const issues = await this.db.getRepository(DriverIssue).find({
       where: own ? { driverId } : { resolvedAt: IsNull() },
       relations: { truck: true, driver: { user: true } },
@@ -98,7 +104,7 @@ export class IssuesService {
     return { items: issues.map((i) => this.view(i)) };
   }
   async resolve(c: AdminContext, id: string, raw: unknown) {
-    this.events.require(c);
+    requireIssues(c, true);
     drivingId(id);
     const note = parseIssueResolution(raw);
     const changed = await this.db.transaction(async (m) => {

@@ -25,9 +25,11 @@ export function useAttention(session: Session | null) {
   });
   const enabled =
     !!session &&
-    ["admin.access", "trucks.read", "trucks.write"].every((p) =>
-      session.permissions.includes(p),
-    );
+    session.permissions.includes("admin.access") &&
+    (session.permissions.includes("issues.read") ||
+      ["trucks.read", "trucks.write"].every((p) =>
+        session.permissions.includes(p),
+      ));
   const token = enabled ? session?.sessionToken : undefined;
   const currentToken = useRef(token),
     sequence = useRef(0);

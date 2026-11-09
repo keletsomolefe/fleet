@@ -65,7 +65,7 @@ export class MobileIssuesController {
 
 @Controller('admin/issues')
 @UseGuards(PermissionsGuard)
-@RequirePermissions('admin.access', 'trucks.read', 'trucks.write')
+@RequirePermissions('admin.access', 'issues.read')
 export class AdminIssuesController {
   constructor(
     @Inject(AuthService) private readonly auth: AuthService,
@@ -78,6 +78,7 @@ export class AdminIssuesController {
   }
   @Header('Cache-Control', 'private, no-store')
   @Post(':id/resolve')
+  @RequirePermissions('admin.access', 'issues.read', 'issues.resolve')
   @HttpCode(200)
   resolve(
     @Req() r: AdminRequest,

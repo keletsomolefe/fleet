@@ -17,5 +17,8 @@
       }
     ],
     "refreshTimeout": 1000
+  },
+  "server": {
+    "bodyLimit": 16777216
   }
 }

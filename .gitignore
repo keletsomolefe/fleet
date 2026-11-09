@@ -30,3 +30,6 @@ docker/kratos/kratos.local.json
 *.aab
 *.jks
 credentials.json
+
+# Private repair photos, WhatsApp jobs and linked-device state
+.fleet-data/

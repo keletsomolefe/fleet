@@ -21,13 +21,11 @@ Application sessions/credentials remain in Kratos. The application and Kratos ha
 
 ## Deployment and recovery
 
-`deploy/receive.sh` serializes server deployments with `flock`, pulls the immutable image and downloads matching configuration. `deploy/deploy.sh` starts dependencies, applies Kratos and explicit TypeORM migrations, initializes an owner only when there are no owners, then starts the application and verifies public HTTPS. Existing owner passwords and roles are never reset on a later push.
+`deploy/receive.sh` serializes server deployments with `flock`, pulls the immutable image and downloads matching configuration. `deploy/deploy.sh` starts dependencies, applies Kratos migrations, checks that the existing application tables and columns are present, initializes an owner only when there are no owners, then starts the application and verifies public HTTPS. Existing owner passwords and roles are never reset on a later push.
 
-The launch baseline replaces the former application migrations. The user authorized wiping staging application data for this deployment. Before applying `LaunchBaseline1793188800000`, `deploy/prepare-baseline.sh` recognizes the retired migration chain, stops the old application, and transactionally drops and recreates only the `app` schema, including its migration history, with the existing application role as owner and public access revoked. Kratos identities, passwords, sessions, extensions, roles and other services remain. Owner bootstrap reconnects the marked original owner identity. The reset is skipped when the baseline is already recorded; unknown migration histories stop deployment without deleting data. `pnpm db:reset --yes` remains local-only.
+Application migrations and schema resets are disabled; historical sources are not executed. Deployment does not create, migrate or clear the `app` schema. The read-only preflight in `apps/api/src/database/check-schema.ts` stops a deployment with a missing or incomplete schema before owner bootstrap or application replacement. Fresh database initialization is deferred. Kratos identities, passwords, sessions, extensions, roles and other services are retained.
 
-Run `pnpm test:deployment` with the local Docker stack to verify this transition in a temporary database, including repeat deployment and schema isolation checks.
-
-If application health fails, the script attempts to restore the previous application's image/configuration only when that release records the same database baseline. It cannot restore a release from the retired migration chain after the reset. Database migrations are retained. Fleet remains pre-production; this is not a guarantee of database-compatible rollback. Old Fleet image tags are pruned while preserving the current and previous releases. No other project's containers, images or volumes are pruned.
+If application health fails, the script attempts to restore the previous application's image/configuration. Application data stays in place. Fleet remains pre-production; this is not a guarantee of database-compatible rollback after future schema changes. Old Fleet image tags are pruned while preserving the current and previous releases. No other project's containers, images or volumes are pruned.
 
 To redeploy an existing SHA manually as the normal server operator:
 
@@ -70,3 +68,7 @@ curl --fail --head https://fleet.nativesounds.co.za/downloads/android/latest.apk
 The publisher checks the upload checksum and archive signature, stores an immutable file named by its SHA-256, and atomically updates the latest symlink. It keeps the previous build available on disk if the next upload fails. Files persist across web/API releases. Android updates must continue to use the same signing key; phones with an earlier debug-signed development build may require uninstalling that build first.
 
 Run `pnpm test:downloads` to check atomic publication, checksum rejection, response headers, HEAD and resumable requests in an isolated local Caddy container.
+
+The deployment runs `apps/api/dist/database/configure-roles.js` after the read-only schema preflight. This idempotent data update creates Truck mechanic with issue read/resolve access, grants those issue permissions to Owner and Administrator, and retains existing roles and assignments. It does not create tables or run application migrations.
+
+WhatsApp repair links, OTP verification, private photos and the optional OpenWA service are described in [whatsapp-repairs-poc.md](whatsapp-repairs-poc.md).

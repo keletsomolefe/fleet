@@ -12,6 +12,7 @@ import { RbacService } from '../rbac/rbac.service.js';
 import { DriverProfile } from '../fleet/fleet.entity.js';
 import { parseLogin } from './mobile.input.js';
 import { DrivingService } from './driving.service.js';
+import { canManageVehicles, canReadIssues } from '../rbac/issue-access.js';
 
 @Injectable()
 export class MobileAuthService {
@@ -92,12 +93,7 @@ export class MobileAuthService {
         .findOneBy({ userId: context.user.id, status: 'active' });
       if (profile) return 'driver';
     }
-    if (
-      ['admin.access', 'trucks.read', 'trucks.write'].every((p) =>
-        context.permissions.includes(p),
-      )
-    )
-      return 'admin';
+    if (canManageVehicles(context) || canReadIssues(context)) return 'admin';
     this.rbac.require(context, 'driver.access');
     throw new ForbiddenException(
       'Driver access is not active. Contact your fleet administrator.',

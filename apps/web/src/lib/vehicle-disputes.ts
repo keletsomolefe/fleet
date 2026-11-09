@@ -2,7 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import {
   getRequestHeader,
   setResponseHeader,
+  setResponseStatus,
 } from "@tanstack/react-start/server";
+import { getSession } from "./auth";
 export const issueLabels = {
   vehicle: "Vehicle problem",
   safety: "Safety concern",
@@ -47,8 +49,21 @@ export const getVehicleDisputes = createServerFn({ method: "GET" }).handler(
   }> => {
     setResponseHeader("Cache-Control", "private, no-store");
     try {
+      const { session } = await getSession();
+      const paths = [];
+      if (session?.permissions.includes("issues.read")) paths.push("issues");
+      if (
+        ["trucks.read", "trucks.write"].every((p) =>
+          session?.permissions.includes(p),
+        )
+      )
+        paths.push("vehicle-disputes");
+      if (!paths.length) {
+        setResponseStatus(403);
+        return { items: [], error: "You do not have access to these items." };
+      }
       const responses = await Promise.all(
-        ["vehicle-disputes", "issues"].map((path) =>
+        paths.map((path) =>
           fetch(new URL(`api/admin/${path}`, process.env.APP_URL), {
             headers: { Cookie: getRequestHeader("cookie") ?? "" },
             signal: AbortSignal.timeout(8000),
@@ -62,14 +77,17 @@ export const getVehicleDisputes = createServerFn({ method: "GET" }).handler(
             ? "You do not have access to these items."
             : "Could not load items.",
         };
-      const [disputes, issues] = (await Promise.all(
+      const results = (await Promise.all(
         responses.map((r) => r.json()),
-      )) as [{ items: VehicleDispute[] }, { items: DriverIssue[] }];
+      )) as Array<{ items: (VehicleDispute | DriverIssue)[] }>;
       return {
-        items: [...disputes.items, ...issues.items].sort(
-          (a, b) =>
-            b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id),
-        ),
+        items: results
+          .flatMap((result) => result.items)
+          .sort(
+            (a, b) =>
+              b.createdAt.localeCompare(a.createdAt) ||
+              b.id.localeCompare(a.id),
+          ),
       };
     } catch {
       return {

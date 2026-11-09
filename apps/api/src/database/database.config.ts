@@ -1,4 +1,3 @@
-import { LaunchBaseline1793188800000 } from './migrations/1793188800000-LaunchBaseline.js';
 import { transportEntities } from '../transport/transport.entity.js';
 import { DriverIssue } from '../issues/issue.entity.js';
 import { DriverSchedule } from '../scheduling/schedule.entity.js';
@@ -44,7 +43,7 @@ export function databaseOptions(maintenance = false): DataSourceOptions {
       RolePermission,
       UserRole,
     ],
-    migrations: [LaunchBaseline1793188800000],
+    migrations: [],
     migrationsTableName: 'migrations',
     migrationsTransactionMode: 'each',
     synchronize: false,
