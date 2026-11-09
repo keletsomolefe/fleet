@@ -124,6 +124,41 @@ try {
   assert.equal((await request(app, 'api/admin/users', { ...json(data), headers: { ...authorized, Origin: localhostOrigin.origin } }, cookies)).status, 409);
   const catalog = await request(app, 'api/admin/roles', {}, cookies);
   assert.equal(catalog.status, 200);
+  assert.ok(!catalog.body.some(role => role.key === 'dispatcher'));
+  const mechanicRole = catalog.body.find(role => role.key === 'truck_mechanic');
+  assert.equal(mechanicRole?.name, 'Truck mechanic');
+  assert.deepEqual(mechanicRole.permissions.map(p => p.key), ['admin.access', 'issues.read', 'issues.resolve']);
+  const retiredSections = ['customers', 'locations', 'products', 'pricing', 'rates', 'dispatch', 'activities', 'earnings', 'fleet-map', 'exceptions', 'exports', 'vehicle-reports', 'shifts'];
+  for (const section of retiredSections) {
+    const page = await request(app, `admin/${section}`, { headers: { Accept: 'text/html' } }, cookies);
+    assert.equal(page.status, 404, `Removed page: ${section}`);
+  }
+  const retiredPrefixes = /^(customers|locations|products|pricing|dispatch|activities|revenue|exceptions|exports|vehicle_reports|shifts)\./;
+  assert.ok(session.body.permissions.every(key => !retiredPrefixes.test(key)));
+  assert.ok(catalog.body.every(role => role.permissions.every(({ key }) => !retiredPrefixes.test(key))));
+  for (const [method, path] of [
+    ['GET', 'catalogue'], ['POST', 'master/customers'], ['PATCH', 'master/customers/old-id'],
+    ['POST', 'master/locations'], ['POST', 'master/products'], ['GET', 'rates'], ['POST', 'rates'],
+    ['GET', 'dispatches'], ['POST', 'dispatches'], ['PATCH', 'dispatches/old-id'],
+    ['GET', 'records'], ['GET', 'records/old-id'], ['POST', 'records/old-id/review'], ['GET', 'earnings'],
+  ]) {
+    const response = await request(app, `api/admin/transport/${path}`, { method, headers: authorized }, cookies);
+    assert.equal(response.status, 404, `Removed API: ${method} ${path}`);
+  }
+  for (const [method, path] of [
+    ['GET', 'catalogue'], ['GET', 'dispatches'], ['POST', 'contexts'], ['POST', 'batches'], ['GET', 'reviews'],
+  ]) {
+    assert.equal((await request(app, `api/mobile/transport/${path}`, { method })).status, 404);
+  }
+  const home = await request(app, 'admin', { headers: { Accept: 'text/html' } }, cookies);
+  assert.equal(home.status, 200);
+  for (const label of ['Driver schedule', 'Drivers', 'Vehicles', 'Exceptions']) {
+    assert.ok(home.body.includes(`>${label}<`), `Retained navigation: ${label}`);
+  }
+  for (const section of retiredSections) {
+    assert.ok(!home.body.includes(`href="/admin/${section}"`), `Removed navigation: ${section}`);
+  }
+  pass('Retired features have no pages, APIs or permission grants; driver and issue navigation remains');
   const roleId = key => { const role = catalog.body.find(role => role.key === key); assert.ok(role); return role.id; };
   const targetId = created.body.user.id;
   const access = (id, keys, isActive = true, jar = cookies, headers = authorized) => request(app, `api/admin/users/${id}/access`,
@@ -158,23 +193,25 @@ try {
   assert.equal((await request(publicUrl, verification.body.ui.action, json({ method: 'code', code }))).status, 200);
   assert.equal((await login(email, password, newCookies)).status, 200);
   assert.equal((await request(app, 'api/auth/session', {}, newCookies)).status, 403, 'Driver/terminal users have no admin access');
-  assert.equal((await access(targetId, ['driver', 'dispatcher'])).status, 200);
-  const dispatchSession = await request(app, 'api/auth/session', {}, newCookies);
-  assert.equal(dispatchSession.status, 200);
-  assert.ok(dispatchSession.body.permissions.includes('driver.access'));
-  assert.ok(dispatchSession.body.permissions.includes('dispatch.read'));
-  assert.ok(!dispatchSession.body.permissions.includes('users.read'));
+  assert.equal((await access(targetId, ['driver', 'truck_mechanic'])).status, 200);
+  const mechanicSession = await request(app, 'api/auth/session', {}, newCookies);
+  assert.equal(mechanicSession.status, 200);
+  assert.ok(mechanicSession.body.permissions.includes('driver.access'));
+  assert.ok(mechanicSession.body.permissions.includes('issues.resolve'));
+  assert.ok(!mechanicSession.body.permissions.includes('drivers.read'));
+  assert.ok(!mechanicSession.body.permissions.includes('dispatch.read'));
+  assert.ok(!mechanicSession.body.permissions.includes('users.read'));
   assert.equal((await request(app, 'api/admin/users', {}, newCookies)).status, 403);
   assert.equal((await request(app, 'api/admin/roles', {}, newCookies)).status, 403);
-  assert.equal((await request(app, 'api/admin/users', { ...json({ ...data, email: 'denied@example.test' }), headers: { ...originHeaders, 'X-CSRF-Token': dispatchSession.body.csrfToken } }, newCookies)).status, 403);
-  for (const path of ['admin/users', 'admin/users/new', 'admin/roles', 'admin/exports']) {
+  assert.equal((await request(app, 'api/admin/users', { ...json({ ...data, email: 'denied@example.test' }), headers: { ...originHeaders, 'X-CSRF-Token': mechanicSession.body.csrfToken } }, newCookies)).status, 403);
+  for (const path of ['admin/users', 'admin/users/new', 'admin/roles']) {
     const denied = await request(app, path, { headers: { Accept: 'text/html' } }, newCookies);
     assert.equal(denied.status, 403, `Direct SSR permission protection: ${path}`);
     assert.ok(!denied.body.includes(env.BOOTSTRAP_ADMIN_EMAIL), 'User roster is not leaked');
   }
-  const dispatchPage = await request(app, 'admin/dispatch', { headers: { Accept: 'text/html' } }, newCookies);
-  assert.equal(dispatchPage.status, 200);
-  assert.ok(!dispatchPage.body.includes('>Roles &amp; permissions<'));
+  const issuesPage = await request(app, 'admin/vehicle-disputes', { headers: { Accept: 'text/html' } }, newCookies);
+  assert.equal(issuesPage.status, 200);
+  assert.ok(!issuesPage.body.includes('>Roles &amp; permissions<'));
   assert.equal((await access(targetId, ['driver', 'administrator'])).status, 200);
   const adminSession = await request(app, 'api/auth/session', {}, newCookies);
   assert.equal(adminSession.status, 200);

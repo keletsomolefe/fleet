@@ -1,5 +1,17 @@
 # Fleet
 
+## Current scope
+
+The current app focuses on sign-in, drivers, vehicles, driver schedules and issue reporting. Administrators review and resolve reports in **Exceptions**. Existing vehicle confirmation, location logging and account access controls remain in place.
+
+Customers, saved locations, products, transport rates, dispatch, collections/deliveries/fuel activity and truck earnings are deferred. Their screens, APIs and permissions are removed, along with empty future-feature links in the sidebar. Existing transport and issue records are retained.
+
+The **Truck mechanic** role can view and resolve reported issues. It replaces Dispatcher and has no driver, schedule, vehicle-management or user-management access.
+
+Next: send reported issues to a WhatsApp group and let an external mechanic mark them resolved. That workflow will be specified separately; WhatsApp delivery and completion links are not enabled yet.
+
+Application migrations and reset commands have been removed for now. Use an existing initialized `app` schema; fresh application database setup is deferred. Automatic schema synchronization remains disabled, and Kratos migrations are retained.
+
 ## Development
 
 This repository uses pnpm workspaces and Watt to run three applications:
@@ -22,7 +34,7 @@ make up    # PostgreSQL, Ory Kratos, login UI and Mailpit
 make dev   # Fleet API, web and gateway
 ```
 
-Set `BOOTSTRAP_ADMIN_PASSWORD` in the root `.env` before `make up`.
+With an existing application schema, run `pnpm db:roles` to configure issue permissions and replace the retired Dispatcher role. This updates role data only, with no schema migration or reset. Then set `BOOTSTRAP_ADMIN_PASSWORD` in the root `.env` and run `pnpm db:seed` if a development owner is needed. `make up` starts infrastructure only.
 Open <http://127.0.0.1:3042> (or <http://localhost:3042>) for Fleet admin.
 Change `GATEWAY_PORT` in `.env`
 if that port is already in use.
@@ -44,7 +56,7 @@ with isolated `kratos` and `app` schemas and separate roles. See the
 database access and authentication behavior.
 
 See [admin authentication and UI foundation](docs/admin-authentication.md) for
-account provisioning, TypeORM migrations, Kratos sessions/hooks, shadcn/ui and live tests.
+account provisioning, existing database setup, Kratos sessions/hooks, shadcn/ui and live tests.
 
 The apps were added using `wattpm add`, with the latest NestJS and TanStack
 CLIs generating the framework starters. TanStack packages stay on stable v1.
@@ -57,6 +69,8 @@ the web app uses TypeScript 7. Nitro writes the web production build to `.output
 Existing design documentation and assets remain at the repository root.
 
 ## Prototype documentation
+
+The prototype and functional plan below include future features beyond the current scope above. They remain design references.
 
 Final agreed requirements, reconstructed brand assets and an editable Figma prototype for one fleet business. Updated 17 October 2026.
 

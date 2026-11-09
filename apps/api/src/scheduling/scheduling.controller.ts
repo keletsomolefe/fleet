@@ -84,14 +84,14 @@ export class AdminNotificationsController {
     @Inject(AuthService) private readonly auth: AuthService,
   ) {}
   @Get()
-  @RequirePermissions('admin.access', 'trucks.read', 'trucks.write')
+  @RequirePermissions('admin.access')
   @Header('Cache-Control', 'private, no-store')
   list(@Req() r: AdminRequest) {
     return this.events.snapshot(r.adminContext!);
   }
   @Post('connection')
   @HttpCode(200)
-  @RequirePermissions('admin.access', 'trucks.read', 'trucks.write')
+  @RequirePermissions('admin.access')
   @Header('Cache-Control', 'private, no-store')
   connection(@Req() r: AdminRequest) {
     this.auth.verifyCsrf(r);

@@ -160,7 +160,12 @@ export function Screen({
         }}
       >
         <View
-          style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8 }}
+          style={{
+            flex: 1,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+          }}
         >
           <Image
             source={require("../../assets/brand/monogram.svg")}
@@ -187,7 +192,8 @@ export function Screen({
           }}
         >
           {session?.permissions.includes("admin.access") &&
-            session.permissions.includes("trucks.write") && (
+            (session.permissions.includes("issues.read") ||
+              session.permissions.includes("trucks.write")) && (
               <Pressable
                 onPress={() => router.push("/admin")}
                 accessibilityRole="button"

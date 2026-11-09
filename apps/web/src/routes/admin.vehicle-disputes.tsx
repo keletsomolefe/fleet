@@ -93,7 +93,7 @@ function Page() {
   return (
     <>
       <PageHeader
-        title="Needs attention"
+        title="Exceptions"
         group="Review & records"
         actions={
           <Button

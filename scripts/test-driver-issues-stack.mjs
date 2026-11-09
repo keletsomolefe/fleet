@@ -49,7 +49,7 @@ const login = async (identifier) => {
   return r.body;
 };
 const pass = (message) => console.log(`PASS ${message}`);
-async function fixture(n) {
+async function fixture(n, role = "driver") {
   const email = `${tag.toLowerCase()}-${n}@example.test`;
   const identity = await request(
     "admin/identities",
@@ -82,9 +82,10 @@ async function fixture(n) {
   ).rows[0].id;
   users.push(user);
   await db.query(
-    'INSERT INTO app.user_roles ("userId","roleId") SELECT $1,id FROM app.roles WHERE key=\'driver\'',
-    [user],
+    'INSERT INTO app.user_roles ("userId","roleId") SELECT $1,id FROM app.roles WHERE key=$2',
+    [user, role],
   );
+  if (role !== "driver") return { ...(await login(email)), user, email };
   const id = (
     await db.query(
       'INSERT INTO app.driver_profiles ("userId",identifier,phone,"licenceNumber","licenceCode","licenceCountry","licenceExpiresOn","prdpNumber","prdpExpiresOn",status) VALUES ($1,$2,\'+27 82 123 4567\',$2,\'EC\',\'ZA\',\'2099-01-01\',$2,\'2099-01-01\',\'active\') RETURNING id',
@@ -92,7 +93,7 @@ async function fixture(n) {
     )
   ).rows[0].id;
   drivers.push(id);
-  return { id, user, ...(await login(email)) };
+  return { ...(await login(email)), id, user, email };
 }
 
 let socket;
@@ -495,6 +496,61 @@ try {
   pass(
     "Native admins can resolve issues; reconnect snapshots retain the full count beyond the 20-item preview",
   );
+
+  const mechanic = await fixture(3, "truck_mechanic");
+  assert.equal(mechanic.mode, "admin");
+  assert.deepEqual(mechanic.permissions, ["admin.access", "issues.read", "issues.resolve"]);
+  const mechanicIssues = await mobile("admin/issues", { token: mechanic.sessionToken });
+  assert.equal(mechanicIssues.status, 200);
+  assert.ok(mechanicIssues.body.items.some(i => i.id === ids[0]));
+  const mechanicSnapshot = await mobile("admin/notifications", { token: mechanic.sessionToken });
+  assert.equal(mechanicSnapshot.status, 200);
+  assert.equal(mechanicSnapshot.body.count, mechanicIssues.body.items.length);
+  assert.ok(mechanicSnapshot.body.latest.every(i => i.kind === "issue"));
+  assert.equal((await mobile("admin/notifications/connection", { method: "POST", token: mechanic.sessionToken })).status, 200);
+  for (const path of ["admin/vehicle-disputes", "admin/schedules", "admin/schedules/options", "driver/context", "driver/issues"]) {
+    assert.equal((await mobile(path, { token: mechanic.sessionToken })).status, 403, path);
+  }
+  const dispute = (await mobile("admin/vehicle-disputes", { token: admin })).body.items.find(i => i.truck.id === trucks[1]);
+  assert.equal((await mobile(`admin/vehicle-disputes/${dispute.id}/resolve`, {
+    method: "POST", token: mechanic.sessionToken,
+    body: { note: "Mechanic must not change allocations", resolution: "release_vehicle", expectedActiveSessionId: started.body.drivingSession.id },
+  })).status, 403);
+  assert.equal((await mobile(`admin/issues/${ids[0]}/resolve`, {
+    method: "POST", token: mechanic.sessionToken, body: { note: "Checked and repaired." },
+  })).status, 200);
+  assert.equal((await db.query('SELECT "resolvedById" FROM app.driver_issues WHERE id=$1', [ids[0]])).rows[0].resolvedById, mechanic.user);
+  assert.equal((await mobile("driver/issues", { token: a.sessionToken })).body.items.find(i => i.id === ids[0]).resolutionNote, "Checked and repaired.");
+
+  jar.clear();
+  const mechanicFlow = await browser("self-service/login/browser", {}, env.KRATOS_PUBLIC_URL);
+  const mechanicCsrf = mechanicFlow.body.ui.nodes.find(n => n.attributes.name === "csrf_token").attributes.value;
+  assert.equal((await browser(mechanicFlow.body.ui.action, {
+    method: "POST", body: { method: "password", identifier: mechanic.email, password, csrf_token: mechanicCsrf },
+  }, env.KRATOS_PUBLIC_URL)).status, 200);
+  const mechanicWebSession = await browser("api/auth/session");
+  assert.equal(mechanicWebSession.status, 200);
+  for (const path of ["users", "roles", "drivers", "trucks", "schedules", "vehicle-disputes"]) {
+    assert.equal((await browser(`api/admin/${path}`)).status, 403, path);
+  }
+  const mechanicHome = await fetch(new URL("admin", env.APP_URL), {
+    headers: { Cookie: cookies(), Accept: "text/html" }, signal: AbortSignal.timeout(15000),
+  });
+  assert.equal(mechanicHome.status, 200);
+  assert.ok(mechanicHome.url.endsWith("/admin/vehicle-disputes"));
+  const mechanicHtml = await mechanicHome.text();
+  assert.ok(mechanicHtml.includes(">Exceptions<"));
+  for (const path of ["users", "roles", "drivers", "trucks", "schedules"]) {
+    assert.ok(!mechanicHtml.includes(`href="/admin/${path}"`));
+  }
+  assert.equal((await browser(`api/admin/issues/${ids[1]}/resolve`, {
+    method: "POST", body: { note: "Repaired in workshop." },
+  })).status, 403);
+  assert.equal((await browser(`api/admin/issues/${ids[1]}/resolve`, {
+    method: "POST", body: { note: "Repaired in workshop." },
+    headers: { Origin: new URL(env.APP_URL).origin, "X-CSRF-Token": mechanicWebSession.body.csrfToken },
+  })).status, 200);
+  pass("Truck mechanics sign in on web/native, see only issue notifications and resolve reports with an audit, without fleet or user access");
 
   const logout = await browser(
     "self-service/logout/browser",

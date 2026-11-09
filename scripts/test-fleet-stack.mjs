@@ -401,12 +401,12 @@ try {
   pass("Failed profile provisioning rolls back the new application account");
 
   const roles = await api("roles");
-  const dispatcher = roles.body.find((r) => r.key === "dispatcher");
-  assert.ok(dispatcher);
+  const mechanic = roles.body.find((r) => r.key === "truck_mechanic");
+  assert.ok(mechanic);
   assert.equal(
     (
       await api(`users/${u2.id}/access`, "PATCH", {
-        roleIds: [dispatcher.id],
+        roleIds: [mechanic.id],
         isActive: true,
       })
     ).status,
@@ -431,26 +431,26 @@ try {
       },
     ]),
   });
-  const readOnly = new Map();
-  assert.equal((await login(email2, password, readOnly)).status, 200);
-  const readSession = await request(app, "api/auth/session", {}, readOnly);
-  assert.equal(readSession.status, 200);
-  const readHeaders = {
+  const mechanicCookies = new Map();
+  assert.equal((await login(email2, password, mechanicCookies)).status, 200);
+  const mechanicSession = await request(app, "api/auth/session", {}, mechanicCookies);
+  assert.equal(mechanicSession.status, 200);
+  const mechanicHeaders = {
     ...headers,
-    "X-CSRF-Token": readSession.body.csrfToken,
+    "X-CSRF-Token": mechanicSession.body.csrfToken,
   };
   for (const kind of ["drivers", "trucks"]) {
     assert.equal(
-      (await request(app, `api/admin/${kind}`, {}, readOnly)).status,
-      200,
+      (await request(app, `api/admin/${kind}`, {}, mechanicCookies)).status,
+      403,
     );
     assert.equal(
       (
         await request(
           app,
           `api/admin/${kind}`,
-          requestJson("POST", {}, readHeaders),
-          readOnly,
+          requestJson("POST", {}, mechanicHeaders),
+          mechanicCookies,
         )
       ).status,
       403,
@@ -460,8 +460,8 @@ try {
         await request(
           app,
           `api/admin/${kind}/${kind === "drivers" ? d1 : t1}`,
-          requestJson("PATCH", {}, readHeaders),
-          readOnly,
+          requestJson("PATCH", {}, mechanicHeaders),
+          mechanicCookies,
         )
       ).status,
       403,
@@ -470,9 +470,9 @@ try {
       app,
       `admin/${kind}`,
       { headers: { Accept: "text/html" } },
-      readOnly,
+      mechanicCookies,
     );
-    assert.equal(page.status, 200);
+    assert.equal(page.status, 403);
     assert.ok(!page.body.includes(`href="/admin/${kind}/new"`));
     assert.equal(
       (
@@ -480,14 +480,14 @@ try {
           app,
           `admin/${kind}/new`,
           { headers: { Accept: "text/html" } },
-          readOnly,
+          mechanicCookies,
         )
       ).status,
       403,
     );
   }
   assert.equal(
-    (await request(app, "api/admin/drivers/users", {}, readOnly)).status,
+    (await request(app, "api/admin/drivers/users", {}, mechanicCookies)).status,
     403,
   );
   for (const [path, expected] of [
@@ -510,7 +510,7 @@ try {
     assert.ok(page.body.includes(expected), `SSR ${path}: expected ${expected}`);
   }
   pass(
-    "Dispatcher read-only permissions, protected write APIs, direct-route protection and populated server-rendered screens",
+    "Mechanic cannot read or change fleet records; administrator pages remain available",
   );
 } finally {
   if (driverIds.length) {

@@ -28,9 +28,12 @@ type Connection = {
 export function AttentionMenu({ session }: { session: AdminSession }) {
   const [data, setData] = useState<Snapshot | null>(null),
     [error, setError] = useState("");
-  const allowed = ["admin.access", "trucks.read", "trucks.write"].every((p) =>
-    session.permissions.includes(p),
-  );
+  const allowed =
+    session.permissions.includes("admin.access") &&
+    (session.permissions.includes("issues.read") ||
+      ["trucks.read", "trucks.write"].every((p) =>
+        session.permissions.includes(p),
+      ));
   useEffect(() => {
     if (!allowed) return;
     let alive = true,
@@ -155,7 +158,7 @@ export function AttentionMenu({ session }: { session: AdminSession }) {
       </summary>
       <Card className="absolute right-0 z-50 mt-3 max-h-[70vh] w-[min(360px,90vw)] gap-0 overflow-auto p-4 shadow-lg">
         <h2 className="mb-3 text-sm font-semibold">
-          Needs attention{data ? ` (${data.count})` : ""}
+          Exceptions{data ? ` (${data.count})` : ""}
         </h2>
         {error && (
           <p role="alert" className="text-xs text-destructive">

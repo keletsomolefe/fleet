@@ -63,6 +63,8 @@ provides working authentication while Fleet's own screens are implemented.
 
 ## Initialization and migrations
 
+App migrations and app-schema reset commands are temporarily removed. Infrastructure startup retains existing application data. Fresh application database setup is deferred; use an already initialized `app` schema. Kratos migration jobs continue unchanged.
+
 PostgreSQL runs the numbered SQL files in `docker/postgres` on its first start.
 They create the roles and schemas and install the extensions as the administrator.
 The `kratos-migrate` job waits for PostgreSQL, applies Kratos migrations using the

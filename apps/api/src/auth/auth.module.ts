@@ -1,5 +1,3 @@
-import { TransportService } from '../transport/transport.service.js';
-import { AdminTransportController, MobileTransportController } from '../transport/transport.controller.js';
 import { IssuesService } from '../issues/issues.service.js';
 import {
   AdminIssuesController,
@@ -66,8 +64,6 @@ import { RolesController } from '../rbac/roles.controller.js';
     ]),
   ],
   controllers: [
-    AdminTransportController,
-    MobileTransportController,
     AuthController,
     AdminIssuesController,
     MobileIssuesController,
@@ -86,7 +82,6 @@ import { RolesController } from '../rbac/roles.controller.js';
     RolesController,
   ],
   providers: [
-    TransportService,
     AuthService,
     IssuesService,
     SchedulingService,

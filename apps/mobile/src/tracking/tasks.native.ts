@@ -1,7 +1,6 @@
 import * as TaskManager from "expo-task-manager";
 import * as BackgroundTask from "expo-background-task";
 import type { LocationObject } from "expo-location";
-import { ACTIVITY_UPLOAD_TASK, syncActivities } from "../activities/service";
 import {
   capture,
   flush,
@@ -9,14 +8,23 @@ import {
   LOCATION_TASK,
   UPLOAD_TASK,
 } from "./service";
-TaskManager.defineTask(ACTIVITY_UPLOAD_TASK, async () => {
+// Older installations may still have this retired task scheduled. Stop it
+// without opening or uploading the archived activity queue.
+const retiredActivityTask = "fleet-activity-upload-v1";
+async function stopRetiredActivityTask() {
+  if (await TaskManager.isTaskRegisteredAsync(retiredActivityTask)) {
+    await BackgroundTask.unregisterTaskAsync(retiredActivityTask);
+  }
+}
+TaskManager.defineTask(retiredActivityTask, async () => {
   try {
-    await syncActivities();
+    await stopRetiredActivityTask();
     return BackgroundTask.BackgroundTaskResult.Success;
   } catch {
     return BackgroundTask.BackgroundTaskResult.Failed;
   }
 });
+void stopRetiredActivityTask().catch(() => undefined);
 TaskManager.defineTask(LOCATION_TASK, async ({ data, error }) => {
   try {
     if (error) {

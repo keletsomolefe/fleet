@@ -1,3 +1,4 @@
+import { isActivePermission } from './active-permissions.js';
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -28,7 +29,7 @@ export class RbacService {
       permissions: [
         ...new Set(
           assigned.flatMap(({ role }) =>
-            role.grants.map((g) => g.permission.key),
+            role.grants.map((g) => g.permission.key).filter(isActivePermission),
           ),
         ),
       ].sort(),
@@ -36,7 +37,11 @@ export class RbacService {
   }
 
   require(access: Access, ...permissions: string[]): void {
-    if (!permissions.every((key) => access.permissions.includes(key)))
+    if (
+      !permissions.every(
+        (key) => isActivePermission(key) && access.permissions.includes(key),
+      )
+    )
       throw new ForbiddenException(
         'You do not have permission to perform this action.',
       );
@@ -52,6 +57,7 @@ export class RbacService {
       key: role.key,
       name: role.name,
       permissions: role.grants
+        .filter(({ permission }) => isActivePermission(permission.key))
         .map(({ permission }) => ({
           key: permission.key,
           name: permission.name,

@@ -48,7 +48,6 @@ function Routes() {
         <Stack.Protected guard={session?.mode === "driver"}>
           <Stack.Screen name="truck" />
           <Stack.Screen name="issues" />
-          <Stack.Screen name="activities" />
           <Stack.Screen name="vehicles" />
           <Stack.Screen name="vehicle-review" />
           <Stack.Screen name="schedule-mismatch" />
@@ -59,11 +58,27 @@ function Routes() {
           guard={
             session?.mode === "admin" ||
             (!!session?.permissions?.includes("admin.access") &&
-              !!session?.permissions?.includes("trucks.write"))
+              (!!session?.permissions?.includes("issues.read") ||
+                !!session?.permissions?.includes("trucks.write")))
           }
         >
           <Stack.Screen name="admin" />
+        </Stack.Protected>
+        <Stack.Protected
+          guard={
+            !!session?.permissions?.includes("admin.access") &&
+            !!session?.permissions?.includes("drivers.write") &&
+            !!session?.permissions?.includes("trucks.write")
+          }
+        >
           <Stack.Screen name="schedules" />
+        </Stack.Protected>
+        <Stack.Protected
+          guard={
+            !!session?.permissions?.includes("admin.access") &&
+            !!session?.permissions?.includes("trucks.write")
+          }
+        >
           <Stack.Screen name="setup" />
         </Stack.Protected>
       </Stack>

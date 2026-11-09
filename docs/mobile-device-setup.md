@@ -22,7 +22,7 @@ Drivers cannot force a takeover. An occupied vehicle's review screen offers **Fl
 
 An open flag prevents new driving sessions even after the previous driver releases the vehicle. The current driver is not automatically displaced by someone else's report. Vehicle flags are available to administrators in the native app and at `/admin/vehicle-disputes`. Resolving requires `admin.access`, `trucks.read`, `trucks.write`, a resolution note and the expected current session ID. The administrator may retain the current driver or release the vehicle. The server records resolver, time, action and note, resolves the vehicle's open flags together, and never assigns the reporting driver automatically. That driver must refresh and explicitly select the vehicle again.
 
-Session changes, releases, conflict flags and resolution serialize with the same transaction-scoped lock as fleet asset edits. Partial unique indexes enforce active driver and vehicle exclusivity independently of application code. All application persistence uses TypeORM with synchronization disabled. The consolidated `LaunchBaseline1793188800000` migration contains these tables and tracking links. See [customer products and revenue](customer-products-and-revenue.md) for the pre-launch reset and offline continuation rules.
+Session changes, releases, conflict flags and resolution serialize with the same transaction-scoped lock as fleet asset edits. Partial unique indexes enforce active driver and vehicle exclusivity independently of application code. All application persistence uses TypeORM with synchronization disabled. These tables and tracking links must already exist; app migrations and reset commands are currently deferred. See [background location logging](background-location.md) for offline location capture. Transport activity logging is deferred.
 
 ## Authentication and storage
 
@@ -51,10 +51,10 @@ The browser administrator API exposes the last two operations under `/api/admin/
 
 ## Running and verification
 
-Use pnpm from the repository root and the root `.env` for shared configuration. Run `pnpm db:migrate`, `pnpm mobile:check`, `pnpm typecheck`, `pnpm test`, `pnpm test:tracking-queue`, `pnpm test:mobile` and `pnpm build`. Live tests require the local Kratos, PostgreSQL, gateway and MQTT broker. They create random temporary identities, users, drivers, vehicles and records, then remove their own fixtures; no reusable account or password is committed.
+Use pnpm from the repository root and the root `.env` for shared configuration. With an initialized application database, run `pnpm mobile:check`, `pnpm typecheck`, `pnpm test`, `pnpm test:tracking-queue`, `pnpm test:mobile` and `pnpm build`. Live tests require the local Kratos, PostgreSQL, gateway and MQTT broker. They create random temporary identities, users, drivers, vehicles and records, then remove their own fixtures; no reusable account or password is committed.
 
 Use `pnpm mobile:android` or `pnpm mobile:ios` for an installed native build. `pnpm mobile:reverse` forwards the configured development ports for Android. Only `EXPO_PUBLIC_API_URL` is exposed from the root `.env`; release builds require HTTPS. Physical-phone background/battery/permission acceptance remains a separate device check.
 
 ## Daily schedules
 
-Administrators can now [schedule drivers by date and weekdays](driver-scheduling.md). Drivers confirm today’s planned vehicle, or report a mismatch for administrator resolution. Needs attention badges and MQTT updates cover both schedule and occupied-vehicle disputes. The earlier Figma snapshot shows the manual-selection journey before scheduling was added.
+Administrators can now [schedule drivers by date and weekdays](driver-scheduling.md). Drivers confirm today’s planned vehicle, or report a mismatch for administrator resolution. Issues badges and MQTT updates cover both schedule and occupied-vehicle disputes. The earlier Figma snapshot shows the manual-selection journey before scheduling was added.

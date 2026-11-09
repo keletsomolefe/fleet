@@ -24,7 +24,6 @@ export default function Driving() {
     <Screen
       actions={
         <>
-          <Button secondary onPress={() => router.push('/activities')}>Jobs & activity</Button>
           {driver && (
             <Button
               disabled={!driver.canDrive || !!driver.pendingDispute}
@@ -78,9 +77,10 @@ export default function Driving() {
             </Button>
           )}
           {fleet.session?.permissions?.includes("admin.access") &&
-            fleet.session.permissions.includes("trucks.write") && (
+            (fleet.session.permissions.includes("issues.read") ||
+              fleet.session.permissions.includes("trucks.write")) && (
               <Button secondary onPress={() => router.push("/admin")}>
-                Needs attention
+                Exceptions
               </Button>
             )}
           <Button

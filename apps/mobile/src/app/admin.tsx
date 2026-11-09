@@ -30,13 +30,23 @@ export default function VehicleFlags() {
     [note, setNote] = useState(""),
     [error, setError] = useState(""),
     [outcome, setOutcome] = useState("");
+  const canManageVehicles = ["trucks.read", "trucks.write"].every((p) =>
+    fleet.session?.permissions.includes(p),
+  );
+  const canReadIssues = !!fleet.session?.permissions.includes("issues.read");
   const load = useCallback(async () => {
     try {
       const [disputes, issues] = await Promise.all([
-        request<{ items: VehicleDispute[] }>("admin/vehicle-disputes", {
-          session: token,
-        }),
-        request<{ items: DriverIssue[] }>("admin/issues", { session: token }),
+        canManageVehicles
+          ? request<{ items: VehicleDispute[] }>("admin/vehicle-disputes", {
+              session: token,
+            })
+          : Promise.resolve({ items: [] }),
+        canReadIssues
+          ? request<{ items: DriverIssue[] }>("admin/issues", {
+              session: token,
+            })
+          : Promise.resolve({ items: [] }),
       ]);
       setItems(
         [...disputes.items, ...issues.items].sort(
@@ -50,7 +60,7 @@ export default function VehicleFlags() {
         cause instanceof Error ? cause.message : "Could not load items.",
       );
     }
-  }, [token]);
+  }, [token, canManageVehicles, canReadIssues]);
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!selected) void load();
@@ -197,7 +207,7 @@ export default function VehicleFlags() {
         )
       }
     >
-      <Heading title={selected ? "Resolve item" : "Needs attention"} />
+      <Heading title={selected ? "Resolve item" : "Exceptions"} />
       {!!outcome && <Copy>{outcome}</Copy>}
       {selected ? (
         <>

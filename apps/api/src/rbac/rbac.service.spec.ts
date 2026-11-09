@@ -46,6 +46,66 @@ describe('Company user RBAC', () => {
     expect((await service.access('new-user')).permissions).toEqual([]);
   });
 
+  it('excludes retired feature grants from sessions and the role catalogue', async () => {
+    const role = {
+      id: 'owner',
+      key: 'owner',
+      name: 'Owner',
+      grants: [
+        'driver.access',
+        'drivers.write',
+        'trucks.write',
+        'customers.read',
+        'customers.write',
+        'locations.read',
+        'locations.write',
+        'dispatch.read',
+        'dispatch.write',
+        'activities.read',
+        'activities.write',
+        'activities.review',
+        'revenue.read',
+        'exceptions.read',
+        'exports.read',
+        'vehicle_reports.read',
+        'shifts.read',
+        'products.read',
+        'products.write',
+        'pricing.read',
+        'pricing.write',
+      ].map((key) => ({ permission: { key, name: key } })),
+    };
+    const service = new RbacService(
+      {
+        find: vi.fn().mockResolvedValue([{ role }]),
+      } as unknown as Repository<UserRole>,
+      {
+        find: vi.fn().mockResolvedValue([role]),
+      } as unknown as Repository<Role>,
+    );
+    expect((await service.access('person')).permissions).toEqual([
+      'driver.access',
+      'drivers.write',
+      'trucks.write',
+    ]);
+    expect((await service.catalog())[0].permissions.map((p) => p.key)).toEqual([
+      'driver.access',
+      'drivers.write',
+      'trucks.write',
+    ]);
+    for (const key of [
+      'customers.write',
+      'dispatch.write',
+      'activities.write',
+      'pricing.write',
+      'revenue.read',
+    ]) {
+      expect(() =>
+        service.require({ roles: [], permissions: [key] }, key),
+      ).toThrow(ForbiddenException);
+    }
+  });
+
   it('validates access updates and refuses client permission or user-type fields', () => {
     const role = '00000000-0000-0000-0000-000000000001';
     expect(parseAccessInput({ roleIds: [role, role], isActive: true })).toEqual(

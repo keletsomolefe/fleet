@@ -4,8 +4,6 @@ import { EmptyPage } from "@/components/empty-page";
 import { PageError } from "@/components/page-error";
 import { can } from "@/lib/auth";
 import { deniedPage } from "@/lib/users";
-import { getTransportPage, sections } from "@/lib/transport";
-import { TransportPage } from "@/components/transport-page";
 
 export const Route = createFileRoute("/admin/$section")({
   loader: async ({ params, context }) => {
@@ -21,26 +19,13 @@ export const Route = createFileRoute("/admin/$section")({
       group: group!.label,
       denied,
       section: params.section,
-      transport:
-        !denied && sections.includes(params.section)
-          ? await getTransportPage({ data: params.section })
-          : null,
     };
   },
   component: Section,
 });
 function Section() {
   const data = Route.useLoaderData();
-  const session = Route.useRouteContext().session;
   if (data.denied)
     return <PageError message="You do not have access to this page." />;
-  if (data.transport)
-    return (
-      <TransportPage
-        section={data.section}
-        data={data.transport}
-        session={session}
-      />
-    );
   return <EmptyPage {...data} />;
 }
