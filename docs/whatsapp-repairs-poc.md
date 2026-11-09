@@ -45,6 +45,8 @@ ssh -L 2785:127.0.0.1:2785 root@nativesounds.co.za
 
 OpenWA has its own SQLite/session volume. It is not given a Docker socket, Fleet DB credentials, or Kratos access. Back up `repair_data` and OpenWA's data volume; do not use `down -v`.
 
+The connector has a 1 GiB memory limit and a 1536 MiB combined memory/swap limit. The initial linked-device sync hit sustained memory pressure at 768 MiB on the test account and stalled group lookups; raising RAM to 1 GiB restored those reads. Check host headroom and container memory pressure before changing these limits.
+
 ## POC boundaries and recovery
 
 No app schema migrations, resets or synchronization are introduced. Issue state, timestamp and comment remain in the existing DB columns; repair photos/receipts and alert jobs live on the private persistent volume. Photos are served only through permission-checked or issue-capability endpoints, never by a public file server. A receipt is shown only when its timestamp and note match the committed DB resolution. A failed transaction may leave private orphan files; it cannot expose them as a completed repair.

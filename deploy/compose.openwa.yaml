@@ -5,7 +5,8 @@ services:
     image: ghcr.io/rmyndharis/openwa:0.29.1
     restart: unless-stopped
     init: true
-    mem_limit: 768m
+    mem_limit: 1g
+    memswap_limit: 1536m
     shm_size: 256m
     stop_grace_period: 75s
     ports: [127.0.0.1:2785:2785]
