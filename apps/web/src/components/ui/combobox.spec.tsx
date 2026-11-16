@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { useState } from 'react'
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { useState, type ReactElement } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { act, cleanup, fireEvent, render as renderComponent, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Combobox, type ComboboxOption } from './combobox'
 
@@ -8,12 +9,17 @@ const patrick = { value: 'driver-patrick', label: 'Patrick Molefe · D001' }
 const demo = { value: 'driver-demo', label: 'Demo Driver · D002' }
 type Load = (query: string, signal: AbortSignal) => Promise<ComboboxOption[]>
 
+function render(component: ReactElement) {
+  const client = new QueryClient()
+  return renderComponent(<QueryClientProvider client={client}>{component}</QueryClientProvider>)
+}
+
 function Field({ loadOptions, initial = null, disabled = false }: { loadOptions: Load; initial?: ComboboxOption | null; disabled?: boolean }) {
   const [value, setValue] = useState(initial)
   return (
     <form aria-label="Assignment">
       <label htmlFor="driver">Driver</label>
-      <Combobox id="driver" name="driverId" value={value} onValueChange={setValue} loadOptions={loadOptions} required disabled={disabled} />
+      <Combobox id="driver" name="driverId" value={value} onValueChange={setValue} optionsKey={['driver-options']} loadOptions={loadOptions} required disabled={disabled} />
       <button type="submit">Save</button>
     </form>
   )
@@ -76,6 +82,7 @@ describe('Searchable selection', () => {
     await waitFor(() => expect(load).toHaveBeenCalled())
     fireEvent.change(input, { target: { value: 'dem' } })
     await screen.findByRole('option', { name: demo.label })
+    expect(load.mock.calls[0]?.[1].aborted).toBe(true)
     await act(async () => finishOld([patrick]))
     expect(screen.queryByRole('option', { name: patrick.label })).toBeNull()
     expect(screen.getByRole('option', { name: demo.label })).toBeTruthy()

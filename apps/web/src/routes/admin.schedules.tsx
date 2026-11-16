@@ -1,5 +1,7 @@
 import { PageHeader } from "@/components/page-header";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { adminOperationsKey, refreshAdminOperations } from "@/lib/admin-queries";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -73,12 +75,11 @@ function range(anchor: string, mode: "week" | "month") {
 }
 function Schedules() {
   const { session } = Route.useRouteContext();
+  const queryClient = useQueryClient();
   const [anchor, setAnchor] = useState(localDate),
     [mode, setMode] = useState<"week" | "month">("week"),
-    [items, setItems] = useState<Entry[]>([]),
-    [error, setError] = useState(""),
+    [saveError, setSaveError] = useState(""),
     [saved, setSaved] = useState(""),
-    [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false);
   const [from, to] = range(anchor, mode);
   const [selectedDriver, setSelectedDriver] = useState<ComboboxOption | null>(
@@ -107,31 +108,20 @@ function Schedules() {
     "trucks.read",
     "trucks.write",
   ].every((p) => session.permissions.includes(p));
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const r = await fetch(`/api/admin/schedules?from=${from}&to=${to}`, {
+  const { data: items = [], error: loadError, isPending, refetch } = useQuery({
+    queryKey: [...adminOperationsKey(session.user.id), "schedules", from, to],
+    enabled: allowed,
+    queryFn: async ({ signal }) => {
+      const response = await fetch(`/api/admin/schedules?from=${from}&to=${to}`, {
         cache: "no-store",
+        signal,
       });
-      if (!r.ok) throw new Error("Could not load the schedule.");
-      setItems((await r.json()).items);
-      setError("");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load the schedule.");
-    } finally {
-      setLoading(false);
-    }
-  }, [from, to]);
-  useEffect(() => {
-    if (allowed) void load();
-  }, [load, allowed]);
-  useEffect(() => {
-    const update = () => {
-      void load();
-    };
-    window.addEventListener("fleet:attention-changed", update);
-    return () => window.removeEventListener("fleet:attention-changed", update);
-  }, [load]);
+      if (!response.ok) throw new Error("Could not load the schedule.");
+      const data = (await response.json()) as { items: Entry[] };
+      return data.items;
+    },
+  });
+  const error = saveError || loadError?.message;
   useEffect(() => {
     setStart(from);
     setEnd(to);
@@ -153,7 +143,7 @@ function Schedules() {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
-    setError("");
+    setSaveError("");
     setSaved("");
     try {
       const { r, data } = cancel
@@ -181,9 +171,9 @@ function Schedules() {
       setCancel(null);
       setConflicts([]);
       setNote("");
-      await load();
+      await refreshAdminOperations(queryClient, session.user.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save the schedule.");
+      setSaveError(e instanceof Error ? e.message : "Could not save the schedule.");
     } finally {
       setBusy(false);
     }
@@ -248,11 +238,14 @@ function Schedules() {
             <p className="text-sm font-semibold">
               {from} – {to}
             </p>
-            <Button variant="outline" onClick={() => void load()}>
+            <Button variant="outline" onClick={() => {
+                setSaveError("");
+                void refetch();
+              }}>
               Refresh
             </Button>
           </div>
-          {loading ? (
+          {isPending ? (
             <p className="p-5 text-sm">Loading schedule…</p>
           ) : (
             <div className="divide-y">
@@ -332,6 +325,7 @@ function Schedules() {
                       name="driverId"
                       value={selectedDriver}
                       placeholder="Search name or driver number"
+                      optionsKey={["admin", session.user.id, "active-drivers"]}
                       loadOptions={loadDrivers}
                       emptyMessage="No drivers found."
                       disabled={busy}
@@ -349,6 +343,7 @@ function Schedules() {
                       name="truckId"
                       value={selectedTruck}
                       placeholder="Search registration or fleet number"
+                      optionsKey={["admin", session.user.id, "active-vehicles"]}
                       loadOptions={loadVehicles}
                       emptyMessage="No vehicles found."
                       disabled={busy}

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Wrench } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
@@ -39,19 +40,43 @@ async function result(response: Response) {
 }
 export function RepairPage() {
   const { issueId } = Route.useParams();
-  const link = useRef("");
-  const [token, setToken] = useState(""),
-    [grant, setGrant] = useState(""),
-    [issue, setIssue] = useState<Issue | null>(null);
-  const [error, setError] = useState(""),
+  return <Repair key={issueId} issueId={issueId} />;
+}
+
+function RepairPhoto({ photo }: { photo: Blob }) {
+  const [url, setUrl] = useState("");
+  useEffect(() => {
+    const objectUrl = URL.createObjectURL(photo);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [photo]);
+
+  if (!url) return null;
+  return (
+    <a href={url} target="_blank" rel="noreferrer">
+      <img
+        src={url}
+        alt="Completed repair"
+        className="aspect-square rounded-md object-cover"
+      />
+    </a>
+  );
+}
+
+function Repair({ issueId }: { issueId: string }) {
+  const queryClient = useQueryClient();
+  const viewId = useId();
+  const link = useRef<string | null>(null);
+  const [token, setToken] = useState<string | null>(null),
+    [grant, setGrant] = useState("");
+  const [verificationError, setVerificationError] = useState(""),
     [busy, setBusy] = useState(false),
     [phone, setPhone] = useState(""),
     [code, setCode] = useState(""),
     [challenge, setChallenge] = useState("");
-  const [photos, setPhotos] = useState<string[]>([]);
   const endpoint = `/api/repairs/${encodeURIComponent(issueId)}`;
   useEffect(() => {
-    link.current ||=
+    link.current ??=
       new URLSearchParams(window.location.hash.slice(1)).get("token") ?? "";
     window.history.replaceState(
       window.history.state,
@@ -59,61 +84,54 @@ export function RepairPage() {
       window.location.pathname,
     );
     setToken(link.current);
-    if (!link.current) {
-      setError("Open the repair link from the mechanics WhatsApp group.");
-      return;
-    }
-    let active = true;
-    fetch(endpoint, {
-      headers: { Authorization: `Bearer ${link.current}` },
-      cache: "no-store",
-    })
-      .then(result)
-      .then((data) => {
-        if (active) setIssue(data);
-      })
-      .catch((cause) => {
-        if (active) setError(cause.message);
-      });
-    return () => {
-      active = false;
-    };
-  }, [endpoint]);
-  useEffect(() => {
-    const urls: string[] = [];
-    let active = true;
-    if (issue?.photos.length && (grant || token)) {
-      void Promise.all(
-        issue.photos.map(async (id) => {
-          const r = await fetch(`${endpoint}/photos/${id}`, {
-            headers: { Authorization: `Bearer ${grant || token}` },
-            cache: "no-store",
-          });
-          if (!r.ok) throw new Error("Could not load a repair photo.");
-          const url = URL.createObjectURL(await r.blob());
-          urls.push(url);
-          return url;
+  }, []);
+
+  // This view's cache keys never include the bearer credentials.
+  const issueKey = ["repair", issueId, viewId] as const;
+  const authorization = `Bearer ${grant || token || ""}`;
+  const issueQuery = useQuery({
+    queryKey: issueKey,
+    enabled: !!token,
+    gcTime: 0,
+    queryFn: async ({ signal }): Promise<Issue> =>
+      result(
+        await fetch(endpoint, {
+          headers: { Authorization: authorization },
+          cache: "no-store",
+          signal,
         }),
-      )
-        .then((value) => {
-          if (active) setPhotos(value);
-          else urls.forEach(URL.revokeObjectURL);
-        })
-        .catch((cause) => {
-          urls.forEach(URL.revokeObjectURL);
-          if (active) setError(cause.message);
-        });
-    }
-    return () => {
-      active = false;
-      urls.forEach(URL.revokeObjectURL);
-    };
-  }, [issue, token, grant, endpoint]);
+      ),
+  });
+  const issue = issueQuery.data;
+  const photoIds = issue?.photos ?? [];
+  const photoQuery = useQuery({
+    queryKey: [...issueKey, "photos", photoIds],
+    enabled: !!token && photoIds.length > 0,
+    gcTime: 0,
+    queryFn: ({ signal }) =>
+      Promise.all(
+        photoIds.map(async (id) => {
+          const response = await fetch(`${endpoint}/photos/${id}`, {
+            headers: { Authorization: authorization },
+            cache: "no-store",
+            signal,
+          });
+          if (!response.ok) throw new Error("Could not load a repair photo.");
+          return { id, photo: await response.blob() };
+        }),
+      ),
+  });
+  const error =
+    verificationError ||
+    (token === "" && "Open the repair link from the mechanics WhatsApp group.") ||
+    issueQuery.error?.message ||
+    photoQuery.error?.message;
+
   async function auth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
     setBusy(true);
-    setError("");
+    setVerificationError("");
     try {
       const data = await result(
         await fetch(`${endpoint}/otp${challenge ? "/verify" : ""}`, {
@@ -132,7 +150,7 @@ export function RepairPage() {
       if (challenge) setGrant(data.token);
       else setChallenge(data.challengeId);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Please try again.");
+      setVerificationError(cause instanceof Error ? cause.message : "Please try again.");
     } finally {
       setBusy(false);
     }
@@ -187,14 +205,8 @@ export function RepairPage() {
                     {issue.resolutionNote}
                   </p>
                   <div className="grid grid-cols-2 gap-3">
-                    {photos.map((url) => (
-                      <a key={url} href={url} target="_blank" rel="noreferrer">
-                        <img
-                          src={url}
-                          alt="Completed repair"
-                          className="aspect-square rounded-md object-cover"
-                        />
-                      </a>
+                    {photoQuery.data?.map(({ id, photo }) => (
+                      <RepairPhoto key={id} photo={photo} />
                     ))}
                   </div>
                 </div>
@@ -203,15 +215,12 @@ export function RepairPage() {
                   endpoint={`${endpoint}/resolve`}
                   headers={{ Authorization: `Bearer ${grant}` }}
                   askName
-                  onSaved={async () => {
-                    const updated = await result(
-                      await fetch(endpoint, {
-                        headers: { Authorization: `Bearer ${grant}` },
-                        cache: "no-store",
-                      }),
-                    );
-                    setIssue(updated);
-                  }}
+                  onSaved={() =>
+                    queryClient.invalidateQueries({
+                      queryKey: issueKey,
+                      exact: true,
+                    })
+                  }
                 />
               ) : (
                 <form onSubmit={auth} className="space-y-4">

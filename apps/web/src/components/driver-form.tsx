@@ -52,8 +52,9 @@ export function DriverForm({
     ...driver,
   }
   const loadUsers = useCallback(
-    async (query: string) => {
+    async (query: string, signal: AbortSignal) => {
       const result = await getDriverOptions({
+        signal,
         data: { kind: 'users', q: query, driverId: driver?.id },
       })
       if (!result.data) throw new Error(result.error ?? 'Could not load users.')
@@ -65,8 +66,9 @@ export function DriverForm({
     [driver?.id],
   )
   const loadTrucks = useCallback(
-    async (query: string) => {
+    async (query: string, signal: AbortSignal) => {
       const result = await getDriverOptions({
+        signal,
         data: { kind: 'trucks', q: query, driverId: driver?.id },
       })
       if (!result.data)
@@ -215,6 +217,7 @@ export function DriverForm({
                       name="userId"
                       value={selectedUser}
                       onValueChange={setSelectedUser}
+                      optionsKey={['admin', session.user.id, 'driver-users']}
                       loadOptions={loadUsers}
                       placeholder="Search name or email"
                       emptyMessage="No users found."
@@ -313,6 +316,12 @@ export function DriverForm({
                 name="currentTruckId"
                 value={selectedTruck}
                 onValueChange={setSelectedTruck}
+                optionsKey={[
+                  'admin',
+                  session.user.id,
+                  'driver-trucks',
+                  driver?.id,
+                ]}
                 loadOptions={loadTrucks}
                 placeholder="Search fleet number or registration"
                 emptyMessage="No vehicles found."

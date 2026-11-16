@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { adminOperationsKey } from "@/lib/admin-queries";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,57 +23,47 @@ export const Route = createFileRoute("/admin/repairs")({
   component: RepairHistory,
 });
 function RepairHistory() {
-  const [items, setItems] = useState<Repair[]>([]),
-    [error, setError] = useState(""),
-    [loading, setLoading] = useState(true);
-  const load = useCallback(async () => {
-    try {
-      const r = await fetch("/api/admin/repairs", { cache: "no-store" });
-      if (!r.ok)
+  const { session } = Route.useRouteContext();
+  const { data: items = [], error, isPending, refetch } = useQuery({
+    queryKey: [...adminOperationsKey(session.user.id), "repairs"],
+    queryFn: async ({ signal }) => {
+      const response = await fetch("/api/admin/repairs", {
+        signal,
+        cache: "no-store",
+      });
+      if (!response.ok)
         throw new Error(
-          r.status === 403
+          response.status === 403
             ? "You do not have access to repairs."
             : "Could not load repairs. Please try again.",
         );
-      setItems((await r.json()).items);
-      setError("");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load repairs.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-  useEffect(() => {
-    void load();
-    const changed = () => {
-      void load();
-    };
-    window.addEventListener("fleet:attention-changed", changed);
-    return () => window.removeEventListener("fleet:attention-changed", changed);
-  }, [load]);
+      const data = (await response.json()) as { items: Repair[] };
+      return data.items;
+    },
+  });
   return (
     <>
       <PageHeader
         title="Completed repairs"
         group="Review & records"
         actions={
-          <Button variant="outline" onClick={() => void load()}>
+          <Button variant="outline" onClick={() => void refetch()}>
             Refresh
           </Button>
         }
       />
       {error && (
         <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>{error.message}</AlertDescription>
         </Alert>
       )}
       <div className="grid gap-4">
-        {loading && (
+        {isPending && (
           <p role="status" className="text-sm text-muted-foreground">
             Loading repairs…
           </p>
         )}
-        {!loading && !error && !items.length && (
+        {!isPending && !error && !items.length && (
           <Card className="p-6 shadow-none">
             <p className="text-sm text-muted-foreground">
               No completed repairs yet.

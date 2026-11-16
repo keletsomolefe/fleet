@@ -1,4 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  adminNotificationsKey,
+  adminOperationsKey,
+  refreshAdminOperations,
+} from "@/lib/admin-queries";
 import type { MqttClient } from "mqtt";
 import { Bell } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -26,57 +32,53 @@ type Connection = {
   clientPrefix: string;
 };
 export function AttentionMenu({ session }: { session: AdminSession }) {
-  const [data, setData] = useState<Snapshot | null>(null),
-    [error, setError] = useState("");
+  const userId = session.user.id;
+  const queryClient = useQueryClient();
   const allowed =
     session.permissions.includes("admin.access") &&
     (session.permissions.includes("issues.read") ||
       ["trucks.read", "trucks.write"].every((p) =>
         session.permissions.includes(p),
       ));
+  const { data, isError } = useQuery({
+    queryKey: adminNotificationsKey(userId),
+    enabled: allowed,
+    refetchInterval: 20_000,
+    refetchIntervalInBackground: true,
+    queryFn: async ({ signal }): Promise<Snapshot> => {
+      const response = await fetch("/api/admin/notifications", {
+        cache: "no-store",
+        signal: AbortSignal.any([signal, AbortSignal.timeout(8000)]),
+      });
+      if (!response.ok) throw new Error("Could not refresh items. Try again.");
+      return response.json();
+    },
+  });
+
+  // If a socket message was missed, a changed HTTP snapshot still updates the lists.
+  const previous = useRef<{ userId: string; data: Snapshot } | null>(null);
+  useEffect(() => {
+    if (!allowed || !data) {
+      previous.current = null;
+      return;
+    }
+    if (previous.current?.userId === userId && previous.current.data !== data)
+      void queryClient.invalidateQueries(
+        { queryKey: adminOperationsKey(userId) },
+        { cancelRefetch: false },
+      );
+    previous.current = { userId, data };
+  }, [allowed, data, queryClient, userId]);
+
   useEffect(() => {
     if (!allowed) return;
-    let alive = true,
-      busy = false,
-      pending = false,
-      pendingInvalidate = false,
-      connecting = false,
-      fingerprint = "",
-      socket: MqttClient | undefined;
-    async function refresh(invalidate = false) {
-      if (busy) {
-        pending = true;
-        pendingInvalidate ||= invalidate;
-        return;
-      }
-      busy = true;
-      try {
-        const r = await fetch("/api/admin/notifications", {
-          cache: "no-store",
-          signal: AbortSignal.timeout(8000),
-        });
-        if (!r.ok) throw new Error();
-        const next = (await r.json()) as Snapshot;
-        if (alive) {
-          setData(next);
-          setError("");
-          const nextFingerprint = JSON.stringify(next);
-          if (invalidate || (fingerprint && fingerprint !== nextFingerprint))
-            window.dispatchEvent(new Event("fleet:attention-changed"));
-          fingerprint = nextFingerprint;
-        }
-      } catch {
-        if (alive) setError("Could not refresh items. Try again.");
-      } finally {
-        busy = false;
-        if (pending && alive) {
-          const nextInvalidate = pendingInvalidate;
-          pending = false;
-          pendingInvalidate = false;
-          void refresh(nextInvalidate);
-        }
-      }
-    }
+    const controller = new AbortController();
+    const refresh = () => {
+      if (!controller.signal.aborted)
+        void refreshAdminOperations(queryClient, userId);
+    };
+    let connecting = false;
+    let socket: MqttClient | undefined;
     async function connect() {
       if (connecting || socket?.connected) return;
       connecting = true;
@@ -84,13 +86,16 @@ export function AttentionMenu({ session }: { session: AdminSession }) {
         const r = await fetch("/api/admin/notifications/connection", {
           method: "POST",
           headers: { "X-CSRF-Token": session.csrfToken },
-          signal: AbortSignal.timeout(8000),
+          signal: AbortSignal.any([
+            controller.signal,
+            AbortSignal.timeout(8000),
+          ]),
         });
         if (!r.ok) throw new Error();
         const cfg = (await r.json()) as Connection;
-        if (!cfg.mqttUrl || !alive) return;
+        if (!cfg.mqttUrl || controller.signal.aborted) return;
         const { default: mqtt } = await import("mqtt");
-        if (!alive) return;
+        if (controller.signal.aborted) return;
         socket?.end(true);
         const client = mqtt.connect(cfg.mqttUrl, {
           username: cfg.username,
@@ -105,10 +110,10 @@ export function AttentionMenu({ session }: { session: AdminSession }) {
         socket = client;
         client.on("connect", () =>
           client.subscribe(cfg.topic, { qos: 1 }, (err) => {
-            if (!err) void refresh(true);
+            if (!err) refresh();
           }),
         );
-        client.on("message", () => void refresh(true));
+        client.on("message", refresh);
         client.on("error", () => undefined);
       } catch {
         /* The HTTP snapshot also recovers missed notifications. */
@@ -116,22 +121,17 @@ export function AttentionMenu({ session }: { session: AdminSession }) {
         connecting = false;
       }
     }
-    const update = () => {
-      void refresh();
-      void connect();
-    };
-    update();
-    const timer = setInterval(update, 20000);
-    window.addEventListener("focus", update);
-    window.addEventListener("fleet:attention-refresh", update);
+    void connect();
+    const reconnect = () => void connect();
+    const timer = setInterval(reconnect, 20_000);
+    window.addEventListener("focus", reconnect);
     return () => {
-      alive = false;
+      controller.abort();
       clearInterval(timer);
-      window.removeEventListener("focus", update);
-      window.removeEventListener("fleet:attention-refresh", update);
+      window.removeEventListener("focus", reconnect);
       socket?.end(true);
     };
-  }, [allowed, session.csrfToken]);
+  }, [allowed, queryClient, session.csrfToken, userId]);
   if (!allowed) return null;
   return (
     <details
@@ -160,12 +160,12 @@ export function AttentionMenu({ session }: { session: AdminSession }) {
         <h2 className="mb-3 text-sm font-semibold">
           Exceptions{data ? ` (${data.count})` : ""}
         </h2>
-        {error && (
+        {isError && (
           <p role="alert" className="text-xs text-destructive">
-            {error}
+            Could not refresh items. Try again.
           </p>
         )}
-        {!data && !error && <p className="text-xs">Loading…</p>}
+        {!data && !isError && <p className="text-xs">Loading…</p>}
         {data?.count === 0 && (
           <p className="text-xs text-muted-foreground">Nothing to resolve.</p>
         )}

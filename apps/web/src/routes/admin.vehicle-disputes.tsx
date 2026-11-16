@@ -1,7 +1,10 @@
 import { RepairForm } from "@/components/repair-form";
 import { PageHeader } from "@/components/page-header";
-import { useEffect, useState, type FormEvent } from "react";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { useState, type FormEvent } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
+import { adminOperationsKey, refreshAdminOperations } from "@/lib/admin-queries";
+import type { AdminSession } from "@/lib/auth";
 import {
   getVehicleDisputes,
   type VehicleDispute,
@@ -13,16 +16,27 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { displayDate } from "@/lib/fleet";
+const exceptionsQuery = (session: AdminSession) =>
+  queryOptions({
+    queryKey: [
+      ...adminOperationsKey(session.user.id),
+      "exceptions",
+      session.permissions,
+    ],
+    queryFn: ({ signal }) => getVehicleDisputes({ signal }),
+  });
+
 export const Route = createFileRoute("/admin/vehicle-disputes")({
-  loader: () => getVehicleDisputes(),
+  loader: async ({ context }) => {
+    await context.queryClient.query(exceptionsQuery(context.session));
+  },
   staleTime: 0,
   gcTime: 0,
   component: Page,
 });
 function Page() {
-  const data = Route.useLoaderData(),
-    { session } = Route.useRouteContext(),
-    router = useRouter();
+  const { session } = Route.useRouteContext();
+  const queryClient = useQueryClient();
   const [selected, setSelected] = useState<VehicleDispute | DriverIssue | null>(
       null,
     ),
@@ -30,13 +44,13 @@ function Page() {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [saved, setSaved] = useState("");
-  useEffect(() => {
-    const update = () => {
-      if (!selected) void router.invalidate();
-    };
-    window.addEventListener("fleet:attention-changed", update);
-    return () => window.removeEventListener("fleet:attention-changed", update);
-  }, [selected, router]);
+  const { data, error: loadError, isPending } = useQuery({
+    ...exceptionsQuery(session),
+    enabled: !selected,
+    refetchOnMount: false,
+  });
+  const items = data?.items ?? [];
+  const pageError = error || data?.error || loadError?.message;
   async function resolve(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!selected || busy) return;
@@ -81,8 +95,7 @@ function Page() {
       setSelected(null);
       setNote("");
       setSaved("Item resolved.");
-      window.dispatchEvent(new Event("fleet:attention-refresh"));
-      await router.invalidate();
+      await refreshAdminOperations(queryClient, session.user.id);
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "Could not resolve this item.",
@@ -101,16 +114,19 @@ function Page() {
             variant="outline"
             onClick={() => {
               setSelected(null);
-              void router.invalidate();
+              setError("");
+              void queryClient.invalidateQueries({
+                queryKey: exceptionsQuery(session).queryKey,
+              });
             }}
           >
             Refresh
           </Button>
         }
       />
-      {(error || data.error) && (
+      {pageError && (
         <Alert variant="destructive">
-          <AlertDescription>{error || data.error}</AlertDescription>
+          <AlertDescription>{pageError}</AlertDescription>
         </Alert>
       )}
       {saved && (
@@ -166,8 +182,7 @@ function Page() {
               onSaved={async () => {
                 setSelected(null);
                 setSaved("Issue resolved.");
-                window.dispatchEvent(new Event("fleet:attention-refresh"));
-                await router.invalidate();
+                await refreshAdminOperations(queryClient, session.user.id);
               }}
             />
           ) : (
@@ -241,14 +256,19 @@ function Page() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {!data.error && !data.items.length && (
+          {isPending && !pageError && (
+            <p role="status" className="text-sm text-muted-foreground">
+              Loading items…
+            </p>
+          )}
+          {!isPending && !pageError && !items.length && (
             <Card className="p-6 shadow-none">
               <p className="text-sm text-muted-foreground">
                 Nothing to resolve.
               </p>
             </Card>
           )}
-          {data.items.map((d) => (
+          {items.map((d) => (
             <Card
               key={d.id}
               className="flex flex-wrap items-start justify-between gap-4 p-5 shadow-none"

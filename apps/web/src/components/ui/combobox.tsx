@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useQuery, type QueryKey } from '@tanstack/react-query'
 import { Combobox as ComboboxPrimitive } from '@base-ui/react/combobox'
 import { Check, ChevronDown, LoaderCircle, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
@@ -12,6 +13,7 @@ export function Combobox({
   value,
   onValueChange,
   loadOptions,
+  optionsKey,
   placeholder = 'Search…',
   emptyMessage = 'No matches found.',
   required = false,
@@ -21,6 +23,7 @@ export function Combobox({
   name?: string
   value: ComboboxOption | null
   onValueChange: (value: ComboboxOption | null) => void
+  optionsKey: QueryKey
   loadOptions: (query: string, signal: AbortSignal) => Promise<ComboboxOption[]>
   placeholder?: string
   emptyMessage?: string
@@ -29,34 +32,26 @@ export function Combobox({
 }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const [options, setOptions] = useState<ComboboxOption[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(false)
-  const [retry, setRetry] = useState(0)
+  const [debouncedQuery, setDebouncedQuery] = useState<string | null>(null)
+  const search = query.trim()
+  const active = open && !disabled
 
   useEffect(() => {
-    if (!open || disabled) return
-    const controller = new AbortController()
-    setLoading(true)
-    setError(false)
-    setOptions([])
-    const timer = setTimeout(() => {
-      void loadOptions(query.trim(), controller.signal)
-        .then((result) => {
-          if (!controller.signal.aborted) setOptions(result)
-        })
-        .catch(() => {
-          if (!controller.signal.aborted) setError(true)
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) setLoading(false)
-        })
-    }, 250)
-    return () => {
-      controller.abort()
-      clearTimeout(timer)
-    }
-  }, [open, query, disabled, loadOptions, retry])
+    if (!active) return
+    const timer = setTimeout(() => setDebouncedQuery(search), 250)
+    return () => clearTimeout(timer)
+  }, [active, search])
+
+  const ready = active && debouncedQuery === search
+  const result = useQuery({
+    queryKey: [...optionsKey, active ? search : null],
+    enabled: ready,
+    queryFn: ({ signal }) => loadOptions(search, signal),
+    retry: false,
+  })
+  const loading = active && (!ready || result.isPending || result.isFetching)
+  const error = ready && result.isError && !loading
+  const options = !ready || loading ? [] : result.data ?? []
 
   // Keep the chosen item available when the next search returns a different page.
   const items =
@@ -76,15 +71,15 @@ export function Combobox({
       onInputValueChange={(text, { reason }) => {
         if (reason !== 'input-change' && reason !== 'clear-press') return
         setQuery(text)
-        setOptions([])
-        setLoading(true)
-        setError(false)
         if (value && text !== value.label) onValueChange(null)
       }}
       open={open && !disabled}
       onOpenChange={(next) => {
         setOpen(next)
-        if (!next) setQuery('')
+        if (!next) {
+          setQuery('')
+          setDebouncedQuery(null)
+        }
       }}
       itemToStringLabel={(option) => option.label}
       itemToStringValue={(option) => option.value}
@@ -137,7 +132,7 @@ export function Combobox({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setRetry((attempt) => attempt + 1)}
+                  onClick={() => void result.refetch()}
                 >
                   Try again
                 </Button>
