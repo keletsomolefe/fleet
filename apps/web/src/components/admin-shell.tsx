@@ -300,7 +300,7 @@ export function AdminShell({
         : pathname.startsWith("/admin/drivers/")
           ? "Driver profile"
           : pathname.startsWith("/admin/trucks/")
-            ? "Truck profile"
+            ? "Vehicle profile"
             : item?.title === "Overview"
               ? "Fleet overview"
               : (item?.title ?? "Administration");
@@ -308,18 +308,19 @@ export function AdminShell({
     <SidebarProvider style={{ "--sidebar-width": "240px" } as CSSProperties}>
       <Navigation session={session} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-white px-4 sm:px-8">
+        <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-background px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
-            <SidebarTrigger className="md:hidden" />
+            <SidebarTrigger
+              className="size-10 md:hidden"
+              aria-label="Open navigation"
+            />
             <p className="truncate text-xs text-muted-foreground">
-              VHH Fleet / {title}
+              <span className="sm:hidden">VHH Fleet</span>
+              <span className="hidden sm:inline">{title}</span>
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
             <AttentionMenu session={session} />
-            <span className="hidden text-[11px] text-muted-foreground sm:block">
-              VHH Fleet
-            </span>
             <Avatar className="size-8">
               <AvatarFallback className="bg-muted text-xs">
                 {session.user.firstName[0]}
@@ -328,7 +329,7 @@ export function AdminShell({
             </Avatar>
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-6 bg-muted p-5 sm:p-6">
+        <main className="flex flex-1 flex-col gap-5 bg-muted p-4 sm:gap-6 sm:p-6">
           {children}
         </main>
       </div>

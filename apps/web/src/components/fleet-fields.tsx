@@ -17,11 +17,11 @@ export interface FieldDefinition {
 export const truckGroups: Array<{ title: string; fields: FieldDefinition[] }> =
   [
     {
-      title: 'Truck details',
+      title: 'Vehicle details',
       fields: [
         {
           name: 'identifier',
-          label: 'Truck identifier',
+          label: 'Fleet number',
           required: true,
           maxLength: 40,
         },
@@ -57,7 +57,7 @@ export const truckGroups: Array<{ title: string; fields: FieldDefinition[] }> =
         { name: 'engineNumber', label: 'Engine number', maxLength: 80 },
         {
           name: 'category',
-          label: 'Truck type',
+          label: 'Vehicle type',
           options: ['rigid', 'tractor', 'tipper', 'tanker', 'flatbed', 'other'],
           required: true,
         },
@@ -175,7 +175,7 @@ export const driverGroups: Array<{ title: string; fields: FieldDefinition[] }> =
       fields: [
         {
           name: 'identifier',
-          label: 'Driver identifier',
+          label: 'Driver number',
           required: true,
           maxLength: 40,
         },
@@ -248,6 +248,7 @@ export function FleetField({
   ComponentProps<typeof Input>,
   'disabled' | 'minLength' | 'autoComplete'
 > & {
+    onBlur?: () => void
     onChange?: (
       event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
     ) => void
@@ -256,13 +257,13 @@ export function FleetField({
     id: f.name,
     name: f.name,
     required: f.required,
-    defaultValue: value ?? '',
+    value: value ?? '',
     'aria-describedby': f.hint ? `${f.name}-hint` : undefined,
     ...props,
   }
   return (
     <div className="space-y-2 min-w-0">
-      <Label htmlFor={f.name} className="text-xs font-medium">
+      <Label htmlFor={f.name} className="text-sm font-medium">
         {f.label}
         {f.required && <span aria-hidden="true"> *</span>}
       </Label>
@@ -305,18 +306,42 @@ export function FieldGroup({
   children: React.ReactNode
 }) {
   return (
-    <Card className="gap-5 rounded-xl p-6 shadow-none">
+    <Card className="gap-5 rounded-xl p-4 shadow-none sm:p-6">
       <h2 className="text-sm font-semibold">{title}</h2>
       <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">{children}</div>
     </Card>
   )
 }
-export function readFields(data: FormData, groups: typeof truckGroups) {
+export function fieldDefaults(
+  values: Record<string, unknown>,
+  groups: typeof truckGroups,
+): Record<string, string> {
+  return Object.fromEntries(
+    groups.flatMap(({ fields }) =>
+      fields.map((field) => {
+        const value = values[field.name]
+        return [
+          field.name,
+          value == null
+            ? field.required
+              ? (field.options?.[0] ?? '')
+              : ''
+            : String(value),
+        ]
+      }),
+    ),
+  )
+}
+
+export function readFields(
+  data: Record<string, string>,
+  groups: typeof truckGroups,
+) {
   return Object.fromEntries(
     groups
       .flatMap((g) => g.fields)
       .map((f) => {
-        const value = data.get(f.name)
+        const value = data[f.name]
         return [
           f.name,
           f.type === 'number' ? (value ? Number(value) : null) : value || null,

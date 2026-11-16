@@ -1,5 +1,7 @@
-import { PageHeader } from "@/components/page-header";
-import { useState, type FormEvent } from "react";
+import { BackLink, PageHeader } from "@/components/page-header";
+import { useState } from "react";
+import { useForm, useStore } from "@tanstack/react-form";
+import { submitForm, textFieldProps } from "@/lib/form";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check, LoaderCircle } from "lucide-react";
 import { FormField } from "@/components/form-field";
@@ -20,70 +22,80 @@ export const Route = createFileRoute("/admin/users/new")({
 
 function CreateUser() {
   const { session } = Route.useRouteContext();
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [created, setCreated] = useState<{
     email: string;
     id: string;
     requiresEmailVerification: boolean;
   } | null>(null);
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (busy) return;
-    const form = event.currentTarget;
-    const data = new FormData(form);
-    setError("");
-    if (data.get("password") !== data.get("confirmation")) {
-      setError("Passwords do not match.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const response = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": session.csrfToken,
-        },
-        body: JSON.stringify({
-          firstName: data.get("firstName"),
-          lastName: data.get("lastName"),
-          email: data.get("email"),
-          password: data.get("password"),
-        }),
-      });
-      if (response.status === 401) {
-        window.location.assign("/login");
-        return;
-      }
-      const body = await response.json();
-      if (!response.ok)
-        throw new Error(
-          typeof body.message === "string"
-            ? body.message
-            : "Could not create the user.",
+  const form = useForm({
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
+      confirmation: "",
+    },
+    validators: {
+      onSubmit: ({ value }) =>
+        value.password === value.confirmation
+          ? undefined
+          : "Passwords do not match.",
+    },
+    onSubmit: async ({
+      value: { firstName, lastName, email, password },
+      formApi,
+    }) => {
+      if (!can(session, "users.create")) return;
+      setError("");
+      try {
+        const response = await fetch("/api/admin/users", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": session.csrfToken,
+          },
+          body: JSON.stringify({ firstName, lastName, email, password }),
+        });
+        if (response.status === 401) {
+          window.location.assign("/login");
+          return;
+        }
+        const body = await response.json();
+        if (!response.ok)
+          throw new Error(
+            typeof body.message === "string"
+              ? body.message
+              : "Could not create the user.",
+          );
+        setCreated({
+          email: body.user.email,
+          id: body.user.id,
+          requiresEmailVerification: body.requiresEmailVerification,
+        });
+        formApi.reset();
+      } catch (cause) {
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "Could not connect. Please try again.",
         );
-      setCreated({
-        email: body.user.email,
-        id: body.user.id,
-        requiresEmailVerification: body.requiresEmailVerification,
-      });
-      form.reset();
-    } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "Could not connect. Please try again.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
+      }
+    },
+  });
+  const busy = useStore(form.store, (state) => state.isSubmitting);
+  const validationError = useStore(
+    form.store,
+    (state) => state.errorMap.onSubmit,
+  );
   if (!can(session, "users.create"))
     return <PageError message="You do not have access to this page." />;
   return (
     <>
-      <PageHeader title="Create user" group="Company" />
+      <PageHeader
+        title="Create user"
+        back={<BackLink to="/admin/users">Users</BackLink>}
+      />
       <Card className="w-full max-w-[640px] self-start rounded-xl py-0 text-left shadow-none">
         <CardContent className="space-y-6 p-6 sm:p-8">
           {created ? (
@@ -123,60 +135,82 @@ function CreateUser() {
             </div>
           ) : (
             <>
-              {error && (
+              {(validationError || error) && (
                 <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>
+                    {validationError || error}
+                  </AlertDescription>
                 </Alert>
               )}
-              <form onSubmit={submit} className="space-y-6">
+              <form onSubmit={submitForm(form)} className="space-y-6">
                 <div className="grid gap-6 sm:grid-cols-2">
-                  <FormField
-                    id="firstName"
-                    name="firstName"
-                    label="First name"
-                    autoComplete="given-name"
-                    maxLength={100}
-                    required
-                  />
-                  <FormField
-                    id="lastName"
-                    name="lastName"
-                    label="Last name"
-                    autoComplete="family-name"
-                    maxLength={100}
-                    required
-                  />
+                  <form.Field name="firstName">
+                    {(field) => (
+                      <FormField
+                        {...textFieldProps(field)}
+                        id="firstName"
+                        label="First name"
+                        autoComplete="given-name"
+                        maxLength={100}
+                        required
+                      />
+                    )}
+                  </form.Field>
+                  <form.Field name="lastName">
+                    {(field) => (
+                      <FormField
+                        {...textFieldProps(field)}
+                        id="lastName"
+                        label="Last name"
+                        autoComplete="family-name"
+                        maxLength={100}
+                        required
+                      />
+                    )}
+                  </form.Field>
                 </div>
-                <FormField
-                  id="email"
-                  name="email"
-                  label="Email address"
-                  type="email"
-                  autoComplete="email"
-                  maxLength={320}
-                  required
-                />
-                <FormField
-                  id="password"
-                  name="password"
-                  label="Password"
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={8}
-                  maxLength={128}
-                  hint="At least 8 characters"
-                  required
-                />
-                <FormField
-                  id="confirmation"
-                  name="confirmation"
-                  label="Confirm password"
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={8}
-                  maxLength={128}
-                  required
-                />
+                <form.Field name="email">
+                  {(field) => (
+                    <FormField
+                      {...textFieldProps(field)}
+                      id="email"
+                      label="Email address"
+                      type="email"
+                      autoComplete="email"
+                      maxLength={320}
+                      required
+                    />
+                  )}
+                </form.Field>
+                <form.Field name="password">
+                  {(field) => (
+                    <FormField
+                      {...textFieldProps(field)}
+                      id="password"
+                      label="Password"
+                      type="password"
+                      autoComplete="new-password"
+                      minLength={8}
+                      maxLength={128}
+                      hint="At least 8 characters"
+                      required
+                    />
+                  )}
+                </form.Field>
+                <form.Field name="confirmation">
+                  {(field) => (
+                    <FormField
+                      {...textFieldProps(field)}
+                      id="confirmation"
+                      label="Confirm password"
+                      type="password"
+                      autoComplete="new-password"
+                      minLength={8}
+                      maxLength={128}
+                      required
+                    />
+                  )}
+                </form.Field>
                 <div className="flex flex-wrap gap-3">
                   <Button
                     type="submit"

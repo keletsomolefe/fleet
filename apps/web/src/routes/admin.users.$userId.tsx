@@ -1,7 +1,9 @@
-import { PageHeader } from "@/components/page-header";
-import { useState, type FormEvent } from "react";
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { ArrowLeft, LoaderCircle } from "lucide-react";
+import { useForm, useStore } from "@tanstack/react-form";
+import { submitForm } from "@/lib/form";
+import { BackLink, PageHeader } from "@/components/page-header";
+import { useState } from "react";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { LoaderCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +40,15 @@ function UserDetail() {
   const { user, roles } = Route.useLoaderData();
   const { session } = Route.useRouteContext();
   if (!user.data || !roles.data)
-    return <PageError message={user.error ?? roles.error!} />;
+    return (
+      <>
+        <PageHeader
+          title="User profile"
+          back={<BackLink to="/admin/users">Users</BackLink>}
+        />
+        <PageError message={user.error ?? roles.error!} />
+      </>
+    );
   return (
     <AccessForm
       key={user.data.id}
@@ -59,9 +69,6 @@ function AccessForm({
   session: AdminSession;
 }) {
   const router = useRouter();
-  const [roleIds, setRoleIds] = useState(user.roles.map((role) => role.id));
-  const [active, setActive] = useState(user.isActive);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const owner = user.roles.some((role) => role.key === "owner");
@@ -100,6 +107,28 @@ function AccessForm({
       setLinkBusy(false);
     }
   }
+  const form = useForm({
+    defaultValues: {
+      roleIds: user.roles.map((role) => role.id),
+      active: user.isActive,
+    },
+    onSubmit: async ({ value: { roleIds, active } }) => {
+      if (!editable) return;
+      setError("");
+      setSaved(false);
+      try {
+        await updateAccess(user.id, roleIds, active, session.csrfToken);
+        await router.invalidate();
+        setSaved(true);
+      } catch (cause) {
+        setError(
+          cause instanceof Error ? cause.message : "Could not save access.",
+        );
+      }
+    },
+  });
+  const busy = useStore(form.store, (state) => state.isSubmitting);
+  const { roleIds, active } = useStore(form.store, (state) => state.values);
   const selectedPermissions = [
     ...new Map(
       roles
@@ -108,60 +137,28 @@ function AccessForm({
         .map((permission) => [permission.key, permission]),
     ).values(),
   ].sort((a, b) => a.name.localeCompare(b.name));
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    if (busy) return;
-    setBusy(true);
-    setError("");
-    setSaved(false);
-    try {
-      await updateAccess(user.id, roleIds, active, session.csrfToken);
-      await router.invalidate();
-      setSaved(true);
-    } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : "Could not save access.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
   return (
     <>
       <PageHeader
         title={`${user.firstName} ${user.lastName}`}
-        group="Company"
-        actions={
-          <Link
-            to="/admin/users"
-            search={{ q: "", page: 1 }}
-            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="size-4" />
-            Users
-          </Link>
-        }
+        description={user.email}
+        back={<BackLink to="/admin/users">Users</BackLink>}
       />
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(240px,320px)_minmax(0,640px)]">
         <Card className="shadow-none">
           <CardContent className="space-y-5">
-            <Avatar className="size-14">
+            <Avatar className="size-10">
               <AvatarFallback>
                 {user.firstName[0]}
                 {user.lastName[0]}
               </AvatarFallback>
             </Avatar>
             <div className="space-y-1">
-              <h2 className="text-sm font-semibold">
-                {user.firstName} {user.lastName}
-              </h2>
-              <p className="text-xs break-all text-muted-foreground">
-                {user.email}
-              </p>
+              <h2 className="text-sm font-semibold">Account</h2>
+              <Badge variant="outline">
+                {user.isActive ? "Active" : "Inactive"}
+              </Badge>
             </div>
-            <Badge variant="outline">
-              {user.isActive ? "Active" : "Inactive"}
-            </Badge>
             <dl className="space-y-4 border-t pt-5 text-xs">
               <div className="space-y-1">
                 <dt className="text-muted-foreground">Last sign in</dt>
@@ -226,7 +223,7 @@ function AccessForm({
         </Card>
         <Card className="shadow-none">
           <CardContent>
-            <form onSubmit={submit} className="space-y-6 text-left">
+            <form onSubmit={submitForm(form)} className="space-y-6 text-left">
               <div className="flex items-center justify-between gap-4">
                 <h2 className="text-base font-semibold">Access</h2>
                 <div className="flex items-center gap-3">
@@ -236,7 +233,7 @@ function AccessForm({
                     checked={active}
                     disabled={!editable || user.id === session.user.id || busy}
                     onCheckedChange={(value) => {
-                      setActive(value);
+                      form.setFieldValue("active", value);
                       setSaved(false);
                     }}
                   />
@@ -266,7 +263,7 @@ function AccessForm({
                         role.key === "owner" && !can(session, "users.owners")
                       }
                       onCheckedChange={(checked) => {
-                        setRoleIds((ids) =>
+                        form.setFieldValue("roleIds", (ids) =>
                           checked === true
                             ? [...ids, role.id]
                             : ids.filter((id) => id !== role.id),

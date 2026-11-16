@@ -1,16 +1,19 @@
+import { useEffect } from 'react'
 import { CreateAction, PageHeader } from '@/components/page-header'
-import { useState, type FormEvent } from 'react'
+import { useForm } from '@tanstack/react-form'
+import { submitForm, textFieldProps } from '@/lib/form'
 import {
   createFileRoute,
   Link,
   useNavigate,
   stripSearchParams,
 } from '@tanstack/react-router'
-import { ArrowUpRight, Plus, Search } from 'lucide-react'
+import { ArrowRight, Plus, Search } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { EmptyState } from '@/components/empty-state'
+import { RecordList } from '@/components/record-list'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -46,14 +49,15 @@ function Users() {
   const result = Route.useLoaderData()
   const { session } = Route.useRouteContext()
   const search = Route.useSearch()
-  const [query, setQuery] = useState(search.q)
   const navigate = useNavigate({ from: Route.fullPath })
-  function submit(event: FormEvent) {
-    event.preventDefault()
-    void navigate({ search: { q: query, page: 1 } })
-  }
-  if (!result.data) return <PageError message={result.error!} />
-  const { items, total, page, pageSize } = result.data
+  const form = useForm({
+    defaultValues: { q: search.q },
+    onSubmit: ({ value }) => navigate({ search: { q: value.q, page: 1 } }),
+  })
+  useEffect(() => {
+    form.reset({ q: search.q })
+  }, [form, search.q])
+  const { items = [], total = 0, page = 1, pageSize = 20 } = result.data ?? {}
   return (
     <>
       <PageHeader
@@ -70,194 +74,180 @@ function Users() {
           )
         }
       />
-      <Card className="gap-0 overflow-hidden py-0 shadow-none">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b p-5">
-          <form
-            className="flex w-full max-w-sm items-center gap-2"
-            onSubmit={submit}
-            role="search"
-          >
-            <Input
-              aria-label="Search users"
-              placeholder="Search users"
-              value={query}
-              maxLength={200}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <Button
-              type="submit"
-              variant="outline"
-              size="icon"
-              aria-label="Search"
+      {!result.data ? (
+        <PageError message={result.error!} />
+      ) : (
+        <RecordList
+          summary={`${total} ${total === 1 ? 'user' : 'users'}`}
+          page={page}
+          pageCount={Math.max(1, Math.ceil(total / pageSize))}
+          onPageChange={(page) =>
+            void navigate({ search: { q: search.q, page } })
+          }
+          filters={
+            <form
+              className="flex w-full max-w-sm items-center gap-2"
+              onSubmit={submitForm(form)}
+              role="search"
             >
-              <Search />
-            </Button>
-          </form>
-          <p className="text-xs text-muted-foreground">
-            {total} {total === 1 ? 'user' : 'users'}
-          </p>
-        </div>
-        <div className="divide-y sm:hidden">
-          {items.map((user) => (
-            <Link
-              key={user.id}
-              to="/admin/users/$userId"
-              params={{ userId: user.id }}
-              className="block space-y-4 p-5 hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-ring"
-            >
-              <div className="flex items-start gap-3">
-                <Avatar>
-                  <AvatarFallback className="text-xs">
-                    {user.firstName[0]}
-                    {user.lastName[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1 space-y-1">
-                  <p className="text-xs font-semibold">
-                    {user.firstName} {user.lastName}
-                  </p>
-                  <p className="break-all text-xs text-muted-foreground">
-                    {user.email}
-                  </p>
-                </div>
-                <ArrowUpRight className="size-4 shrink-0" />
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                <Badge variant="outline">
-                  {user.isActive ? 'Active' : 'Inactive'}
-                </Badge>
-                {user.roles.length ? (
-                  user.roles.map((role) => (
-                    <Badge key={role.id} variant="secondary">
-                      {role.name}
-                    </Badge>
-                  ))
-                ) : (
-                  <span className="text-xs text-muted-foreground">
-                    No roles
-                  </span>
+              <form.Field name="q">
+                {(field) => (
+                  <Input
+                    {...textFieldProps(field)}
+                    aria-label="Search users"
+                    placeholder="Search users"
+                    maxLength={200}
+                  />
                 )}
-              </div>
-            </Link>
-          ))}
-          {!items.length && (
-            <p className="p-10 text-center text-xs text-muted-foreground">
-              {search.q ? 'No matching users' : 'No users yet'}
-            </p>
-          )}
-        </div>
-        <Table className="hidden sm:table">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="pl-5">User</TableHead>
-              <TableHead>Roles</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="pr-5">
-                <span className="sr-only">Actions</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="py-5 pl-5">
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarFallback className="text-xs">
-                        {user.firstName[0]}
-                        {user.lastName[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <Link
-                        to="/admin/users/$userId"
-                        params={{ userId: user.id }}
-                        className="font-semibold hover:underline"
-                      >
-                        {user.firstName} {user.lastName}
-                      </Link>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {user.email}
-                      </p>
+              </form.Field>
+              <Button
+                type="submit"
+                variant="outline"
+                size="icon"
+                className="size-12"
+                aria-label="Search"
+              >
+                <Search />
+              </Button>
+            </form>
+          }
+        >
+          {items.length ? (
+            <>
+              <div className="divide-y lg:hidden">
+                {items.map((user) => (
+                  <Link
+                    key={user.id}
+                    to="/admin/users/$userId"
+                    params={{ userId: user.id }}
+                    className="block space-y-4 p-5 hover:bg-muted/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+                  >
+                    <div className="flex items-start gap-3">
+                      <Avatar>
+                        <AvatarFallback className="text-xs">
+                          {user.firstName[0]}
+                          {user.lastName[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <p className="font-semibold [overflow-wrap:anywhere]">
+                          {user.firstName} {user.lastName}
+                        </p>
+                        <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">
+                          {user.email}
+                        </p>
+                      </div>
+                      <ArrowRight
+                        aria-hidden="true"
+                        className="size-4 shrink-0"
+                      />
                     </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1.5">
-                    {user.roles.length ? (
-                      user.roles.map((role) => (
-                        <Badge key={role.id} variant="secondary">
-                          {role.name}
+                    <div className="flex flex-wrap gap-1.5">
+                      <Badge variant="outline">
+                        {user.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                      {user.roles.length ? (
+                        user.roles.map((role) => (
+                          <Badge key={role.id} variant="secondary">
+                            {role.name}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          No roles
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              <Table className="hidden lg:table">
+                <TableHeader className="bg-muted">
+                  <TableRow>
+                    <TableHead className="pl-5">User</TableHead>
+                    <TableHead>Roles</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="py-4 pl-5 whitespace-normal [overflow-wrap:anywhere]">
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback className="text-xs">
+                              {user.firstName[0]}
+                              {user.lastName[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <Link
+                              to="/admin/users/$userId"
+                              params={{ userId: user.id }}
+                              className="font-semibold underline-offset-4 hover:underline focus-visible:underline"
+                            >
+                              {user.firstName} {user.lastName}
+                              <ArrowRight
+                                aria-hidden="true"
+                                className="ml-1.5 inline-block size-3.5 align-text-bottom text-muted-foreground"
+                              />
+                            </Link>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {user.email}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1.5">
+                          {user.roles.length ? (
+                            user.roles.map((role) => (
+                              <Badge key={role.id} variant="secondary">
+                                {role.name}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              No roles
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="pr-5">
+                        <Badge variant="outline">
+                          <span
+                            className={`mr-1 size-1.5 rounded-full ${user.isActive ? 'bg-emerald-600' : 'bg-muted-foreground'}`}
+                          />
+                          {user.isActive ? 'Active' : 'Inactive'}
                         </Badge>
-                      ))
-                    ) : (
-                      <span className="text-xs text-muted-foreground">
-                        No roles
-                      </span>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline">
-                    <span
-                      className={`mr-1 size-1.5 rounded-full ${user.isActive ? 'bg-emerald-600' : 'bg-muted-foreground'}`}
-                    />
-                    {user.isActive ? 'Active' : 'Inactive'}
-                  </Badge>
-                </TableCell>
-                <TableCell className="pr-5 text-right">
-                  <Button asChild variant="ghost" size="icon">
-                    <Link
-                      to="/admin/users/$userId"
-                      params={{ userId: user.id }}
-                      aria-label={`View ${user.firstName} ${user.lastName}`}
-                    >
-                      <ArrowUpRight />
-                    </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
+          ) : (
+            <EmptyState
+              icon="users"
+              title={search.q ? 'No matching users' : 'No users yet'}
+              action={
+                search.q ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      form.reset({ q: '' })
+                      void navigate({ search: { q: '', page: 1 } })
+                    }}
+                  >
+                    Clear search
                   </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-            {!items.length && (
-              <TableRow>
-                <TableCell
-                  colSpan={4}
-                  className="h-48 text-center text-muted-foreground"
-                >
-                  {search.q ? 'No matching users' : 'No users yet'}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-        <div className="flex items-center justify-between gap-3 border-t p-5 text-xs">
-          <span className="text-muted-foreground">
-            Page {page} of {Math.max(1, Math.ceil(total / pageSize))}
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              className="h-9"
-              disabled={page <= 1}
-              onClick={() =>
-                void navigate({ search: { q: search.q, page: page - 1 } })
+                ) : undefined
               }
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              className="h-9"
-              disabled={page * pageSize >= total}
-              onClick={() =>
-                void navigate({ search: { q: search.q, page: page + 1 } })
-              }
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      </Card>
+            />
+          )}
+        </RecordList>
+      )}
     </>
   )
 }

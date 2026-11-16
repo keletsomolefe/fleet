@@ -1,37 +1,45 @@
 import type { QueryClient } from '@tanstack/react-query'
-import { HeadContent, Scripts, createRootRouteWithContext } from '@tanstack/react-router'
+import {
+  HeadContent,
+  Scripts,
+  createRootRouteWithContext,
+} from '@tanstack/react-router'
 
 import appCss from '../styles.css?url'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { MissingPage } from '@/components/page-error'
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      {
-        charSet: 'utf-8',
-      },
-      {
-        name: 'viewport',
-        content: 'width=device-width, initial-scale=1',
-      },
-      {
-        title: 'VHH Fleet',
-      },
-    ],
-    links: [
-      {
-        rel: 'icon',
-        type: 'image/svg+xml',
-        href: '/design/monogram.svg',
-      },
-      {
-        rel: 'stylesheet',
-        href: appCss,
-      },
-    ],
-  }),
-  shellComponent: RootDocument,
-})
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
+  {
+    head: () => ({
+      meta: [
+        {
+          charSet: 'utf-8',
+        },
+        {
+          name: 'viewport',
+          content: 'width=device-width, initial-scale=1',
+        },
+        {
+          title: 'VHH Fleet',
+        },
+      ],
+      links: [
+        {
+          rel: 'icon',
+          type: 'image/svg+xml',
+          href: '/design/monogram.svg',
+        },
+        {
+          rel: 'stylesheet',
+          href: appCss,
+        },
+      ],
+    }),
+    shellComponent: RootDocument,
+    notFoundComponent: () => <MissingPage />,
+  },
+)
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (

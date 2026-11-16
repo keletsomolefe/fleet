@@ -36,6 +36,7 @@ type SidebarContextProps = {
   setOpen: (open: boolean) => void
   openMobile: boolean
   setOpenMobile: (open: boolean) => void
+  mobileTrigger: React.RefObject<HTMLButtonElement | null>
   isMobile: boolean
   toggleSidebar: () => void
 }
@@ -66,6 +67,7 @@ function SidebarProvider({
 }) {
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
+  const mobileTrigger = React.useRef<HTMLButtonElement>(null)
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -116,6 +118,7 @@ function SidebarProvider({
       isMobile,
       openMobile,
       setOpenMobile,
+      mobileTrigger,
       toggleSidebar,
     }),
     [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar],
@@ -158,7 +161,8 @@ function Sidebar({
   variant?: 'sidebar' | 'floating' | 'inset'
   collapsible?: 'offcanvas' | 'icon' | 'none'
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const { isMobile, state, openMobile, setOpenMobile, mobileTrigger } =
+    useSidebar()
 
   if (collapsible === 'none') {
     return (
@@ -182,7 +186,12 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground"
+          showCloseButton={false}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault()
+            mobileTrigger.current?.focus()
+          }}
           style={
             {
               '--sidebar-width': SIDEBAR_WIDTH_MOBILE,
@@ -253,12 +262,15 @@ function SidebarTrigger({
   onClick,
   ...props
 }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, isMobile, openMobile, mobileTrigger } = useSidebar()
 
   return (
     <Button
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
+      ref={isMobile ? mobileTrigger : undefined}
+      aria-expanded={isMobile ? openMobile : undefined}
+      aria-haspopup={isMobile ? 'dialog' : undefined}
       variant="ghost"
       size="icon"
       className={cn('size-7', className)}

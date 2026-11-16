@@ -1,9 +1,16 @@
+import { useForm, useStore } from "@tanstack/react-form";
+import { submitForm, textFieldProps } from "@/lib/form";
 import { RepairForm } from "@/components/repair-form";
+import { EmptyState } from "@/components/empty-state";
+import { RefreshButton } from "@/components/refresh-button";
 import { PageHeader } from "@/components/page-header";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
-import { adminOperationsKey, refreshAdminOperations } from "@/lib/admin-queries";
+import {
+  adminOperationsKey,
+  refreshAdminOperations,
+} from "@/lib/admin-queries";
 import type { AdminSession } from "@/lib/auth";
 import {
   getVehicleDisputes,
@@ -37,91 +44,102 @@ export const Route = createFileRoute("/admin/vehicle-disputes")({
 function Page() {
   const { session } = Route.useRouteContext();
   const queryClient = useQueryClient();
+  const reviewTitle = useRef<HTMLHeadingElement>(null);
+  const returnTo = useRef<string | null>(null);
   const [selected, setSelected] = useState<VehicleDispute | DriverIssue | null>(
       null,
     ),
-    [note, setNote] = useState(""),
-    [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [saved, setSaved] = useState("");
-  const { data, error: loadError, isPending } = useQuery({
+  const {
+    data,
+    error: loadError,
+    isPending,
+    isFetching,
+    refetch,
+  } = useQuery({
     ...exceptionsQuery(session),
     enabled: !selected,
     refetchOnMount: false,
   });
   const items = data?.items ?? [];
   const pageError = error || data?.error || loadError?.message;
-  async function resolve(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!selected || busy) return;
-    const form = new FormData(e.currentTarget);
-    setBusy(true);
-    setError("");
-    setSaved("");
-    try {
-      const r = await fetch(
-        `/api/admin/${selected.kind === "issue" ? "issues" : "vehicle-disputes"}/${selected.id}/resolve`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": session.csrfToken,
+  const form = useForm({
+    defaultValues: { resolution: "", note: "" },
+    onSubmit: async ({ value: { resolution, note }, formApi }) => {
+      if (!selected || !note.trim()) return;
+      setError("");
+      setSaved("");
+      try {
+        const r = await fetch(
+          `/api/admin/${selected.kind === "issue" ? "issues" : "vehicle-disputes"}/${selected.id}/resolve`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRF-Token": session.csrfToken,
+            },
+            body: JSON.stringify(
+              selected.kind === "issue"
+                ? { note }
+                : {
+                    expectedActiveSessionId:
+                      selected.kind === "schedule"
+                        ? (selected.requestedTruckSession?.id ?? null)
+                        : (selected.currentDriver?.id ?? null),
+                    ...(selected.kind === "schedule"
+                      ? {
+                          expectedScheduleId: selected.schedule?.id ?? null,
+                          expectedRequestedScheduleId:
+                            selected.requestedScheduleId,
+                        }
+                      : {}),
+                    resolution,
+                    note,
+                  },
+            ),
           },
-          body: JSON.stringify(
-            selected.kind === "issue"
-              ? { note }
-              : {
-                  expectedActiveSessionId:
-                    selected.kind === "schedule"
-                      ? (selected.requestedTruckSession?.id ?? null)
-                      : (selected.currentDriver?.id ?? null),
-                  ...(selected.kind === "schedule"
-                    ? {
-                        expectedScheduleId: selected.schedule?.id ?? null,
-                        expectedRequestedScheduleId:
-                          selected.requestedScheduleId,
-                      }
-                    : {}),
-                  resolution: form.get("resolution"),
-                  note,
-                },
-          ),
-        },
-      );
-      if (!r.ok) {
-        const body = await r.json().catch(() => null);
-        throw new Error(body?.message ?? "Could not resolve this item.");
+        );
+        if (!r.ok) {
+          const body = await r.json().catch(() => null);
+          throw new Error(body?.message ?? "Could not resolve this item.");
+        }
+        setSelected(null);
+        formApi.reset();
+        setSaved("Item resolved.");
+        await refreshAdminOperations(queryClient, session.user.id);
+      } catch (cause) {
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "Could not resolve this item.",
+        );
       }
-      setSelected(null);
-      setNote("");
-      setSaved("Item resolved.");
-      await refreshAdminOperations(queryClient, session.user.id);
-    } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : "Could not resolve this item.",
-      );
-    } finally {
-      setBusy(false);
+    },
+  });
+  const busy = useStore(form.store, (state) => state.isSubmitting);
+  const hasNote = useStore(form.store, (state) => !!state.values.note.trim());
+  useEffect(() => {
+    if (selected) reviewTitle.current?.focus();
+    else if (returnTo.current) {
+      document.getElementById(returnTo.current)?.focus();
+      returnTo.current = null;
     }
-  }
+  }, [selected]);
+  const closeReview = () => {
+    if (selected) returnTo.current = `review-${selected.id}`;
+    setSelected(null);
+    setError("");
+  };
   return (
     <>
       <PageHeader
         title="Exceptions"
         group="Review & records"
         actions={
-          <Button
-            variant="outline"
-            onClick={() => {
-              setSelected(null);
-              setError("");
-              void queryClient.invalidateQueries({
-                queryKey: exceptionsQuery(session).queryKey,
-              });
-            }}
-          >
-            Refresh
-          </Button>
+          !selected && (
+            <RefreshButton busy={isFetching} onRefresh={() => void refetch()} />
+          )
         }
       />
       {pageError && (
@@ -135,8 +153,12 @@ function Page() {
         </Alert>
       )}
       {selected ? (
-        <Card className="gap-5 p-6 shadow-none">
-          <h2 className="text-base font-semibold">
+        <Card className="w-full max-w-3xl gap-4 p-4 shadow-none sm:p-6 [overflow-wrap:anywhere]">
+          <h2
+            ref={reviewTitle}
+            tabIndex={-1}
+            className="scroll-mt-4 rounded-sm text-base font-semibold"
+          >
             Resolve {selected.truck?.registration ?? "issue"}
           </h2>
           <p className="text-sm">Flagged by {selected.requestedBy}</p>
@@ -179,6 +201,7 @@ function Page() {
             <RepairForm
               endpoint={`/api/admin/issues/${selected.id}/repair/resolve`}
               headers={{ "X-CSRF-Token": session.csrfToken }}
+              onCancel={closeReview}
               onSaved={async () => {
                 setSelected(null);
                 setSaved("Issue resolved.");
@@ -186,67 +209,74 @@ function Page() {
               }}
             />
           ) : (
-            <form className="space-y-4" onSubmit={resolve}>
+            <form className="space-y-4" onSubmit={submitForm(form)}>
               <fieldset disabled={busy} className="space-y-4">
                 {selected.kind !== "issue" && (
                   <div className="space-y-2">
                     <Label htmlFor="resolution">Action</Label>
-                    <select
-                      id="resolution"
-                      name="resolution"
-                      required
-                      className="h-12 w-full rounded-md border bg-white px-3 text-sm"
-                      defaultValue=""
-                    >
-                      <option value="" disabled>
-                        Choose an action
-                      </option>
-                      {selected.kind === "schedule" ? (
-                        <>
-                          <option value="keep_schedule">
-                            Keep current schedule
+                    <form.Field name="resolution">
+                      {(field) => (
+                        <select
+                          id="resolution"
+                          name="resolution"
+                          required
+                          className="h-12 w-full rounded-md border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-ring"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(event) =>
+                            field.handleChange(event.currentTarget.value)
+                          }
+                        >
+                          <option value="" disabled>
+                            Choose an action
                           </option>
-                          <option
-                            value="change_schedule"
-                            disabled={!selected.requestedTruck}
-                          >
-                            Assign requested vehicle for this date
-                          </option>
-                        </>
-                      ) : (
-                        <>
-                          <option
-                            value="keep_current"
-                            disabled={!selected.currentDriver}
-                          >
-                            Keep current driver
-                          </option>
-                          <option value="release_vehicle">
-                            Release vehicle
-                          </option>
-                        </>
+                          {selected.kind === "schedule" ? (
+                            <>
+                              <option value="keep_schedule">
+                                Keep current schedule
+                              </option>
+                              <option
+                                value="change_schedule"
+                                disabled={!selected.requestedTruck}
+                              >
+                                Assign requested vehicle for this date
+                              </option>
+                            </>
+                          ) : (
+                            <>
+                              <option
+                                value="keep_current"
+                                disabled={!selected.currentDriver}
+                              >
+                                Keep current driver
+                              </option>
+                              <option value="release_vehicle">
+                                Release vehicle
+                              </option>
+                            </>
+                          )}
+                        </select>
                       )}
-                    </select>
+                    </form.Field>
                   </div>
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="note">What was decided?</Label>
-                  <textarea
-                    id="note"
-                    required
-                    maxLength={1000}
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    className="min-h-24 w-full rounded-md border bg-white p-3 text-sm"
-                  />
+                  <form.Field name="note">
+                    {(field) => (
+                      <textarea
+                        id="note"
+                        required
+                        maxLength={1000}
+                        {...textFieldProps(field)}
+                        className="min-h-24 w-full rounded-md border bg-background p-3 text-sm focus-visible:outline-2 focus-visible:outline-ring"
+                      />
+                    )}
+                  </form.Field>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <Button disabled={!note.trim()}>Resolve item</Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setSelected(null)}
-                  >
+                  <Button disabled={!hasNote}>Resolve item</Button>
+                  <Button type="button" variant="outline" onClick={closeReview}>
                     Cancel
                   </Button>
                 </div>
@@ -262,18 +292,16 @@ function Page() {
             </p>
           )}
           {!isPending && !pageError && !items.length && (
-            <Card className="p-6 shadow-none">
-              <p className="text-sm text-muted-foreground">
-                Nothing to resolve.
-              </p>
+            <Card className="py-0 shadow-none">
+              <EmptyState icon="alert" title="No open exceptions" />
             </Card>
           )}
           {items.map((d) => (
             <Card
               key={d.id}
-              className="flex flex-wrap items-start justify-between gap-4 p-5 shadow-none"
+              className="gap-4 p-4 shadow-none sm:flex-row sm:items-start sm:justify-between sm:p-5"
             >
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2 [overflow-wrap:anywhere]">
                 <h2 className="text-sm font-semibold">
                   {d.truck
                     ? `${d.truck.registration} · ${d.truck.identifier}`
@@ -309,10 +337,13 @@ function Page() {
                 </p>
               </div>
               <Button
+                id={`review-${d.id}`}
                 variant="outline"
+                className="w-full sm:w-auto"
+                aria-label={`Review ${d.truck?.registration ?? "report"} from ${d.requestedBy}`}
                 onClick={() => {
                   setSelected(d);
-                  setNote("");
+                  form.reset();
                   setError("");
                   setSaved("");
                 }}

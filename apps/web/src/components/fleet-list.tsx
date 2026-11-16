@@ -1,9 +1,12 @@
-import { useState, type FormEvent } from "react";
+import { useEffect } from "react";
+import { useForm } from "@tanstack/react-form";
+import { submitForm, textFieldProps } from "@/lib/form";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/empty-state";
+import { RecordList } from "@/components/record-list";
 import {
   Table,
   TableBody,
@@ -14,7 +17,7 @@ import {
 } from "@/components/ui/table";
 import { PageError } from "@/components/page-error";
 import { CreateAction, PageHeader } from "@/components/page-header";
-import { Plus } from "lucide-react";
+import { ArrowRight, Plus, Search as SearchIcon } from "lucide-react";
 import { can, type AdminSession } from "@/lib/auth";
 import {
   expired,
@@ -36,10 +39,7 @@ export function FleetList({
   session: AdminSession;
   search: Search;
 }) {
-  const [q, setQ] = useState(search.q);
   const navigate = useNavigate();
-  if (!result.data) return <PageError message={result.error!} />;
-  const { items, total, page, pageSize } = result.data;
   const isDriver = kind === "drivers";
   const title = isDriver ? "Drivers" : "Vehicles";
   const change = (s: Search) =>
@@ -47,19 +47,23 @@ export function FleetList({
       to: isDriver ? "/admin/drivers" : "/admin/trucks",
       search: s,
     });
-  function submit(e: FormEvent) {
-    e.preventDefault();
-    change({ ...search, q, page: 1 });
-  }
+  const form = useForm({
+    defaultValues: { q: search.q },
+    onSubmit: ({ value }) => change({ ...search, q: value.q, page: 1 }),
+  });
+  useEffect(() => {
+    form.reset({ q: search.q });
+  }, [form, search.q]);
+  const data = result.data;
   return (
     <>
       <PageHeader
         title={title}
-        group={isDriver ? "People & access" : "Vehicles"}
+        group="People & assets"
         description={
           isDriver
-            ? "Manage driver profiles and truck assignments"
-            : "Manage fleet vehicles"
+            ? "Find drivers and their vehicle assignments"
+            : "Find vehicles and check their availability"
         }
         actions={
           can(session, `${kind}.write`) && (
@@ -71,151 +75,167 @@ export function FleetList({
           )
         }
       />
-      <Card className="gap-5 rounded-xl p-4 shadow-none sm:p-6">
-        <form onSubmit={submit} role="search" className="flex flex-wrap gap-3">
-          <Input
-            aria-label={`Search ${kind}`}
-            placeholder={
-              isDriver
-                ? "Search name, identifier or email"
-                : "Search truck, registration or VIN"
-            }
-            value={q}
-            maxLength={200}
-            onChange={(e) => setQ(e.target.value)}
-            className="w-full sm:max-w-sm"
-          />
-          <select
-            aria-label="Filter status"
-            value={search.status}
-            onChange={(e) =>
-              change({ ...search, q, page: 1, status: e.target.value })
-            }
-            className="h-12 rounded-md border bg-white px-3 text-xs"
-          >
-            <option value="">All statuses</option>
-            <option value="active">Active</option>
-            {!isDriver && <option value="maintenance">Maintenance</option>}
-            <option value="inactive">Inactive</option>
-          </select>
-          <Button type="submit" variant="outline">
-            Search
-          </Button>
-        </form>
-        <div className="overflow-hidden rounded-xl border">
-          <div className="flex items-center justify-between gap-4 p-4">
-            <h2 className="text-sm font-semibold">
-              {isDriver ? "Drivers" : "Fleet vehicles"}
-            </h2>
-            <p className="text-[11px] text-muted-foreground">
-              {total} {total === 1 ? "record" : "records"}
-            </p>
-          </div>
-          <div className="divide-y sm:hidden">
-            {items.map((item) => (
-              <MobileRecord key={item.id} kind={kind} item={item} />
-            ))}
-            {!items.length && (
-              <p className="p-8 text-center text-xs text-muted-foreground">
-                {search.q || search.status
-                  ? "No matching records"
-                  : isDriver
-                    ? "No drivers yet"
-                    : "No trucks yet"}
-              </p>
-            )}
-          </div>
-          <Table className="hidden sm:table">
-            <TableHeader className="bg-muted">
-              <TableRow>
-                {(isDriver
-                  ? ["Driver", "Identifier", "Assigned vehicle", "Status", ""]
-                  : [
-                      "Vehicle",
-                      "Registration",
-                      "Driving now",
-                      "Availability",
-                      "",
-                    ]
-                ).map((c, i) => (
-                  <TableHead key={i} className="px-4 text-[11px] uppercase">
-                    {c || <span className="sr-only">Open profile</span>}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((item) => (
-                <TableRow key={item.id}>
-                  {isDriver ? (
-                    <DriverRow driver={item as Driver} />
-                  ) : (
-                    <TruckRow truck={item as Truck} />
+      {!data ? (
+        <PageError message={result.error!} />
+      ) : (
+        <RecordList
+          summary={`${data.total} ${isDriver ? (data.total === 1 ? "driver" : "drivers") : data.total === 1 ? "vehicle" : "vehicles"}`}
+          page={data.page}
+          pageCount={Math.max(1, Math.ceil(data.total / data.pageSize))}
+          onPageChange={(page) => change({ ...search, page })}
+          filters={
+            <form
+              onSubmit={submitForm(form)}
+              role="search"
+              className="flex w-full flex-wrap items-center gap-2 md:w-auto"
+            >
+              <div className="flex w-full max-w-sm items-center gap-2 sm:w-80">
+                <form.Field name="q">
+                  {(field) => (
+                    <Input
+                      {...textFieldProps(field)}
+                      aria-label={`Search ${isDriver ? "drivers" : "vehicles"}`}
+                      placeholder={
+                        isDriver
+                          ? "Name, driver number or email"
+                          : "Registration, fleet number or VIN"
+                      }
+                      maxLength={200}
+                    />
                   )}
-                </TableRow>
-              ))}
-              {!items.length && (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="h-40 text-center text-xs text-muted-foreground"
+                </form.Field>
+                <Button
+                  type="submit"
+                  variant="outline"
+                  size="icon"
+                  className="size-12"
+                  aria-label="Search"
+                >
+                  <SearchIcon aria-hidden="true" />
+                </Button>
+              </div>
+              <select
+                aria-label="Filter status"
+                value={search.status}
+                onChange={(e) =>
+                  change({
+                    ...search,
+                    q: form.getFieldValue("q"),
+                    page: 1,
+                    status: e.target.value,
+                  })
+                }
+                className="h-12 rounded-md border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                <option value="">All statuses</option>
+                <option value="active">Active</option>
+                {!isDriver && <option value="maintenance">Maintenance</option>}
+                <option value="inactive">Inactive</option>
+              </select>
+            </form>
+          }
+        >
+          {data.items.length ? (
+            <>
+              <div className="divide-y lg:hidden">
+                {data.items.map((item) => (
+                  <MobileRecord key={item.id} kind={kind} item={item} />
+                ))}
+              </div>
+              <Table className="hidden lg:table">
+                <TableHeader className="bg-muted">
+                  <TableRow>
+                    {(isDriver
+                      ? [
+                          "Driver",
+                          "Driver number",
+                          "Assigned vehicle",
+                          "Status",
+                        ]
+                      : [
+                          "Vehicle",
+                          "Fleet number",
+                          "Driving now",
+                          "Availability",
+                        ]
+                    ).map((column) => (
+                      <TableHead
+                        key={column}
+                        className="whitespace-normal px-4 text-xs"
+                      >
+                        {column}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.items.map((item) => (
+                    <TableRow key={item.id}>
+                      {isDriver ? (
+                        <DriverRow driver={item as Driver} />
+                      ) : (
+                        <TruckRow truck={item as Truck} />
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
+          ) : (
+            <EmptyState
+              icon={isDriver ? "users" : "truck"}
+              title={
+                search.q || search.status
+                  ? `No matching ${isDriver ? "drivers" : "vehicles"}`
+                  : `No ${isDriver ? "drivers" : "vehicles"} yet`
+              }
+              action={
+                search.q || search.status ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      form.reset({ q: "" });
+                      change({ q: "", page: 1, status: "" });
+                    }}
                   >
-                    {search.q || search.status
-                      ? "No matching records"
-                      : isDriver
-                        ? "No drivers yet"
-                        : "No trucks yet"}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
-          <span className="text-muted-foreground">
-            Page {page} of {Math.max(1, Math.ceil(total / pageSize))}
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              disabled={page <= 1}
-              onClick={() => change({ ...search, page: page - 1 })}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              disabled={page * pageSize >= total}
-              onClick={() => change({ ...search, page: page + 1 })}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      </Card>
+                    Clear filters
+                  </Button>
+                ) : undefined
+              }
+            />
+          )}
+        </RecordList>
+      )}
     </>
   );
 }
 function DriverRow({ driver: d }: { driver: Driver }) {
   return (
     <>
-      <TableCell className="p-4">
+      <TableCell className="p-4 whitespace-normal [overflow-wrap:anywhere]">
         <Link
           to="/admin/drivers/$driverId"
           params={{ driverId: d.id }}
-          className="font-semibold hover:underline"
+          className="font-semibold underline-offset-4 hover:underline focus-visible:underline"
         >
           {d.user.firstName} {d.user.lastName}
+          <ArrowRight
+            aria-hidden="true"
+            className="ml-1.5 inline-block size-3.5 align-text-bottom text-muted-foreground"
+          />
         </Link>
         <p className="mt-1 text-[11px] text-muted-foreground">{d.user.email}</p>
       </TableCell>
-      <TableCell className="px-4">{d.identifier}</TableCell>
-      <TableCell className="px-4">
+      <TableCell className="px-4 whitespace-normal [overflow-wrap:anywhere]">
+        {d.identifier}
+      </TableCell>
+      <TableCell className="px-4 whitespace-normal [overflow-wrap:anywhere]">
         {d.currentTruck
-          ? `${d.currentTruck.identifier} · ${d.currentTruck.registration}`
+          ? `${d.currentTruck.registration} · ${d.currentTruck.identifier}`
           : "Unassigned"}
       </TableCell>
-      <TableCell className="px-4">
+      <TableCell className="px-4 whitespace-normal [overflow-wrap:anywhere]">
         <div className="flex flex-col items-start gap-1">
           <Badge variant="outline">
             {d.status === "active" ? "Active" : "Inactive"}
@@ -232,36 +252,35 @@ function DriverRow({ driver: d }: { driver: Driver }) {
           )}
         </div>
       </TableCell>
-      <TableCell className="px-4">
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/admin/drivers/$driverId" params={{ driverId: d.id }}>
-            Open<span className="sr-only"> {d.identifier}</span>
-          </Link>
-        </Button>
-      </TableCell>
     </>
   );
 }
 function TruckRow({ truck: t }: { truck: Truck }) {
   return (
     <>
-      <TableCell className="p-4">
+      <TableCell className="p-4 whitespace-normal [overflow-wrap:anywhere]">
         <Link
           to="/admin/trucks/$truckId"
           params={{ truckId: t.id }}
-          className="font-semibold hover:underline"
+          className="font-semibold underline-offset-4 hover:underline focus-visible:underline"
         >
-          {t.identifier}
+          {t.registration}
+          <ArrowRight
+            aria-hidden="true"
+            className="ml-1.5 inline-block size-3.5 align-text-bottom text-muted-foreground"
+          />
         </Link>
         <p className="mt-1 text-[11px] text-muted-foreground">
           {t.make} {t.model}
         </p>
       </TableCell>
-      <TableCell className="px-4">{t.registration}</TableCell>
-      <TableCell className="px-4">
+      <TableCell className="px-4 whitespace-normal [overflow-wrap:anywhere]">
+        {t.identifier}
+      </TableCell>
+      <TableCell className="px-4 whitespace-normal [overflow-wrap:anywhere]">
         {t.currentDriving?.driverName ?? "No active driver"}
       </TableCell>
-      <TableCell className="px-4">
+      <TableCell className="px-4 whitespace-normal [overflow-wrap:anywhere]">
         <Badge variant="outline">
           {t.status.charAt(0).toUpperCase() + t.status.slice(1)}
         </Badge>
@@ -275,13 +294,6 @@ function TruckRow({ truck: t }: { truck: Truck }) {
           </p>
         )}
       </TableCell>
-      <TableCell className="px-4">
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/admin/trucks/$truckId" params={{ truckId: t.id }}>
-            Open<span className="sr-only"> {t.identifier}</span>
-          </Link>
-        </Button>
-      </TableCell>
     </>
   );
 }
@@ -294,7 +306,7 @@ function MobileRecord({
   item: Driver | Truck;
 }) {
   const style =
-    "block space-y-3 p-4 text-xs hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring";
+    "block space-y-2 p-4 hover:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring [overflow-wrap:anywhere]";
   const badge = (
     <Badge variant="outline">
       {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
@@ -309,16 +321,20 @@ function MobileRecord({
         className={style}
       >
         <div className="flex flex-wrap items-start justify-between gap-2">
-          <p className="font-semibold">
+          <p className="min-w-0 flex-1 font-semibold">
             {d.user.firstName} {d.user.lastName}
           </p>
           {badge}
+          <ArrowRight
+            aria-hidden="true"
+            className="size-4 shrink-0 text-muted-foreground"
+          />
         </div>
         <p className="text-muted-foreground">{d.identifier}</p>
-        <p className="break-all text-muted-foreground">{d.user.email}</p>
+        <p className="text-sm text-muted-foreground">{d.user.email}</p>
         <p>
           {d.currentTruck
-            ? `${d.currentTruck.identifier} · ${d.currentTruck.registration}`
+            ? `${d.currentTruck.registration} · ${d.currentTruck.identifier}`
             : "Unassigned"}
         </p>
         {!d.user.isActive && (
@@ -338,14 +354,17 @@ function MobileRecord({
       className={style}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <p className="font-semibold">{t.identifier}</p>
+        <p className="min-w-0 flex-1 font-semibold">{t.registration}</p>
         {badge}
+        <ArrowRight
+          aria-hidden="true"
+          className="size-4 shrink-0 text-muted-foreground"
+        />
       </div>
       <p className="text-muted-foreground">
-        {t.make} {t.model}
+        {t.identifier} · {t.make} {t.model}
       </p>
-      <p>{t.registration}</p>
-      <p className="break-all text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
         Driving now: {t.currentDriving?.driverName ?? "No active driver"}
       </p>
       {[

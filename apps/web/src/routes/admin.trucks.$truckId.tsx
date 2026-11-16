@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { TruckForm } from '@/components/truck-form'
+import { BackLink, PageHeader } from '@/components/page-header'
 import { PageError } from '@/components/page-error'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { getTruck } from '@/lib/fleet'
@@ -19,12 +20,21 @@ function Page() {
   const data = Route.useLoaderData()
   const { session } = Route.useRouteContext()
   const { created } = Route.useSearch()
-  if (!data.result.data) return <PageError message={data.result.error!} />
+  if (!data.result.data)
+    return (
+      <>
+        <PageHeader
+          title="Vehicle profile"
+          back={<BackLink to="/admin/trucks">Vehicles</BackLink>}
+        />
+        <PageError message={data.result.error!} />
+      </>
+    )
   return (
     <>
       {created && (
         <Alert role="status">
-          <AlertDescription>Truck created.</AlertDescription>
+          <AlertDescription>Vehicle added.</AlertDescription>
         </Alert>
       )}
       <TruckForm

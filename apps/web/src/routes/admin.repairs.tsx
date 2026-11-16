@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { adminOperationsKey } from "@/lib/admin-queries";
+import { EmptyState } from "@/components/empty-state";
+import { RefreshButton } from "@/components/refresh-button";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { displayDate } from "@/lib/fleet";
 
@@ -24,7 +25,13 @@ export const Route = createFileRoute("/admin/repairs")({
 });
 function RepairHistory() {
   const { session } = Route.useRouteContext();
-  const { data: items = [], error, isPending, refetch } = useQuery({
+  const {
+    data: items = [],
+    error,
+    isPending,
+    isFetching,
+    refetch,
+  } = useQuery({
     queryKey: [...adminOperationsKey(session.user.id), "repairs"],
     queryFn: async ({ signal }) => {
       const response = await fetch("/api/admin/repairs", {
@@ -47,9 +54,7 @@ function RepairHistory() {
         title="Completed repairs"
         group="Review & records"
         actions={
-          <Button variant="outline" onClick={() => void refetch()}>
-            Refresh
-          </Button>
+          <RefreshButton busy={isFetching} onRefresh={() => void refetch()} />
         }
       />
       {error && (
@@ -64,17 +69,20 @@ function RepairHistory() {
           </p>
         )}
         {!isPending && !error && !items.length && (
-          <Card className="p-6 shadow-none">
-            <p className="text-sm text-muted-foreground">
-              No completed repairs yet.
-            </p>
+          <Card className="py-0 shadow-none">
+            <EmptyState icon="wrench" title="No completed repairs yet" />
           </Card>
         )}
         {items.map((item) => (
-          <Card key={item.id} className="gap-4 p-6 shadow-none">
+          <Card
+            key={item.id}
+            className="gap-4 p-4 shadow-none sm:p-5 [overflow-wrap:anywhere]"
+          >
             <div className="flex flex-wrap justify-between gap-2">
               <h2 className="font-semibold">
-                {item.truck?.registration ?? "Truck"} · {item.truck?.identifier}
+                {item.truck
+                  ? `${item.truck.registration} · ${item.truck.identifier}`
+                  : "Vehicle not specified"}
               </h2>
               <span className="text-xs text-muted-foreground">
                 Resolved {displayDate(item.resolvedAt)}
@@ -89,8 +97,8 @@ function RepairHistory() {
               </p>
             </div>
             <div className="space-y-2 rounded-md bg-muted/50 p-4 text-sm">
-              <h3 className="font-medium">
-                Repair response
+              <h3 className="font-semibold">
+                Repair details
                 {item.mechanicName
                   ? ` · ${item.mechanicName}`
                   : item.resolvedBy

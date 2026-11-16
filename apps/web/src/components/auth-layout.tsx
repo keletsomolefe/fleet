@@ -3,14 +3,14 @@ import type { ReactNode } from 'react'
 export function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <main className="grid min-h-svh grid-rows-[auto_1fr] lg:grid-cols-[4fr_5fr] lg:grid-rows-1">
-      <aside className="flex flex-col items-center justify-between gap-8 bg-black p-6 text-white lg:min-h-svh lg:items-start lg:p-12">
-        <div className="flex h-[85px] w-[216px] max-w-full shrink-0 items-center lg:h-32 lg:w-80">
+      <aside className="flex flex-col items-center justify-between gap-8 bg-primary p-4 text-primary-foreground lg:min-h-svh lg:items-start lg:p-12">
+        <div className="flex w-44 max-w-full shrink-0 items-center lg:h-32 lg:w-80">
           <img
             src="/design/brand-white.svg"
             alt="VHH Fleet"
             width={300}
             height={117}
-            className="h-auto w-[216px] max-w-full lg:w-72"
+            className="h-auto w-full lg:w-72"
           />
         </div>
         <div className="relative hidden h-40 w-full shrink-0 lg:block">
@@ -29,15 +29,12 @@ export function AuthLayout({ children }: { children: ReactNode }) {
             One clear record.
           </p>
         </div>
-        <p className="hidden text-[11px] leading-4 lg:block">
-          VHH Fleet
-        </p>
       </aside>
       <section
         aria-label="VHH Fleet account"
-        className="flex items-center justify-center bg-muted p-5 sm:p-10 lg:justify-start lg:p-12"
+        className="flex items-start justify-center bg-muted px-4 py-6 sm:items-center sm:p-10 lg:p-12"
       >
-        <div className="w-full max-w-[556px]">{children}</div>
+        <div className="w-full max-w-md">{children}</div>
       </section>
     </main>
   )

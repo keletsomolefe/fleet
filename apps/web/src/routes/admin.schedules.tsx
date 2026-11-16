@@ -1,7 +1,14 @@
+import { Plus } from "lucide-react";
+import { RefreshButton } from "@/components/refresh-button";
 import { PageHeader } from "@/components/page-header";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useForm, useStore } from "@tanstack/react-form";
+import { submitForm } from "@/lib/form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { adminOperationsKey, refreshAdminOperations } from "@/lib/admin-queries";
+import {
+  adminOperationsKey,
+  refreshAdminOperations,
+} from "@/lib/admin-queries";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -73,24 +80,32 @@ function range(anchor: string, mode: "week" | "month") {
   }
   return [start.toISOString().slice(0, 10), end.toISOString().slice(0, 10)];
 }
+const dateFormat = new Intl.DateTimeFormat("en-ZA", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+});
+const dayFormat = new Intl.DateTimeFormat("en-ZA", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
+const dateValue = (value: string) => new Date(value + "T00:00:00Z");
+
 function Schedules() {
   const { session } = Route.useRouteContext();
   const queryClient = useQueryClient();
+  const editor = useRef<HTMLHeadingElement>(null);
+  const cancelTrigger = useRef<HTMLButtonElement | null>(null);
+  const today = localDate();
   const [anchor, setAnchor] = useState(localDate),
     [mode, setMode] = useState<"week" | "month">("week"),
     [saveError, setSaveError] = useState(""),
-    [saved, setSaved] = useState(""),
-    [busy, setBusy] = useState(false);
+    [saved, setSaved] = useState("");
   const [from, to] = range(anchor, mode);
-  const [selectedDriver, setSelectedDriver] = useState<ComboboxOption | null>(
-      null,
-    ),
-    [selectedTruck, setSelectedTruck] = useState<ComboboxOption | null>(null),
-    [start, setStart] = useState(from),
-    [end, setEnd] = useState(to),
-    [weekdays, setWeekdays] = useState([1, 2, 3, 4, 5]),
-    [note, setNote] = useState(""),
-    [conflicts, setConflicts] = useState<
+  const [conflicts, setConflicts] = useState<
       Array<{
         id: string;
         date: string;
@@ -99,8 +114,6 @@ function Schedules() {
       }>
     >([]),
     [cancel, setCancel] = useState<Entry | null>(null);
-  const driverId = selectedDriver?.value ?? "";
-  const truckId = selectedTruck?.value ?? "";
   const allowed = [
     "admin.access",
     "drivers.read",
@@ -108,25 +121,28 @@ function Schedules() {
     "trucks.read",
     "trucks.write",
   ].every((p) => session.permissions.includes(p));
-  const { data: items = [], error: loadError, isPending, refetch } = useQuery({
+  const {
+    data: items,
+    error: loadError,
+    isPending,
+    isFetching,
+    refetch,
+  } = useQuery({
     queryKey: [...adminOperationsKey(session.user.id), "schedules", from, to],
     enabled: allowed,
     queryFn: async ({ signal }) => {
-      const response = await fetch(`/api/admin/schedules?from=${from}&to=${to}`, {
-        cache: "no-store",
-        signal,
-      });
+      const response = await fetch(
+        `/api/admin/schedules?from=${from}&to=${to}`,
+        {
+          cache: "no-store",
+          signal,
+        },
+      );
       if (!response.ok) throw new Error("Could not load the schedule.");
       const data = (await response.json()) as { items: Entry[] };
       return data.items;
     },
   });
-  const error = saveError || loadError?.message;
-  useEffect(() => {
-    setStart(from);
-    setEnd(to);
-    setConflicts([]);
-  }, [from, to]);
   async function write(path: string, body: unknown) {
     const r = await fetch("/api/admin/" + path, {
       method: "POST",
@@ -139,45 +155,79 @@ function Schedules() {
     const data = await r.json().catch(() => null);
     return { r, data };
   }
-  async function save(e: FormEvent) {
-    e.preventDefault();
-    if (busy) return;
-    setBusy(true);
-    setSaveError("");
-    setSaved("");
-    try {
-      const { r, data } = cancel
-        ? await write(`schedules/${cancel.id}/cancel`, { note })
-        : await write("schedules", {
-            driverId,
-            truckId,
-            from: start,
-            to: end,
-            weekdays,
-            note,
-            override: conflicts.length > 0,
-            expectedConflicts: conflicts.map((c) => c.id),
-          });
-      if (!r.ok) {
-        if (data?.conflicts) setConflicts(data.conflicts);
-        else setConflicts([]);
-        throw new Error(data?.message ?? "Could not save the schedule.");
+  const form = useForm({
+    defaultValues: {
+      driver: null as ComboboxOption | null,
+      truck: null as ComboboxOption | null,
+      start: from,
+      end: to,
+      weekdays: [1, 2, 3, 4, 5],
+      note: "",
+    },
+    validators: {
+      onSubmit: ({ value }) =>
+        (cancel || conflicts.length > 0) && !value.note.trim()
+          ? "Enter a reason."
+          : undefined,
+    },
+    onSubmit: async ({ value, formApi }) => {
+      if (!allowed) return;
+      const { driver, truck, start, end, weekdays, note } = value;
+      setSaveError("");
+      setSaved("");
+      try {
+        const { r, data } = cancel
+          ? await write(`schedules/${cancel.id}/cancel`, { note })
+          : driver && truck && weekdays.length
+            ? await write("schedules", {
+                driverId: driver.value,
+                truckId: truck.value,
+                from: start,
+                to: end,
+                weekdays,
+                note,
+                override: conflicts.length > 0,
+                expectedConflicts: conflicts.map((c) => c.id),
+              })
+            : { r: null, data: null };
+        if (!r) return;
+        if (!r.ok) {
+          setConflicts(data?.conflicts ?? []);
+          throw new Error(data?.message ?? "Could not save the schedule.");
+        }
+        setSaved(
+          cancel
+            ? "Scheduled day cancelled."
+            : `Schedule saved${data.overridden ? ` · ${data.overridden} scheduled days replaced` : ""}.`,
+        );
+        setCancel(null);
+        setConflicts([]);
+        formApi.resetField("note");
+        await refreshAdminOperations(queryClient, session.user.id);
+      } catch (e) {
+        setSaveError(
+          e instanceof Error ? e.message : "Could not save the schedule.",
+        );
       }
-      setSaved(
-        cancel
-          ? "Scheduled day cancelled."
-          : `Schedule saved${data.overridden ? ` · ${data.overridden} scheduled days replaced` : ""}.`,
-      );
-      setCancel(null);
-      setConflicts([]);
-      setNote("");
-      await refreshAdminOperations(queryClient, session.user.id);
-    } catch (e) {
-      setSaveError(e instanceof Error ? e.message : "Could not save the schedule.");
-    } finally {
-      setBusy(false);
-    }
-  }
+    },
+  });
+  const { driver, truck, start, end, weekdays, note } = useStore(
+    form.store,
+    (state) => state.values,
+  );
+  const busy = useStore(form.store, (state) => state.isSubmitting);
+  const validationError = useStore(
+    form.store,
+    (state) => state.errorMap.onSubmit,
+  );
+  useEffect(() => {
+    if (cancel) editor.current?.focus();
+  }, [cancel]);
+  useEffect(() => {
+    form.setFieldValue("start", from, { dontUpdateMeta: true });
+    form.setFieldValue("end", to, { dontUpdateMeta: true });
+    setConflicts([]);
+  }, [form, from, to]);
   if (!allowed)
     return (
       <Alert variant="destructive">
@@ -197,73 +247,86 @@ function Schedules() {
         title="Driver schedule"
         group="People & assets"
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant={mode === "week" ? "default" : "outline"}
-              onClick={() => setMode("week")}
-            >
-              Week
-            </Button>
-            <Button
-              variant={mode === "month" ? "default" : "outline"}
-              onClick={() => setMode("month")}
-            >
-              Month
-            </Button>
-            <Input
-              aria-label="Schedule date"
-              className="w-auto"
-              type="date"
-              value={anchor}
-              onChange={(e) => {
-                if (e.target.value) setAnchor(e.target.value);
-              }}
-            />
-          </div>
+          <Button
+            className="w-full sm:w-auto xl:hidden"
+            onClick={() => editor.current?.focus()}
+          >
+            <Plus aria-hidden="true" />
+            {cancel ? "Review cancellation" : "Assign driver"}
+          </Button>
         }
       />
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
       {saved && (
         <Alert role="status">
           <AlertDescription>{saved}</AlertDescription>
         </Alert>
       )}
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <Card className="gap-0 overflow-hidden shadow-none">
-          <div className="flex items-center justify-between border-b p-4">
-            <p className="text-sm font-semibold">
-              {from} – {to}
-            </p>
-            <Button variant="outline" onClick={() => {
-                setSaveError("");
-                void refetch();
-              }}>
-              Refresh
-            </Button>
+        <Card className="gap-0 overflow-hidden py-0 shadow-none">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
+            <div
+              role="group"
+              aria-label="Schedule view"
+              className="flex items-center gap-1 rounded-lg bg-muted p-1"
+            >
+              {(["week", "month"] as const).map((period) => (
+                <Button
+                  key={period}
+                  size="sm"
+                  disabled={busy}
+                  aria-pressed={mode === period}
+                  variant={mode === period ? "default" : "ghost"}
+                  onClick={() => setMode(period)}
+                >
+                  {period === "week" ? "Week" : "Month"}
+                </Button>
+              ))}
+            </div>
+            <Input
+              aria-label="Schedule date"
+              disabled={busy}
+              className="h-10 w-auto max-w-full bg-background"
+              type="date"
+              value={anchor}
+              onChange={(e) => {
+                if (
+                  e.target.value &&
+                  Number.isFinite(Date.parse(e.target.value))
+                )
+                  setAnchor(e.target.value);
+              }}
+            />
           </div>
-          {isPending ? (
-            <p className="p-5 text-sm">Loading schedule…</p>
-          ) : (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
+            <h2 className="text-sm font-semibold">
+              {dateFormat.formatRange(dateValue(from), dateValue(to))}
+            </h2>
+            <RefreshButton busy={isFetching} onRefresh={() => void refetch()} />
+          </div>
+          {loadError && (
+            <Alert variant="destructive" className="m-4 w-auto">
+              <AlertDescription>{loadError.message}</AlertDescription>
+            </Alert>
+          )}
+          {isPending && (
+            <p role="status" className="p-4 text-sm text-muted-foreground">
+              Loading schedule…
+            </p>
+          )}
+          {items && (
             <div className="divide-y">
               {days.map((day) => (
                 <div
                   key={day}
-                  className="grid gap-3 p-4 sm:grid-cols-[100px_1fr]"
+                  className={`grid gap-3 p-4 sm:grid-cols-[100px_minmax(0,1fr)] ${day === today ? "bg-muted/60" : ""}`}
                 >
                   <div>
                     <p className="text-sm font-semibold">
-                      {new Date(day + "T00:00Z").toLocaleDateString("en-ZA", {
-                        weekday: "short",
-                        day: "numeric",
-                        month: "short",
-                        timeZone: "UTC",
-                      })}
+                      <time dateTime={day}>
+                        {dayFormat.format(dateValue(day))}
+                      </time>
                     </p>
-                    {day === localDate() && (
+                    {day === today && (
                       <p className="text-xs text-muted-foreground">Today</p>
                     )}
                   </div>
@@ -278,20 +341,25 @@ function Schedules() {
                       .map((item) => (
                         <div
                           key={item.id}
-                          className="flex items-center justify-between gap-3 rounded-lg border p-3"
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card p-3"
                         >
-                          <div className="space-y-1">
+                          <div className="min-w-0 space-y-1 [overflow-wrap:anywhere]">
                             <p className="text-sm font-semibold">
                               {item.registration}
                             </p>
-                            <p className="text-xs">{item.driverName}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {item.driverName}
+                            </p>
                           </div>
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => {
+                            disabled={busy}
+                            onClick={(event) => {
+                              cancelTrigger.current = event.currentTarget;
+                              setSaveError("");
                               setCancel(item);
-                              setNote("");
+                              form.resetField("note");
                               setConflicts([]);
                               setSaved("");
                             }}
@@ -306,16 +374,33 @@ function Schedules() {
             </div>
           )}
         </Card>
-        <Card className="p-5 shadow-none">
-          <h2 className="text-base font-semibold">
+        <Card className="gap-4 p-4 shadow-none sm:p-5">
+          <h2
+            ref={editor}
+            tabIndex={-1}
+            className="scroll-mt-4 rounded-sm text-base font-semibold"
+          >
             {cancel ? "Cancel scheduled day" : "Assign driver"}
           </h2>
-          <form className="space-y-4" onSubmit={save}>
+          {saveError && (
+            <Alert variant="destructive">
+              <AlertDescription>{saveError}</AlertDescription>
+            </Alert>
+          )}
+          <form className="space-y-4" onSubmit={submitForm(form)}>
             <fieldset disabled={busy} className="space-y-4">
               {cancel ? (
-                <p className="text-sm">
-                  {cancel.date} · {cancel.driverName} · {cancel.registration}
-                </p>
+                <div className="space-y-1 rounded-lg border bg-muted p-3 [overflow-wrap:anywhere]">
+                  <p className="font-semibold">
+                    {cancel.registration} · {cancel.driverName}
+                  </p>
+                  <time
+                    className="text-sm text-muted-foreground"
+                    dateTime={cancel.date}
+                  >
+                    {dateFormat.format(dateValue(cancel.date))}
+                  </time>
+                </div>
               ) : (
                 <>
                   <div className="space-y-2">
@@ -323,15 +408,15 @@ function Schedules() {
                     <Combobox
                       id="schedule-driver"
                       name="driverId"
-                      value={selectedDriver}
-                      placeholder="Search name or driver number"
+                      value={driver}
+                      placeholder="Name or driver number"
                       optionsKey={["admin", session.user.id, "active-drivers"]}
                       loadOptions={loadDrivers}
                       emptyMessage="No drivers found."
                       disabled={busy}
                       required
                       onValueChange={(driver) => {
-                        setSelectedDriver(driver);
+                        form.setFieldValue("driver", driver);
                         setConflicts([]);
                       }}
                     />
@@ -341,15 +426,15 @@ function Schedules() {
                     <Combobox
                       id="schedule-vehicle"
                       name="truckId"
-                      value={selectedTruck}
-                      placeholder="Search registration or fleet number"
+                      value={truck}
+                      placeholder="Registration or fleet number"
                       optionsKey={["admin", session.user.id, "active-vehicles"]}
                       loadOptions={loadVehicles}
                       emptyMessage="No vehicles found."
                       disabled={busy}
                       required
                       onValueChange={(truck) => {
-                        setSelectedTruck(truck);
+                        form.setFieldValue("truck", truck);
                         setConflicts([]);
                       }}
                     />
@@ -363,7 +448,7 @@ function Schedules() {
                         required
                         value={start}
                         onChange={(e) => {
-                          setStart(e.target.value);
+                          form.setFieldValue("start", e.target.value);
                           setConflicts([]);
                         }}
                       />
@@ -377,7 +462,7 @@ function Schedules() {
                         min={start}
                         value={end}
                         onChange={(e) => {
-                          setEnd(e.target.value);
+                          form.setFieldValue("end", e.target.value);
                           setConflicts([]);
                         }}
                       />
@@ -397,7 +482,7 @@ function Schedules() {
                               className="accent-black"
                               checked={weekdays.includes(d)}
                               onChange={(e) => {
-                                setWeekdays((v) =>
+                                form.setFieldValue("weekdays", (v) =>
                                   e.target.checked
                                     ? [...v, d]
                                     : v.filter((x) => x !== d),
@@ -439,14 +524,18 @@ function Schedules() {
                   value={note}
                   maxLength={1000}
                   required={!!cancel || conflicts.length > 0}
-                  onChange={(e) => setNote(e.target.value)}
+                  onChange={(e) => form.setFieldValue("note", e.target.value)}
                 />
               </div>
+              {validationError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{validationError}</AlertDescription>
+                </Alert>
+              )}
               <Button
                 className="w-full"
                 disabled={
-                  busy ||
-                  (!cancel && (!driverId || !truckId || !weekdays.length))
+                  busy || (!cancel && (!driver || !truck || !weekdays.length))
                 }
               >
                 {busy
@@ -464,7 +553,9 @@ function Schedules() {
                   className="w-full"
                   onClick={() => {
                     setCancel(null);
-                    setNote("");
+                    setSaveError("");
+                    form.resetField("note");
+                    cancelTrigger.current?.focus();
                   }}
                 >
                   Back to schedule

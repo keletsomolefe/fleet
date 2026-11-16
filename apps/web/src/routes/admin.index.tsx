@@ -5,6 +5,7 @@ import {
   redirect,
 } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { PageError } from "@/components/page-error";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,7 +34,12 @@ const shortcuts = [
     title: "Driver schedule",
     description: "Plan which drivers use each vehicle.",
     icon: "clock",
-    permissions: ["drivers.read", "drivers.write", "trucks.read", "trucks.write"],
+    permissions: [
+      "drivers.read",
+      "drivers.write",
+      "trucks.read",
+      "trucks.write",
+    ],
     link: linkOptions({ to: "/admin/schedules" }),
   },
   {
@@ -115,8 +121,8 @@ function Overview() {
           </ul>
         </nav>
       ) : (
-        <Card className="py-4 shadow-none">
-          <CardContent>No fleet sections available.</CardContent>
+        <Card className="py-0 shadow-none">
+          <EmptyState icon="overview" title="No fleet sections available" />
         </Card>
       )}
     </>

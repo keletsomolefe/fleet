@@ -1,5 +1,7 @@
+import { useForm, useStore } from "@tanstack/react-form";
+import { submitForm, textFieldProps } from "@/lib/form";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Wrench } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -7,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { displayDate } from "@/lib/fleet";
 import { RepairForm } from "@/components/repair-form";
 
 type Issue = {
@@ -70,9 +73,6 @@ function Repair({ issueId }: { issueId: string }) {
   const [token, setToken] = useState<string | null>(null),
     [grant, setGrant] = useState("");
   const [verificationError, setVerificationError] = useState(""),
-    [busy, setBusy] = useState(false),
-    [phone, setPhone] = useState(""),
-    [code, setCode] = useState(""),
     [challenge, setChallenge] = useState("");
   const endpoint = `/api/repairs/${encodeURIComponent(issueId)}`;
   useEffect(() => {
@@ -123,52 +123,59 @@ function Repair({ issueId }: { issueId: string }) {
   });
   const error =
     verificationError ||
-    (token === "" && "Open the repair link from the mechanics WhatsApp group.") ||
+    (token === "" &&
+      "Open the repair link from the mechanics WhatsApp group.") ||
     issueQuery.error?.message ||
     photoQuery.error?.message;
 
-  async function auth(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (busy) return;
-    setBusy(true);
-    setVerificationError("");
-    try {
-      const data = await result(
-        await fetch(`${endpoint}/otp${challenge ? "/verify" : ""}`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(
-            challenge
-              ? { challengeId: challenge, code }
-              : { phone: phone.replace(/[\s()-]/g, "") },
-          ),
-        }),
-      );
-      if (challenge) setGrant(data.token);
-      else setChallenge(data.challengeId);
-    } catch (cause) {
-      setVerificationError(cause instanceof Error ? cause.message : "Please try again.");
-    } finally {
-      setBusy(false);
-    }
-  }
+  const form = useForm({
+    defaultValues: { phone: "", code: "" },
+    onSubmit: async ({ value: { phone, code }, formApi }) => {
+      setVerificationError("");
+      try {
+        const data = await result(
+          await fetch(`${endpoint}/otp${challenge ? "/verify" : ""}`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(
+              challenge
+                ? { challengeId: challenge, code }
+                : { phone: phone.replace(/[\s()-]/g, "") },
+            ),
+          }),
+        );
+        if (challenge) {
+          setGrant(data.token);
+          formApi.reset();
+        } else setChallenge(data.challengeId);
+      } catch (cause) {
+        setVerificationError(
+          cause instanceof Error ? cause.message : "Please try again.",
+        );
+      }
+    },
+  });
+  const busy = useStore(form.store, (state) => state.isSubmitting);
+  const phone = useStore(form.store, (state) => state.values.phone);
   return (
-    <main className="min-h-screen bg-muted/30 px-4 py-8 sm:py-12">
-      <div className="mx-auto max-w-xl space-y-6">
+    <main className="min-h-screen bg-muted px-4 py-5 sm:py-10">
+      <div className="mx-auto max-w-xl space-y-4">
         <header className="flex items-center gap-3">
-          <img src="/design/monogram.svg" alt="VHH" className="size-10" />
+          <img src="/design/monogram.svg" alt="" className="size-9" />
           <span className="font-semibold">VHH Fleet</span>
         </header>
-        <Card className="gap-6 p-6 shadow-none sm:p-8">
+        <Card className="gap-5 p-4 shadow-none sm:p-6 [overflow-wrap:anywhere]">
           <div className="flex items-center gap-3">
-            {issue?.resolvedAt ? (
-              <CheckCircle2 className="size-6 text-green-700" />
-            ) : (
-              <Wrench className="size-6 text-primary" />
-            )}
+            <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-secondary">
+              {issue?.resolvedAt ? (
+                <CheckCircle2 aria-hidden="true" className="size-5" />
+              ) : (
+                <Wrench aria-hidden="true" className="size-5" />
+              )}
+            </span>
             <h1 className="text-xl font-semibold">
               {issue?.resolvedAt ? "Issue resolved" : "Truck repair"}
             </h1>
@@ -185,22 +192,27 @@ function Repair({ issueId }: { issueId: string }) {
           )}
           {issue && (
             <>
-              <div className="space-y-2">
-                <h2 className="font-semibold">
-                  {issue.truck?.registration}{" "}
-                  <span className="font-normal text-muted-foreground">
-                    · {issue.truck?.identifier}
-                  </span>
-                </h2>
+              <div className="space-y-2 rounded-lg border bg-muted p-4">
+                <div>
+                  <h2 className="font-semibold">
+                    {issue.truck?.registration ?? "Reported issue"}
+                  </h2>
+                  {issue.truck && (
+                    <p className="text-xs text-muted-foreground">
+                      {issue.truck.identifier}
+                    </p>
+                  )}
+                </div>
                 <p className="whitespace-pre-wrap break-words text-sm">
                   {issue.description}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Reported {new Date(issue.createdAt).toLocaleString("en-ZA")}
+                  Reported {displayDate(issue.createdAt)}
                 </p>
               </div>
               {issue.resolvedAt ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
+                  <h2 className="font-semibold">Repair details</h2>
                   <p className="whitespace-pre-wrap break-words text-sm">
                     {issue.resolutionNote}
                   </p>
@@ -223,7 +235,7 @@ function Repair({ issueId }: { issueId: string }) {
                   }
                 />
               ) : (
-                <form onSubmit={auth} className="space-y-4">
+                <form onSubmit={submitForm(form)} className="space-y-4">
                   <p className="text-sm text-muted-foreground">
                     Verify your WhatsApp number to record the repair.
                   </p>
@@ -231,33 +243,39 @@ function Repair({ issueId }: { issueId: string }) {
                     {!challenge ? (
                       <div className="space-y-2">
                         <Label htmlFor="phone">WhatsApp number</Label>
-                        <Input
-                          id="phone"
-                          type="tel"
-                          autoComplete="tel"
-                          placeholder="+27"
-                          required
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                        />
+                        <form.Field name="phone">
+                          {(field) => (
+                            <Input
+                              id="phone"
+                              type="tel"
+                              autoComplete="tel"
+                              placeholder="+27"
+                              required
+                              {...textFieldProps(field)}
+                            />
+                          )}
+                        </form.Field>
                       </div>
                     ) : (
                       <div className="space-y-2">
                         <Label htmlFor="code">Code sent to {phone}</Label>
-                        <Input
-                          id="code"
-                          inputMode="numeric"
-                          autoComplete="one-time-code"
-                          pattern="[0-9]{6}"
-                          maxLength={6}
-                          required
-                          value={code}
-                          onChange={(e) => setCode(e.target.value)}
-                        />
+                        <form.Field name="code">
+                          {(field) => (
+                            <Input
+                              id="code"
+                              inputMode="numeric"
+                              autoComplete="one-time-code"
+                              pattern="[0-9]{6}"
+                              maxLength={6}
+                              required
+                              {...textFieldProps(field)}
+                            />
+                          )}
+                        </form.Field>
                       </div>
                     )}
                     <div className="flex flex-wrap gap-3">
-                      <Button>
+                      <Button className="w-full sm:w-auto">
                         {busy
                           ? "Please wait…"
                           : challenge
@@ -268,9 +286,10 @@ function Repair({ issueId }: { issueId: string }) {
                         <Button
                           type="button"
                           variant="outline"
+                          className="w-full sm:w-auto"
                           onClick={() => {
                             setChallenge("");
-                            setCode("");
+                            form.resetField("code");
                           }}
                         >
                           Request another code
