@@ -85,6 +85,12 @@ export const navigation = [
         icon: "alert",
         permission: "issues.read",
       },
+      {
+        title: "Completed repairs",
+        section: "repairs",
+        icon: "wrench",
+        permission: "issues.read",
+      },
     ],
   },
 ];

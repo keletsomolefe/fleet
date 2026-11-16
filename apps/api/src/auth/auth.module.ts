@@ -1,4 +1,16 @@
 import { IssuesService } from '../issues/issues.service.js';
+import { OpenWaService } from '../issues/openwa.service.js';
+import { RepairAccess } from '../issues/repair-access.js';
+import { RepairOtpService } from '../issues/repair-otp.service.js';
+import { RepairsService } from '../issues/repairs.service.js';
+import {
+  RepairsController,
+  AdminRepairsController,
+  RepairHistoryController,
+  RepairLinkGuard,
+  RepairSubmitGuard,
+  RepairCsrfGuard,
+} from '../issues/repairs.controller.js';
 import {
   AdminIssuesController,
   MobileIssuesController,
@@ -64,6 +76,9 @@ import { RolesController } from '../rbac/roles.controller.js';
     ]),
   ],
   controllers: [
+    RepairsController,
+    AdminRepairsController,
+    RepairHistoryController,
     AuthController,
     AdminIssuesController,
     MobileIssuesController,
@@ -82,6 +97,13 @@ import { RolesController } from '../rbac/roles.controller.js';
     RolesController,
   ],
   providers: [
+    OpenWaService,
+    RepairAccess,
+    RepairOtpService,
+    RepairsService,
+    RepairLinkGuard,
+    RepairSubmitGuard,
+    RepairCsrfGuard,
     AuthService,
     IssuesService,
     SchedulingService,

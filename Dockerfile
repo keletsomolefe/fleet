@@ -21,7 +21,7 @@ ENV PLT_SERVER_LOGGER_LEVEL=warn PLT_MANAGEMENT_API=false PLT_SERVER_HOSTNAME=0.
 RUN pnpm test && pnpm typecheck && pnpm build
 
 FROM base AS runtime
-RUN install -d -o node -g node /app /pnpm /home/node/.cache
+RUN install -d -o node -g node /app /pnpm /home/node/.cache /app/.fleet-data /app/.fleet-data/repairs
 USER node
 COPY --chown=node:node package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY --chown=node:node apps/api/package.json ./apps/api/

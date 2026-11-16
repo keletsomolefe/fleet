@@ -18,6 +18,7 @@ stage_config() {
   install -m 0644 "$source/Caddyfile" /opt/fleet/config/Caddyfile
   install -m 0644 "$source"/postgres/*.sql /opt/fleet/config/postgres/
 }
+python3 "$release/init-repairs.py" /opt/fleet/.env
 compose config --quiet
 install -d -m 0755 /opt/fleet/downloads/android/releases
 install -d -m 0700 /opt/fleet/downloads/incoming
@@ -33,6 +34,7 @@ compose up -d --wait --wait-timeout 120 kratos-ui
 compose run --rm -T --no-deps app node apps/api/dist/database/check-schema.js
 compose run --rm -T --no-deps app node apps/api/dist/database/configure-roles.js
 compose run --rm -T --no-deps owner-bootstrap
+compose run --rm -T --no-deps app node apps/api/dist/database/configure-repairs.js
 previous=$(readlink -f /opt/fleet/current || true)
 rollout() {
   compose up -d --wait --wait-timeout 300 app || return 1

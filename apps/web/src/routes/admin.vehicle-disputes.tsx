@@ -1,3 +1,4 @@
+import { RepairForm } from "@/components/repair-form";
 import { PageHeader } from "@/components/page-header";
 import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
@@ -156,70 +157,87 @@ function Page() {
               {selected.currentDriver?.driverName ?? "No active driver"}
             </p>
           )}
-          <form className="space-y-4" onSubmit={resolve}>
-            <fieldset disabled={busy} className="space-y-4">
-              {selected.kind !== "issue" && (
+          {selected.kind === "issue" &&
+          selected.category === "vehicle" &&
+          selected.truck ? (
+            <RepairForm
+              endpoint={`/api/admin/issues/${selected.id}/repair/resolve`}
+              headers={{ "X-CSRF-Token": session.csrfToken }}
+              onSaved={async () => {
+                setSelected(null);
+                setSaved("Issue resolved.");
+                window.dispatchEvent(new Event("fleet:attention-refresh"));
+                await router.invalidate();
+              }}
+            />
+          ) : (
+            <form className="space-y-4" onSubmit={resolve}>
+              <fieldset disabled={busy} className="space-y-4">
+                {selected.kind !== "issue" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="resolution">Action</Label>
+                    <select
+                      id="resolution"
+                      name="resolution"
+                      required
+                      className="h-12 w-full rounded-md border bg-white px-3 text-sm"
+                      defaultValue=""
+                    >
+                      <option value="" disabled>
+                        Choose an action
+                      </option>
+                      {selected.kind === "schedule" ? (
+                        <>
+                          <option value="keep_schedule">
+                            Keep current schedule
+                          </option>
+                          <option
+                            value="change_schedule"
+                            disabled={!selected.requestedTruck}
+                          >
+                            Assign requested vehicle for this date
+                          </option>
+                        </>
+                      ) : (
+                        <>
+                          <option
+                            value="keep_current"
+                            disabled={!selected.currentDriver}
+                          >
+                            Keep current driver
+                          </option>
+                          <option value="release_vehicle">
+                            Release vehicle
+                          </option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+                )}
                 <div className="space-y-2">
-                  <Label htmlFor="resolution">Action</Label>
-                  <select
-                    id="resolution"
-                    name="resolution"
+                  <Label htmlFor="note">What was decided?</Label>
+                  <textarea
+                    id="note"
                     required
-                    className="h-12 w-full rounded-md border bg-white px-3 text-sm"
-                    defaultValue=""
-                  >
-                    <option value="" disabled>
-                      Choose an action
-                    </option>
-                    {selected.kind === "schedule" ? (
-                      <>
-                        <option value="keep_schedule">
-                          Keep current schedule
-                        </option>
-                        <option
-                          value="change_schedule"
-                          disabled={!selected.requestedTruck}
-                        >
-                          Assign requested vehicle for this date
-                        </option>
-                      </>
-                    ) : (
-                      <>
-                        <option
-                          value="keep_current"
-                          disabled={!selected.currentDriver}
-                        >
-                          Keep current driver
-                        </option>
-                        <option value="release_vehicle">Release vehicle</option>
-                      </>
-                    )}
-                  </select>
+                    maxLength={1000}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    className="min-h-24 w-full rounded-md border bg-white p-3 text-sm"
+                  />
                 </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="note">What was decided?</Label>
-                <textarea
-                  id="note"
-                  required
-                  maxLength={1000}
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  className="min-h-24 w-full rounded-md border bg-white p-3 text-sm"
-                />
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <Button disabled={!note.trim()}>Resolve item</Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setSelected(null)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </fieldset>
-          </form>
+                <div className="flex flex-wrap gap-3">
+                  <Button disabled={!note.trim()}>Resolve item</Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setSelected(null)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </fieldset>
+            </form>
+          )}
         </Card>
       ) : (
         <div className="grid gap-4">

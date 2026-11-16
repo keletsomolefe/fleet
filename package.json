@@ -29,7 +29,9 @@
     "mobile:reverse": "node scripts/android-reverse.mjs",
     "test:schedules": "node scripts/test-schedules-stack.mjs",
     "test:issues": "node scripts/test-driver-issues-stack.mjs",
+    "test:deployment": "node scripts/test-deploy-safety.mjs",
     "test:downloads": "node scripts/test-android-download.mjs",
+    "test:repairs": "pnpm --filter api build && node scripts/test-repairs-stack.mjs",
     "db:roles": "pnpm --filter api configure:roles"
   },
   "dependencies": {

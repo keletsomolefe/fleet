@@ -70,3 +70,5 @@ The publisher checks the upload checksum and archive signature, stores an immuta
 Run `pnpm test:downloads` to check atomic publication, checksum rejection, response headers, HEAD and resumable requests in an isolated local Caddy container.
 
 The deployment runs `apps/api/dist/database/configure-roles.js` after the read-only schema preflight. This idempotent data update creates Truck mechanic with issue read/resolve access, grants those issue permissions to Owner and Administrator, and removes Dispatcher without transferring its assignments. It does not create tables or run application migrations.
+
+WhatsApp repair links, OTP verification, private photos and the optional OpenWA service are described in [whatsapp-repairs-poc.md](whatsapp-repairs-poc.md).
