@@ -33,3 +33,6 @@ credentials.json
 
 # Private repair photos, WhatsApp jobs and linked-device state
 .fleet-data/
+
+# Local UI review screenshots and device evidence
+/.design-qa/

@@ -68,6 +68,12 @@ The API uses the latest TypeScript 6 because Nest CLI requires its compiler API;
 the web app uses TypeScript 7. Nitro writes the web production build to `.output/`.
 Existing design documentation and assets remain at the repository root.
 
+## Designing Fleet screens
+
+[DESIGN.md](DESIGN.md) is the shared design guide for the dashboard and driver app. Codex and Claude Code use the same [Fleet UI workflow](.agents/skills/fleet-ui/SKILL.md) through the repository instructions. The [Mobbin library](design/mobbin-references.md) records patterns for each surface, and the [visual QA checklist](design/quality-checklist.md) covers browser review and native captures with `pnpm design:device`.
+
+Start with a task, for example: “Improve the driver’s vehicle review so the registration is easy to confirm. Use the Fleet UI workflow and show the result on a small phone.” In Codex, you can also name `$fleet-ui` directly.
+
 ## Prototype documentation
 
 The prototype and functional plan below include future features beyond the current scope above. They remain design references.

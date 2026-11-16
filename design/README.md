@@ -1,5 +1,7 @@
 # Figma design source and state
 
+For the running app, start with [Fleet's design guide](../DESIGN.md), the editable [Fleet Patterns board](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=228-314), and [visual QA](quality-checklist.md). The records below document Figma prototype work, including driver workflows and admin features outside current scope.
+
 The delivered artifact is [the editable Figma file](https://www.figma.com/design/LEbt69of7SErhXVRHps0B3/Untitled?node-id=5-1864). These JavaScript files are saved Figma Plugin API construction/refinement recipes, not a production application or a standalone local preview.
 
 ## Current source of truth
