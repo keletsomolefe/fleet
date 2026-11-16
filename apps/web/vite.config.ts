@@ -6,15 +6,17 @@ import viteReact from '@vitejs/plugin-react'
 import { nitro } from 'nitro/vite'
 import tailwindcss from '@tailwindcss/vite'
 
-const config = defineConfig({
+const config = defineConfig(({ command }) => ({
   resolve: { tsconfigPaths: true },
+  server: {
+    allowedHosts: ['web.plt.local'],
+  },
   plugins: [
     tailwindcss(),
-    nitro({ rollupConfig: { external: [/^@sentry\//] } }),
-
     tanstackStart(),
+    command === 'build' && nitro({ rollupConfig: { external: [/^@sentry\//] } }),
     viteReact(),
   ],
-})
+}))
 
 export default config

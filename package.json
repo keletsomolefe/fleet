@@ -1,7 +1,7 @@
 {
   "name": "fleet",
   "scripts": {
-    "dev": "wattpm dev",
+    "dev": "node scripts/dev.mjs",
     "build": "wattpm build",
     "start": "wattpm start",
     "test": "pnpm -r --filter '!mobile' --if-present test",

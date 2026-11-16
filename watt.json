@@ -2,7 +2,16 @@
   "$schema": "https://schemas.platformatic.dev/@platformatic/runtime/3.72.0.json",
   "autoload": {
     "path": "apps",
-    "exclude": ["mobile"]
+    "exclude": ["mobile"],
+    "mappings": {
+      "web": {
+        "id": "web",
+        "env": {
+          "NITRO_HOST": "127.0.0.1",
+          "NITRO_PORT": "0"
+        }
+      }
+    }
   },
   "logger": {
     "level": "{PLT_SERVER_LOGGER_LEVEL}"
