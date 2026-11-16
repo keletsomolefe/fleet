@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestError } from '../http/errors.js';
 import { randomUUID } from 'node:crypto';
 import {
   digest,
@@ -36,7 +36,7 @@ describe('Location ingestion boundaries', () => {
     { data: { coords: { latitude: 0, longitude: 0, speed: Infinity } } },
   ])('rejects malformed records %j', (patch) => {
     expect(() => parseSample({ ...sample(), ...patch })).toThrow(
-      BadRequestException,
+      BadRequestError,
     );
   });
   it('bounds batches and validates final sequence', () => {
@@ -46,7 +46,7 @@ describe('Location ingestion boundaries', () => {
         streamId: randomUUID(),
         events: Array.from({ length: 101 }, sample),
       }),
-    ).toThrow(BadRequestException);
+    ).toThrow(BadRequestError);
     expect(() =>
       parseBatch({
         batchId: randomUUID(),
@@ -54,7 +54,7 @@ describe('Location ingestion boundaries', () => {
         events: [],
         end: { at: new Date().toISOString(), finalSequence: -1 },
       }),
-    ).toThrow(BadRequestException);
+    ).toThrow(BadRequestError);
   });
   it('hashes equivalent field order consistently and detects changed history', () => {
     expect(digest({ b: 1, a: { x: 2, y: 3 } })).toBe(

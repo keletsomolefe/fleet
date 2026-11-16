@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestError } from '../http/errors.js';
 
 export const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -6,7 +6,7 @@ function fieldLabel(key: string) {
   return key.replace(/[A-Z]/g, (s) => ` ${s.toLowerCase()}`);
 }
 function invalid(message: string): never {
-  throw new BadRequestException(message);
+  throw new BadRequestError(message);
 }
 function object(raw: unknown, keys: string[]) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw))

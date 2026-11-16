@@ -5,14 +5,12 @@ import {
   timingSafeEqual,
 } from 'node:crypto';
 import {
-  BadRequestException,
-  ForbiddenException,
-  HttpException,
-  Inject,
-  Injectable,
-  ServiceUnavailableException,
-  UnauthorizedException,
-} from '@nestjs/common';
+  BadRequestError,
+  ForbiddenError,
+  HttpError,
+  ServiceUnavailableError,
+  UnauthorizedError,
+} from '../http/errors.js';
 import { OpenWaService } from './openwa.service.js';
 import { RepairAccess } from './repair-access.js';
 
@@ -25,27 +23,24 @@ type Challenge = {
 };
 const digest = (id: string, code: string) =>
   createHash('sha256').update(`${id}:${code}`).digest();
-@Injectable()
 export class RepairOtpService {
   private challenges = new Map<string, Challenge>();
   private requests = new Map<string, number[]>();
   constructor(
-    @Inject(OpenWaService) private readonly wa: OpenWaService,
-    @Inject(RepairAccess) private readonly access: RepairAccess,
+    private readonly wa: OpenWaService,
+    private readonly access: RepairAccess,
   ) {}
   async requireMember(phone: string) {
     let member: boolean;
     try {
       member = await this.wa.isMember(phone);
     } catch {
-      throw new ServiceUnavailableException(
+      throw new ServiceUnavailableError(
         'WhatsApp is unavailable. Please try again shortly.',
       );
     }
     if (!member)
-      throw new ForbiddenException(
-        'Use a WhatsApp number in the mechanics group.',
-      );
+      throw new ForbiddenError('Use a WhatsApp number in the mechanics group.');
   }
   async request(issueId: string, raw: unknown) {
     const input = raw as { phone?: unknown };
@@ -54,7 +49,7 @@ export class RepairOtpService {
       typeof input.phone !== 'string' ||
       !/^\+[1-9]\d{7,14}$/.test(input.phone)
     )
-      throw new BadRequestException(
+      throw new BadRequestError(
         'Enter your WhatsApp number with country code, for example +27821234567.',
       );
     const phone = input.phone.slice(1),
@@ -73,10 +68,7 @@ export class RepairOtpService {
       times.length >= 5 ||
       all.length >= 30
     )
-      throw new HttpException(
-        'Please wait before requesting another code.',
-        429,
-      );
+      throw new HttpError('Please wait before requesting another code.', 429);
     // Reserve the quota before any awaits so concurrent requests cannot bypass it.
     this.requests.set(phone, [...times, now]);
     this.requests.set('*', [...all, now]);
@@ -101,7 +93,7 @@ export class RepairOtpService {
       );
     } catch {
       this.challenges.delete(id);
-      throw new ServiceUnavailableException(
+      throw new ServiceUnavailableError(
         'Could not send the code. Please try again shortly.',
       );
     }
@@ -117,7 +109,7 @@ export class RepairOtpService {
       c.expires <= Date.now() ||
       c.attempts >= 5
     )
-      throw new UnauthorizedException('Request a new code and try again.');
+      throw new UnauthorizedError('Request a new code and try again.');
     c.attempts++;
     const valid =
       typeof v.code === 'string' &&
@@ -125,7 +117,7 @@ export class RepairOtpService {
       timingSafeEqual(c.digest, digest(id, v.code));
     if (!valid) {
       if (c.attempts >= 5) this.challenges.delete(id);
-      throw new UnauthorizedException('That code is incorrect. Try again.');
+      throw new UnauthorizedError('That code is incorrect. Try again.');
     }
     this.challenges.delete(id);
     return {

@@ -1,10 +1,3 @@
-import {
-  Inject,
-  Injectable,
-  Logger,
-  type OnModuleDestroy,
-  type OnModuleInit,
-} from '@nestjs/common';
 import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { resolve, join } from 'node:path';
@@ -43,14 +36,13 @@ type Job = {
   messageId?: string;
 };
 
-@Injectable()
-export class OpenWaService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(OpenWaService.name);
+export class OpenWaService {
   private timer?: ReturnType<typeof setInterval>;
   private running = false;
   constructor(
-    @Inject(DataSource) private readonly db: DataSource,
-    @Inject(RepairAccess) private readonly access: RepairAccess,
+    private readonly db: DataSource,
+    private readonly access: RepairAccess,
+    private readonly logger: Pick<Console, 'info' | 'warn' | 'error'> = console,
   ) {}
   get enabled() {
     return process.env.WHATSAPP_ENABLED === 'true';
@@ -121,7 +113,7 @@ export class OpenWaService implements OnModuleInit, OnModuleDestroy {
       group.participants.some((p) => p.id === mapping.lid)
     );
   }
-  async onModuleInit() {
+  async start() {
     if (!this.enabled) return;
     void this.groupId;
     if (
@@ -143,7 +135,7 @@ export class OpenWaService implements OnModuleInit, OnModuleDestroy {
     this.timer.unref();
     void this.flush();
   }
-  onModuleDestroy() {
+  stop() {
     if (this.timer) clearInterval(this.timer);
   }
   async enqueue(id: string) {

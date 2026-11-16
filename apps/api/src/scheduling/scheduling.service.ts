@@ -1,11 +1,9 @@
 import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+} from '../http/errors.js';
 import { DataSource, EntityManager, In, IsNull } from 'typeorm';
 import type { AdminContext } from '../auth/auth.service.js';
 import { DriverProfile, Truck } from '../fleet/fleet.entity.js';
@@ -22,11 +20,9 @@ import {
 } from './schedule.input.js';
 import { drivingId } from '../mobile/driving.input.js';
 
-@Injectable()
 export class SchedulingService {
   constructor(
-    @Inject(DataSource) private readonly db: DataSource,
-    @Inject(OperationsEventsService)
+    private readonly db: DataSource,
     private readonly events: OperationsEventsService,
   ) {}
   private require(c: AdminContext) {
@@ -35,7 +31,7 @@ export class SchedulingService {
       !c.permissions.includes('drivers.read') ||
       !c.permissions.includes('drivers.write')
     )
-      throw new ForbiddenException('Driver scheduling access is required.');
+      throw new ForbiddenError('Driver scheduling access is required.');
   }
   current(driverId: string, m = this.db.manager) {
     return m.findOneBy(DriverSchedule, {
@@ -71,7 +67,7 @@ export class SchedulingService {
     const start = date(from ?? today()),
       end = date(to ?? start);
     if (end < start || (Date.parse(end) - Date.parse(start)) / 86400000 > 92)
-      throw new BadRequestException('Choose a range of up to 93 days.');
+      throw new BadRequestError('Choose a range of up to 93 days.');
     return {
       items: await this.db.query(
         `SELECT s.*, to_char(s.date,'YYYY-MM-DD') AS date, t.registration, t.identifier AS "truckIdentifier", concat(u."firstName",' ',u."lastName") AS "driverName"
@@ -96,7 +92,7 @@ export class SchedulingService {
         !p?.user.isActive ||
         !(await m.existsBy(Truck, { id: v.truckId, status: 'active' }))
       )
-        throw new BadRequestException('Choose an active driver and vehicle.');
+        throw new BadRequestError('Choose an active driver and vehicle.');
       const conflicts = await m
         .getRepository(DriverSchedule)
         .createQueryBuilder('s')
@@ -109,7 +105,7 @@ export class SchedulingService {
         (s) => s.driverId !== v.driverId || s.truckId !== v.truckId,
       );
       if (changed.length && !v.override)
-        throw new ConflictException({
+        throw new ConflictError({
           message: 'Review the conflicting dates before overriding.',
           conflicts: await Promise.all(
             changed.map(async (s) => {
@@ -134,7 +130,7 @@ export class SchedulingService {
         JSON.stringify(changed.map((s) => s.id).sort()) !==
           JSON.stringify(v.expectedConflicts)
       )
-        throw new ConflictException(
+        throw new ConflictError(
           'The schedule changed. Review the conflicts again.',
         );
       if (changed.length)
@@ -186,7 +182,7 @@ export class SchedulingService {
         id: drivingId(id),
         cancelledAt: IsNull(),
       });
-      if (!s) throw new ConflictException('The schedule changed. Refresh it.');
+      if (!s) throw new ConflictError('The schedule changed. Refresh it.');
       await m.update(
         DriverSchedule,
         { id: s.id },
@@ -231,27 +227,26 @@ export class SchedulingService {
       await m.query(
         "SELECT pg_advisory_xact_lock(hashtext('fleet-assets-v1'))",
       );
-      if (!c.permissions.includes('driver.access'))
-        throw new ForbiddenException();
+      if (!c.permissions.includes('driver.access')) throw new ForbiddenError();
       const p = await m.findOneBy(DriverProfile, {
         userId: c.user.id,
         status: 'active',
       });
-      if (!p) throw new ForbiddenException();
+      if (!p) throw new ForbiddenError();
       const s = await this.current(p.id, m);
       if (!s || s.id !== v.expectedScheduleId)
-        throw new ConflictException(
+        throw new ConflictError(
           'Your schedule changed. Refresh before reporting a mismatch.',
         );
       if (v.requestedTruckId === s.truckId)
-        throw new BadRequestException(
+        throw new BadRequestError(
           'Choose a different vehicle or leave it blank.',
         );
       if (
         v.requestedTruckId &&
         !(await m.existsBy(Truck, { id: v.requestedTruckId, status: 'active' }))
       )
-        throw new NotFoundException('Choose an active vehicle.');
+        throw new NotFoundError('Choose an active vehicle.');
       const existing = await this.pending(p.id, m);
       if (existing) return existing;
       await this.closeDriver(m, p.id, c.user.id, 'schedule_dispute');
@@ -282,7 +277,7 @@ export class SchedulingService {
       'expectedRequestedScheduleId',
     ]);
     if (!['keep_schedule', 'change_schedule'].includes(String(v.resolution)))
-      throw new BadRequestException('Choose a schedule resolution.');
+      throw new BadRequestError('Choose a schedule resolution.');
     const requestedExpected =
       v.expectedRequestedScheduleId === null
         ? null
@@ -304,7 +299,7 @@ export class SchedulingService {
         resolvedAt: IsNull(),
       });
       if (!d)
-        throw new ConflictException(
+        throw new ConflictError(
           'This item has already been resolved. Refresh the list.',
         );
       const current = await m.findOneBy(DriverSchedule, {
@@ -313,10 +308,10 @@ export class SchedulingService {
         cancelledAt: IsNull(),
       });
       if ((current?.id ?? null) !== expected)
-        throw new ConflictException('The schedule changed. Review it again.');
+        throw new ConflictError('The schedule changed. Review it again.');
       if (v.resolution === 'change_schedule') {
         if (!d.requestedTruckId)
-          throw new BadRequestException(
+          throw new BadRequestError(
             'Update the schedule first, then keep the updated schedule.',
           );
         if (
@@ -325,7 +320,7 @@ export class SchedulingService {
             status: 'active',
           }))
         )
-          throw new ConflictException('The requested vehicle is unavailable.');
+          throw new ConflictError('The requested vehicle is unavailable.');
         const active =
           d.scheduleDate === today()
             ? await m.findOneBy(DrivingSession, {
@@ -334,11 +329,11 @@ export class SchedulingService {
               })
             : null;
         if ((active?.id ?? null) !== activeExpected)
-          throw new ConflictException(
+          throw new ConflictError(
             'The vehicle session changed. Review it again.',
           );
         if (active && active.driverId !== d.driverId)
-          throw new ConflictException(
+          throw new ConflictError(
             'Resolve the active vehicle handover before changing the schedule.',
           );
         if (
@@ -348,14 +343,14 @@ export class SchedulingService {
             resolvedAt: IsNull(),
           })
         )
-          throw new ConflictException('Resolve the vehicle flag first.');
+          throw new ConflictError('Resolve the vehicle flag first.');
         const displaced = await m.findBy(DriverSchedule, {
           truckId: d.requestedTruckId,
           date: d.scheduleDate!,
           cancelledAt: IsNull(),
         });
         if ((displaced[0]?.id ?? null) !== requestedExpected)
-          throw new ConflictException(
+          throw new ConflictError(
             'The requested vehicle schedule changed. Review it again.',
           );
         for (const s of [...displaced, ...(current ? [current] : [])]) {
@@ -384,7 +379,7 @@ export class SchedulingService {
         );
       }
       if (!current && v.resolution === 'keep_schedule')
-        throw new ConflictException(
+        throw new ConflictError(
           'Create a replacement schedule before resolving this item.',
         );
       await m.update(

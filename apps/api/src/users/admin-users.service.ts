@@ -1,15 +1,11 @@
 import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Inject,
-  HttpException,
-  Injectable,
-  Logger,
-  NotFoundException,
-  ServiceUnavailableException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  HttpError,
+  NotFoundError,
+  ServiceUnavailableError,
+} from '../http/errors.js';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 import { KratosError, KratosService } from '../auth/kratos.service.js';
 import { User } from './user.entity.js';
@@ -25,14 +21,14 @@ export interface CreateUserInput {
 
 export function parseUserInput(value: unknown): CreateUserInput {
   if (!value || typeof value !== 'object' || Array.isArray(value))
-    throw new BadRequestException('Enter the user details.');
+    throw new BadRequestError('Enter the user details.');
   const input = value as Record<string, unknown>;
   if (
     Object.keys(input).some(
       (k) => !['email', 'firstName', 'lastName', 'password'].includes(k),
     )
   )
-    throw new BadRequestException('Unexpected account fields.');
+    throw new BadRequestError('Unexpected account fields.');
   const email =
     typeof input.email === 'string' ? input.email.trim().toLowerCase() : '';
   const firstName =
@@ -41,31 +37,28 @@ export function parseUserInput(value: unknown): CreateUserInput {
     typeof input.lastName === 'string' ? input.lastName.trim() : '';
   const password = typeof input.password === 'string' ? input.password : '';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 320)
-    throw new BadRequestException('Enter a valid email address.');
+    throw new BadRequestError('Enter a valid email address.');
   if (
     !firstName ||
     !lastName ||
     firstName.length > 100 ||
     lastName.length > 100
   )
-    throw new BadRequestException(
+    throw new BadRequestError(
       'Enter first and last names of up to 100 characters.',
     );
   if (password.length < 8 || password.length > 128)
-    throw new BadRequestException(
-      'Use a password between 8 and 128 characters.',
-    );
+    throw new BadRequestError('Use a password between 8 and 128 characters.');
   return { email, firstName, lastName, password };
 }
 
-@Injectable()
 export class AdminUsersService {
-  private readonly logger = new Logger(AdminUsersService.name);
   constructor(
-    @InjectRepository(User) private readonly users: Repository<User>,
-    @Inject(KratosService) private readonly kratos: KratosService,
-    @Inject(DataSource) private readonly database: DataSource,
-    @Inject(RbacService) private readonly rbac: RbacService,
+    private readonly users: Repository<User>,
+    private readonly kratos: KratosService,
+    private readonly database: DataSource,
+    private readonly rbac: RbacService,
+    private readonly logger: Pick<Console, 'info' | 'warn' | 'error'> = console,
   ) {}
 
   async create(
@@ -75,7 +68,7 @@ export class AdminUsersService {
   ): Promise<User> {
     const input = parseUserInput(raw);
     if (await this.users.existsBy({ email: input.email }))
-      throw new ConflictException('An account with this email already exists.');
+      throw new ConflictError('An account with this email already exists.');
     let identity;
     try {
       identity = await this.kratos.createIdentity({
@@ -89,10 +82,8 @@ export class AdminUsersService {
     } catch (error) {
       if (error instanceof KratosError) {
         if (error.status === 409)
-          throw new ConflictException(
-            'An account with this email already exists.',
-          );
-        throw new BadRequestException(
+          throw new ConflictError('An account with this email already exists.');
+        throw new BadRequestError(
           'The identity service rejected these details. Check the email and use a stronger password.',
         );
       }
@@ -121,12 +112,12 @@ export class AdminUsersService {
           `User provisioning cleanup required for identity ${identity.id}`,
         );
       }
-      if (error instanceof HttpException) throw error;
+      if (error instanceof HttpError) throw error;
       if ((error as { code?: string })?.code === '23505')
-        throw new ConflictException(
+        throw new ConflictError(
           'Account or driver details are already in use.',
         );
-      throw new ServiceUnavailableException(
+      throw new ServiceUnavailableError(
         'The user could not be saved. Please try again.',
       );
     }
@@ -152,7 +143,7 @@ export class AdminUsersService {
       typeof rawPage !== 'string' ||
       !/^[1-9]\d{0,5}$/.test(rawPage)
     )
-      throw new BadRequestException('Invalid user search.');
+      throw new BadRequestError('Invalid user search.');
     const page = Number(rawPage);
     const builder = this.users
       .createQueryBuilder('u')
@@ -191,7 +182,7 @@ export class AdminUsersService {
 
   async get(id: string) {
     const user = await this.users.findOneBy({ id });
-    if (!user) throw new NotFoundException('User not found.');
+    if (!user) throw new NotFoundError('User not found.');
     return { ...this.profile(user), ...(await this.rbac.access(id)) };
   }
 
@@ -215,11 +206,11 @@ export class AdminUsersService {
         !permissions.has('admin.access') ||
         !permissions.has('users.access')
       )
-        throw new ForbiddenException('Account management access is required.');
+        throw new ForbiddenError('Account management access is required.');
       const target = await manager.findOneBy(User, { id: targetId });
-      if (!target) throw new NotFoundException('User not found.');
+      if (!target) throw new NotFoundError('User not found.');
       if (!target.isActive)
-        throw new BadRequestException(
+        throw new BadRequestError(
           'Activate the account before creating a setup link.',
         );
       const roles = await manager.find(UserRole, {
@@ -230,7 +221,7 @@ export class AdminUsersService {
         roles.some((r) => r.role.key === 'owner') &&
         !permissions.has('users.owners')
       )
-        throw new ForbiddenException(
+        throw new ForbiddenError(
           'You do not have permission to manage owners.',
         );
       const result = await this.kratos.request<{
@@ -253,10 +244,10 @@ export class AdminUsersService {
         link.origin !== base.origin ||
         !link.pathname.startsWith(base.pathname)
       )
-        throw new ServiceUnavailableException(
+        throw new ServiceUnavailableError(
           'The setup link could not be generated.',
         );
-      this.logger.log(
+      this.logger.info(
         `Account setup link created for user ${target.id} by ${actor.id}`,
       );
       return { url: link.toString(), expiresAt: result.expires_at };
@@ -285,11 +276,11 @@ export class AdminUsersService {
         !actorPermissions.has('admin.access') ||
         !actorPermissions.has('users.access')
       )
-        throw new ForbiddenException(
+        throw new ForbiddenError(
           'You do not have permission to change user access.',
         );
       const target = await manager.findOneBy(User, { id: targetId });
-      if (!target) throw new NotFoundException('User not found.');
+      if (!target) throw new NotFoundError('User not found.');
       const current = await manager.find(UserRole, {
         where: { userId: targetId },
         relations: { role: true },
@@ -298,11 +289,11 @@ export class AdminUsersService {
         ? await manager.findBy(Role, { id: In(input.roleIds) })
         : [];
       if (roles.length !== input.roleIds.length)
-        throw new BadRequestException('Select valid roles.');
+        throw new BadRequestError('Select valid roles.');
       const wasOwner = current.some(({ role }) => role.key === 'owner');
       const isOwner = roles.some((role) => role.key === 'owner');
       if ((wasOwner || isOwner) && !actorPermissions.has('users.owners'))
-        throw new ForbiddenException(
+        throw new ForbiddenError(
           'You do not have permission to manage owners.',
         );
       if (wasOwner && (!isOwner || !input.isActive)) {
@@ -313,7 +304,7 @@ export class AdminUsersService {
           [targetId],
         );
         if (!remaining.count)
-          throw new ConflictException('Keep at least one active owner.');
+          throw new ConflictError('Keep at least one active owner.');
       }
       const nextGrants = roles.length
         ? await manager.query(
@@ -327,9 +318,7 @@ export class AdminUsersService {
         (!input.isActive ||
           !nextGrants.some((p: { key: string }) => p.key === 'admin.access'))
       )
-        throw new ForbiddenException(
-          'You cannot remove your own admin access.',
-        );
+        throw new ForbiddenError('You cannot remove your own admin access.');
       await manager.delete(UserRole, { userId: targetId });
       if (roles.length)
         await manager.insert(
@@ -351,7 +340,7 @@ export function parseAccessInput(raw: unknown): {
   isActive: boolean;
 } {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw))
-    throw new BadRequestException('Invalid access details.');
+    throw new BadRequestError('Invalid access details.');
   const input = raw as Record<string, unknown>;
   if (
     Object.keys(input).some((key) => !['roleIds', 'isActive'].includes(key)) ||
@@ -366,7 +355,7 @@ export function parseAccessInput(raw: unknown): {
         ),
     )
   )
-    throw new BadRequestException('Select valid roles and account status.');
+    throw new BadRequestError('Select valid roles and account status.');
   return {
     roleIds: [...new Set(input.roleIds as string[])],
     isActive: input.isActive,

@@ -1,11 +1,9 @@
 import {
-  BadRequestException,
-  ConflictException,
-  Inject,
-  Injectable,
-  NotFoundException,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+  ServiceUnavailableError,
+} from '../http/errors.js';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -33,7 +31,7 @@ type Receipt = {
 export function photoType(file: RepairPhoto) {
   const b = file.buffer;
   if (!b?.length || b.length > 5 * 1024 * 1024)
-    throw new BadRequestException('Each photo must be 5 MB or smaller.');
+    throw new BadRequestError('Each photo must be 5 MB or smaller.');
   if (
     file.mimetype === 'image/jpeg' &&
     b[0] === 0xff &&
@@ -53,7 +51,7 @@ export function photoType(file: RepairPhoto) {
     b.toString('ascii', 8, 12) === 'WEBP'
   )
     return 'image/webp';
-  throw new BadRequestException('Choose JPG, PNG or WebP photos.');
+  throw new BadRequestError('Choose JPG, PNG or WebP photos.');
 }
 function repairInput(raw: unknown) {
   const v = raw as { name?: unknown; note?: unknown };
@@ -66,7 +64,7 @@ function repairInput(raw: unknown) {
     (v.name !== undefined &&
       (typeof v.name !== 'string' || v.name.trim().length > 80))
   )
-    throw new BadRequestException(
+    throw new BadRequestError(
       'Enter a repair comment of up to 1,000 characters.',
     );
   return {
@@ -75,12 +73,10 @@ function repairInput(raw: unknown) {
       typeof v.name === 'string' ? v.name.trim().replace(/[\r\n]/g, ' ') : '',
   };
 }
-@Injectable()
 export class RepairsService {
   constructor(
-    @Inject(DataSource) private readonly db: DataSource,
-    @Inject(RepairOtpService) private readonly otp: RepairOtpService,
-    @Inject(OperationsEventsService)
+    private readonly db: DataSource,
+    private readonly otp: RepairOtpService,
     private readonly events: OperationsEventsService,
   ) {}
   async history() {
@@ -124,7 +120,7 @@ export class RepairsService {
       .getRepository(DriverIssue)
       .findOne({ where: { id }, relations: { truck: true } });
     if (!issue || issue.category !== 'vehicle' || !issue.truckId)
-      throw new NotFoundException('Truck issue not found.');
+      throw new NotFoundError('Truck issue not found.');
     return issue;
   }
   private async receipt(issue: DriverIssue): Promise<Receipt | null> {
@@ -164,7 +160,7 @@ export class RepairsService {
     drivingId(photoId);
     const receipt = await this.receipt(await this.issue(id)),
       photo = receipt?.photos.find((p) => p.id === photoId);
-    if (!photo) throw new NotFoundException('Photo not found.');
+    if (!photo) throw new NotFoundError('Photo not found.');
     return {
       type: photo.type,
       buffer: await readFile(join(repairDataDir(), id, photoId)),
@@ -178,8 +174,7 @@ export class RepairsService {
   ) {
     drivingId(id);
     const v = repairInput(raw);
-    if (files.length > 3)
-      throw new BadRequestException('Choose up to 3 photos.');
+    if (files.length > 3) throw new BadRequestError('Choose up to 3 photos.');
     const photos = files.map((file) => ({
       id: randomUUID(),
       type: photoType(file),
@@ -195,7 +190,7 @@ export class RepairsService {
         .getRepository(User)
         .findOneBy({ email: repairAuditEmail, isActive: false });
       if (!audit)
-        throw new ServiceUnavailableException(
+        throw new ServiceUnavailableError(
           'Repair recording is unavailable. Please contact the office.',
         );
       userId = audit.id;
@@ -206,7 +201,7 @@ export class RepairsService {
         lock: { mode: 'pessimistic_write' },
       });
       if (!issue || issue.category !== 'vehicle' || !issue.truckId)
-        throw new NotFoundException('Truck issue not found.');
+        throw new NotFoundError('Truck issue not found.');
       if (issue.resolvedAt) {
         // A repeated submit must never replace the first mechanic's evidence.
         if (
@@ -216,7 +211,7 @@ export class RepairsService {
             (await this.receipt(issue))?.verifiedPhone === identity.phone)
         )
           return false;
-        throw new ConflictException('This issue has already been resolved.');
+        throw new ConflictError('This issue has already been resolved.');
       }
       const dir = join(repairDataDir(), id);
       await mkdir(dir, { recursive: true, mode: 0o700 });

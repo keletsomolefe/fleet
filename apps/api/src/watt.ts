@@ -1,15 +1,16 @@
-import type { INestApplication } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module.js';
-
-let app: INestApplication | undefined;
+import { createApi } from './app.js';
 
 export async function create() {
-  app = await NestFactory.create(AppModule);
-  await app.init();
-  return app.getHttpServer();
-}
-
-export async function close() {
-  await app?.close();
+  const { app } = createApi({
+    logger: { level: process.env.PLT_SERVER_LOGGER_LEVEL || 'info' },
+  });
+  try {
+    await app.ready();
+    return app;
+  } catch (error) {
+    await app.close().catch((err: unknown) => {
+      app.log.error({ err }, 'API shutdown after failed startup');
+    });
+    throw error;
+  }
 }

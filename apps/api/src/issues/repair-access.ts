@@ -1,9 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import {
-  Injectable,
-  ServiceUnavailableException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ServiceUnavailableError, UnauthorizedError } from '../http/errors.js';
 import { uuidPattern } from '../fleet/fleet.input.js';
 
 type Claim = {
@@ -13,12 +9,11 @@ type Claim = {
   phone?: string;
 };
 
-@Injectable()
 export class RepairAccess {
   private secret() {
     const key = process.env.REPAIR_LINK_SECRET;
     if (!key || key.length < 32)
-      throw new ServiceUnavailableException(
+      throw new ServiceUnavailableError(
         'Repair access is unavailable. Please contact the office.',
       );
     return key;
@@ -29,7 +24,7 @@ export class RepairAccess {
   }
   verify(token: string, issueId: string, purpose?: Claim['purpose']): Claim {
     const denied = () =>
-      new UnauthorizedException(
+      new UnauthorizedError(
         'This link or code has expired. Please open the link from WhatsApp again.',
       );
     if (!uuidPattern.test(issueId) || token.length > 1024) throw denied();
@@ -64,7 +59,7 @@ export class RepairAccess {
   link(issueId: string, now = Date.now()) {
     const base = new URL(process.env.APP_URL ?? 'http://127.0.0.1:3042');
     if (process.env.NODE_ENV === 'production' && base.protocol !== 'https:')
-      throw new ServiceUnavailableException(
+      throw new ServiceUnavailableError(
         'Secure repair links are not configured.',
       );
     const url = new URL(`/repairs/${issueId}`, base);

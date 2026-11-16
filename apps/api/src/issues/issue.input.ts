@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestError } from '../http/errors.js';
 import { drivingId } from '../mobile/driving.input.js';
 
 function object(raw: unknown, keys: string[]) {
@@ -8,12 +8,12 @@ function object(raw: unknown, keys: string[]) {
     Array.isArray(raw) ||
     Object.keys(raw).some((key) => !keys.includes(key))
   )
-    throw new BadRequestException('Check the issue details.');
+    throw new BadRequestError('Check the issue details.');
   return raw as Record<string, unknown>;
 }
 function text(raw: unknown, max: number) {
   if (typeof raw !== 'string' || !raw.trim() || raw.trim().length > max)
-    throw new BadRequestException(`Enter a note of up to ${max} characters.`);
+    throw new BadRequestError(`Enter a note of up to ${max} characters.`);
   return raw.trim();
 }
 export function parseIssue(raw: unknown) {
@@ -22,7 +22,7 @@ export function parseIssue(raw: unknown) {
     typeof v.category !== 'string' ||
     !['vehicle', 'safety', 'other'].includes(v.category)
   )
-    throw new BadRequestException('Choose an issue type.');
+    throw new BadRequestError('Choose an issue type.');
   return {
     id: drivingId(v.id),
     truckId: v.truckId === null ? null : drivingId(v.truckId),

@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestError } from '../http/errors.js';
 import { parseDrivingStart, parseDisputeResolution } from './driving.input.js';
 const id = '11111111-1111-4111-8111-111111111111';
 describe('Personal-phone vehicle request boundary', () => {
@@ -12,7 +12,7 @@ describe('Personal-phone vehicle request boundary', () => {
       expectedScheduleId: null,
     });
     expect(() => parseDrivingStart({ id, truckId: id })).toThrow(
-      BadRequestException,
+      BadRequestError,
     );
     expect(() =>
       parseDrivingStart({
@@ -21,7 +21,7 @@ describe('Personal-phone vehicle request boundary', () => {
         expectedOwnSessionId: null,
         takeover: true,
       }),
-    ).toThrow(BadRequestException);
+    ).toThrow(BadRequestError);
   });
   it('requires a bounded note, recognized resolution and exact session snapshot', () => {
     expect(
@@ -41,6 +41,6 @@ describe('Personal-phone vehicle request boundary', () => {
         note: 'x'.repeat(1001),
       },
     ])
-      expect(() => parseDisputeResolution(raw)).toThrow(BadRequestException);
+      expect(() => parseDisputeResolution(raw)).toThrow(BadRequestError);
   });
 });

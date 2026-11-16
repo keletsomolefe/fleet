@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictError, NotFoundError } from '../http/errors.js';
 import { DataSource, IsNull } from 'typeorm';
 import type { AdminContext } from '../auth/auth.service.js';
 import { DrivingService } from '../mobile/driving.service.js';
@@ -14,14 +9,12 @@ import { parseIssue, parseIssueResolution } from './issue.input.js';
 import { requireIssues } from '../rbac/issue-access.js';
 import { OpenWaService } from './openwa.service.js';
 
-@Injectable()
 export class IssuesService {
   constructor(
-    @Inject(DataSource) private readonly db: DataSource,
-    @Inject(DrivingService) private readonly driving: DrivingService,
-    @Inject(OperationsEventsService)
+    private readonly db: DataSource,
+    private readonly driving: DrivingService,
     private readonly events: OperationsEventsService,
-    @Inject(OpenWaService) private readonly whatsapp: OpenWaService,
+    private readonly whatsapp: OpenWaService,
   ) {}
   private view(i: DriverIssue) {
     return {
@@ -60,7 +53,7 @@ export class IssuesService {
           previous.category !== v.category ||
           previous.description !== v.description
         )
-          throw new ConflictException(
+          throw new ConflictError(
             'This report has already been sent. Start a new report.',
           );
         return { id: previous.id, created: false };
@@ -69,9 +62,7 @@ export class IssuesService {
         v.truckId &&
         ![context.truck?.id, context.schedule?.truck.id].includes(v.truckId)
       )
-        throw new ConflictException(
-          'Your vehicle changed. Refresh and try again.',
-        );
+        throw new ConflictError('Your vehicle changed. Refresh and try again.');
       await m.save(
         DriverIssue,
         m.create(DriverIssue, {
@@ -112,11 +103,11 @@ export class IssuesService {
         where: { id },
         lock: { mode: 'pessimistic_write' },
       });
-      if (!issue) throw new NotFoundException('Issue not found.');
+      if (!issue) throw new NotFoundError('Issue not found.');
       if (issue.resolvedAt) {
         if (issue.resolvedById === c.user.id && issue.resolutionNote === note)
           return false;
-        throw new ConflictException(
+        throw new ConflictError(
           'This issue was already resolved. Refresh the list.',
         );
       }

@@ -1,8 +1,8 @@
 import {
-  ForbiddenException,
-  ServiceUnavailableException,
-  UnauthorizedException,
-} from '@nestjs/common';
+  ForbiddenError,
+  ServiceUnavailableError,
+  UnauthorizedError,
+} from '../http/errors.js';
 import type { Repository } from 'typeorm';
 import { RbacService } from '../rbac/rbac.service.js';
 import { User } from '../users/user.entity.js';
@@ -60,9 +60,7 @@ describe('Administrator sessions', () => {
   afterEach(() => vi.unstubAllEnvs());
 
   it('requires a cookie and forwards it to Kratos', async () => {
-    await expect(auth.authenticate()).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(auth.authenticate()).rejects.toBeInstanceOf(UnauthorizedError);
     expect(whoami).not.toHaveBeenCalled();
     await expect(
       auth.authenticate('fleet_kratos_session=opaque'),
@@ -72,13 +70,13 @@ describe('Administrator sessions', () => {
   it('rejects expired or revoked Kratos sessions', async () => {
     whoami.mockRejectedValue(new KratosError(401));
     await expect(auth.authenticate('cookie')).rejects.toBeInstanceOf(
-      UnauthorizedException,
+      UnauthorizedError,
     );
   });
   it('does not trust an inactive Kratos session', async () => {
     whoami.mockResolvedValue({ ...session, active: false });
     await expect(auth.authenticate('cookie')).rejects.toBeInstanceOf(
-      UnauthorizedException,
+      UnauthorizedError,
     );
   });
   it('requires the current email to be verified', async () => {
@@ -86,7 +84,7 @@ describe('Administrator sessions', () => {
     unverified.identity.verifiable_addresses = [];
     whoami.mockResolvedValue(unverified);
     await expect(auth.authenticate('cookie')).rejects.toBeInstanceOf(
-      ForbiddenException,
+      ForbiddenError,
     );
   });
   it.each([null, { ...user, isActive: false }])(
@@ -94,7 +92,7 @@ describe('Administrator sessions', () => {
     async (local) => {
       findOneBy.mockResolvedValue(local);
       await expect(auth.authenticate('cookie')).rejects.toBeInstanceOf(
-        ForbiddenException,
+        ForbiddenError,
       );
     },
   );
@@ -104,7 +102,7 @@ describe('Administrator sessions', () => {
       permissions: ['driver.access'],
     });
     await expect(auth.authenticate('cookie')).rejects.toBeInstanceOf(
-      ForbiddenException,
+      ForbiddenError,
     );
     access.mockResolvedValue({
       roles: [{ key: 'driver' }, { key: 'administrator' }],
@@ -117,17 +115,17 @@ describe('Administrator sessions', () => {
   it('fails closed when the database or Kratos is unavailable', async () => {
     findOneBy.mockRejectedValue(new Error('connection failed'));
     await expect(auth.authenticate('cookie')).rejects.toBeInstanceOf(
-      ServiceUnavailableException,
+      ServiceUnavailableError,
     );
-    whoami.mockRejectedValue(new ServiceUnavailableException());
+    whoami.mockRejectedValue(new ServiceUnavailableError());
     await expect(auth.authenticate('cookie')).rejects.toBeInstanceOf(
-      ServiceUnavailableException,
+      ServiceUnavailableError,
     );
   });
   it('fails closed when role resolution is unavailable', async () => {
     access.mockRejectedValue(new Error('permission lookup failed'));
     await expect(auth.authenticate('cookie')).rejects.toBeInstanceOf(
-      ServiceUnavailableException,
+      ServiceUnavailableError,
     );
   });
   it('binds CSRF tokens to both the user and Kratos session', () => {
@@ -136,16 +134,16 @@ describe('Administrator sessions', () => {
     const request = (origin: string, value: string) =>
       ({
         adminContext: context,
-        get: (name: string) => (name === 'origin' ? origin : value),
-      }) as AdminRequest;
+        headers: { origin, 'x-csrf-token': value },
+      }) satisfies AdminRequest;
     expect(() =>
       auth.verifyCsrf(request('http://127.0.0.1:3042', token)),
     ).not.toThrow();
     expect(() =>
       auth.verifyCsrf(request('http://evil.example', token)),
-    ).toThrow(ForbiddenException);
+    ).toThrow(ForbiddenError);
     expect(() => auth.verifyCsrf(request('http://127.0.0.1:3042', ''))).toThrow(
-      ForbiddenException,
+      ForbiddenError,
     );
     expect(
       auth.csrfToken({
@@ -161,18 +159,16 @@ describe('Administrator-provisioned sign-in without email OTP', () => {
   afterEach(() => vi.unstubAllEnvs());
   it('allows an unverified identity only when the explicit policy is off and local access remains active', async () => {
     vi.stubEnv('AUTH_REQUIRE_VERIFIED_EMAIL', 'false');
-    const whoami = vi
-      .fn()
-      .mockResolvedValue({
-        id: 's',
-        active: true,
-        identity: {
-          id: 'i',
-          state: 'active',
-          traits: { email: 'managed@example.test' },
-          verifiable_addresses: [],
-        },
-      });
+    const whoami = vi.fn().mockResolvedValue({
+      id: 's',
+      active: true,
+      identity: {
+        id: 'i',
+        state: 'active',
+        traits: { email: 'managed@example.test' },
+        verifiable_addresses: [],
+      },
+    });
     const user = { id: 'u', isActive: true };
     const findOneBy = vi.fn().mockResolvedValue(user);
     const auth = new AuthService(
@@ -190,7 +186,7 @@ describe('Administrator-provisioned sign-in without email OTP', () => {
     });
     findOneBy.mockResolvedValue(null);
     await expect(auth.authenticate('cookie')).rejects.toBeInstanceOf(
-      ForbiddenException,
+      ForbiddenError,
     );
   });
 });

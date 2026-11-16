@@ -1,16 +1,10 @@
 import { randomBytes } from 'node:crypto';
 import { EventEmitter } from 'node:events';
-import {
-  ForbiddenException,
-  Inject,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ForbiddenError, UnauthorizedError } from '../http/errors.js';
 import { DataSource } from 'typeorm';
 import { AuthService, type AdminContext } from '../auth/auth.service.js';
 import { canManageVehicles, canReadIssues } from '../rbac/issue-access.js';
 
-@Injectable()
 export class OperationsEventsService {
   readonly changes = new EventEmitter();
   private readonly tickets = new Map<
@@ -18,16 +12,16 @@ export class OperationsEventsService {
     { userId: string; expires: number; native?: string; cookie?: string }
   >();
   constructor(
-    @Inject(DataSource) private readonly db: DataSource,
-    @Inject(AuthService) private readonly auth: AuthService,
+    private readonly db: DataSource,
+    private readonly auth: AuthService,
   ) {}
   require(c: AdminContext) {
     if (!canManageVehicles(c))
-      throw new ForbiddenException('Vehicle management access is required.');
+      throw new ForbiddenError('Vehicle management access is required.');
   }
   private requireInbox(c: AdminContext) {
     if (!canManageVehicles(c) && !canReadIssues(c))
-      throw new ForbiddenException('Issue access is required.');
+      throw new ForbiddenError('Issue access is required.');
   }
   changed() {
     this.changes.emit('changed');
@@ -37,7 +31,7 @@ export class OperationsEventsService {
     for (const [key, value] of this.tickets)
       if (value.expires < Date.now()) this.tickets.delete(key);
     if (this.tickets.size >= 2000)
-      throw new ForbiddenException('Please try again shortly.');
+      throw new ForbiddenError('Please try again shortly.');
     const password = randomBytes(32).toString('base64url');
     this.tickets.set(password, {
       ...credentials,
@@ -53,7 +47,7 @@ export class OperationsEventsService {
       url &&
       !url.startsWith('wss://')
     )
-      throw new ForbiddenException(
+      throw new ForbiddenError(
         'Secure notification transport is not configured.',
       );
     return {
@@ -72,12 +66,12 @@ export class OperationsEventsService {
       value.expires < Date.now() ||
       username !== `admin:${value.userId}`
     )
-      throw new UnauthorizedException();
+      throw new UnauthorizedError();
     const c = value.native
       ? await this.auth.authenticateNative(value.native)
       : await this.auth.authenticate(value.cookie);
     this.requireInbox(c);
-    if (c.user.id !== value.userId) throw new UnauthorizedException();
+    if (c.user.id !== value.userId) throw new UnauthorizedError();
     return c.user.id;
   }
   async snapshot(c: AdminContext) {

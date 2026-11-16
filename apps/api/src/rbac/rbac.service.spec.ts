@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenError } from '../http/errors.js';
 import type { Repository } from 'typeorm';
 import { RbacService } from './rbac.service.js';
 import { Role, UserRole } from './rbac.entity.js';
@@ -39,7 +39,7 @@ describe('Company user RBAC', () => {
       expect.objectContaining({ where: { userId: 'person' } }),
     );
     expect(() => service.require(access, 'users.read', 'users.access')).toThrow(
-      ForbiddenException,
+      ForbiddenError,
     );
     expect(() => service.require(access, 'admin.access')).not.toThrow();
     find.mockResolvedValue([]);
@@ -102,7 +102,7 @@ describe('Company user RBAC', () => {
     ]) {
       expect(() =>
         service.require({ roles: [], permissions: [key] }, key),
-      ).toThrow(ForbiddenException);
+      ).toThrow(ForbiddenError);
     }
   });
 

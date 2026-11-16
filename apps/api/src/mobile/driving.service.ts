@@ -3,13 +3,11 @@ import { today } from '../scheduling/schedule.input.js';
 import { OperationsEventsService } from '../operations/operations-events.service.js';
 import { DriverSchedule } from '../scheduling/schedule.entity.js';
 import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+} from '../http/errors.js';
 import { DataSource, EntityManager, IsNull } from 'typeorm';
 import type { AdminContext } from '../auth/auth.service.js';
 import { DriverProfile, Truck } from '../fleet/fleet.entity.js';
@@ -23,12 +21,10 @@ import {
   parseDrivingStart,
 } from './driving.input.js';
 
-@Injectable()
 export class DrivingService {
   constructor(
-    @Inject(DataSource) private readonly db: DataSource,
-    @Inject(SchedulingService) private readonly scheduling: SchedulingService,
-    @Inject(OperationsEventsService)
+    private readonly db: DataSource,
+    private readonly scheduling: SchedulingService,
     private readonly events: OperationsEventsService,
   ) {}
   private lock(m: EntityManager) {
@@ -36,13 +32,13 @@ export class DrivingService {
   }
   private async driver(c: AdminContext, m = this.db.manager) {
     if (!c.permissions.includes('driver.access'))
-      throw new ForbiddenException('Driver access is not enabled.');
+      throw new ForbiddenError('Driver access is not enabled.');
     const p = await m.findOne(DriverProfile, {
       where: { userId: c.user.id, status: 'active' },
       relations: { user: true },
     });
     if (!p || !p.user.isActive)
-      throw new ForbiddenException(
+      throw new ForbiddenError(
         'Driver access is not active. Contact your fleet administrator.',
       );
     return p;
@@ -53,7 +49,7 @@ export class DrivingService {
         c.permissions.includes(p),
       )
     )
-      throw new ForbiddenException('Vehicle management access is required.');
+      throw new ForbiddenError('Vehicle management access is required.');
   }
   private vehicle(t: Truck) {
     return {
@@ -99,7 +95,7 @@ export class DrivingService {
       validateAssignment(p);
     } catch (e) {
       reason =
-        e instanceof BadRequestException
+        e instanceof BadRequestError
           ? e.message
           : 'Your licence details need review.';
     }
@@ -188,11 +184,11 @@ export class DrivingService {
       const p = await this.driver(c, m),
         active = await this.active(drivingId(truckId), m);
       if (!active)
-        throw new ConflictException(
+        throw new ConflictError(
           'The vehicle is now available. Refresh the vehicle list.',
         );
       if (active.id !== expected)
-        throw new ConflictException(
+        throw new ConflictError(
           'The vehicle session changed. Refresh the list before flagging it.',
         );
       const existing = await m.findOneBy(VehicleDispute, {
@@ -224,29 +220,29 @@ export class DrivingService {
       validateAssignment(p);
       const schedule = await this.scheduling.current(p.id, m);
       if (await this.scheduling.pending(p.id, m))
-        throw new ConflictException(
+        throw new ConflictError(
           'Your schedule mismatch is awaiting administrator review.',
         );
       if ((schedule?.id ?? null) !== input.expectedScheduleId)
-        throw new ConflictException(
+        throw new ConflictError(
           'Your schedule changed. Refresh and confirm the scheduled vehicle.',
         );
       if (schedule && schedule.truckId !== input.truckId)
-        throw new ConflictException(
+        throw new ConflictError(
           'Report a schedule mismatch for administrator review before changing vehicles.',
         );
       const t = await m.findOneBy(Truck, {
         id: input.truckId,
         status: 'active',
       });
-      if (!t) throw new NotFoundException('Select an active vehicle.');
+      if (!t) throw new NotFoundError('Select an active vehicle.');
       const reserved = await m.findOneBy(DriverSchedule, {
         truckId: t.id,
         date: today(),
         cancelledAt: IsNull(),
       });
       if (reserved && reserved.driverId !== p.id)
-        throw new ConflictException(
+        throw new ConflictError(
           'This vehicle is scheduled for another driver. Contact your administrator.',
         );
       const existing = await m.findOneBy(DrivingSession, { id: input.id });
@@ -257,7 +253,7 @@ export class DrivingService {
           existing.kratosSessionId !== c.session.id ||
           existing.endedAt
         )
-          throw new ConflictException('Refresh the vehicle selection.');
+          throw new ConflictError('Refresh the vehicle selection.');
         return { started: true as const };
       }
       const occupant = await this.active(t.id, m);
@@ -286,7 +282,7 @@ export class DrivingService {
           resolvedAt: IsNull(),
         })
       )
-        throw new ConflictException(
+        throw new ConflictError(
           'This vehicle is flagged for administrator review. Choose another vehicle.',
         );
       const own = await m.findOneBy(DrivingSession, {
@@ -294,7 +290,7 @@ export class DrivingService {
         endedAt: IsNull(),
       });
       if ((own?.id ?? null) !== input.expectedOwnSessionId)
-        throw new ConflictException(
+        throw new ConflictError(
           'Your driving session changed. Refresh and choose again.',
         );
       if (
@@ -328,7 +324,7 @@ export class DrivingService {
     });
     this.events.changed();
     if ('disputeId' in result)
-      throw new ConflictException({
+      throw new ConflictError({
         message: 'Vehicle in use. Flagged for administrator review.',
         disputeId: result.disputeId,
       });
@@ -360,7 +356,7 @@ export class DrivingService {
       const p = await this.driver(c, m),
         s = await m.findOneBy(DrivingSession, { id, driverId: p.id });
       if (!s)
-        throw new ForbiddenException(
+        throw new ForbiddenError(
           'You can only finish your own driving session.',
         );
       if (!s.endedAt) await this.close(m, s, c.user.id, 'driver_released');
@@ -454,18 +450,18 @@ export class DrivingService {
     const result = await this.db.transaction(async (m) => {
       await this.lock(m);
       const d = await m.findOneBy(VehicleDispute, { id: drivingId(id) });
-      if (!d) throw new NotFoundException('Vehicle flag not found.');
+      if (!d) throw new NotFoundError('Vehicle flag not found.');
       if (d.resolvedAt)
-        throw new ConflictException(
+        throw new ConflictError(
           'This flag has already been resolved. Refresh the list.',
         );
       const current = await this.active(d.truckId, m);
       if ((current?.id ?? null) !== input.expectedActiveSessionId)
-        throw new ConflictException(
+        throw new ConflictError(
           'The vehicle session changed. Review it again.',
         );
       if (input.resolution === 'keep_current' && !current)
-        throw new ConflictException(
+        throw new ConflictError(
           'No driver is active. Resolve and release this vehicle instead.',
         );
       if (input.resolution === 'release_vehicle' && current)

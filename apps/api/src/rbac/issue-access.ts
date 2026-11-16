@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenError } from '../http/errors.js';
 
 type Access = { permissions: string[] };
 
@@ -19,5 +19,5 @@ export function requireIssues(access: Access, resolve = false): void {
     !canReadIssues(access) ||
     (resolve && !access.permissions.includes('issues.resolve'))
   )
-    throw new ForbiddenException('You do not have access to these issues.');
+    throw new ForbiddenError('You do not have access to these issues.');
 }

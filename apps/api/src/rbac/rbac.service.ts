@@ -1,6 +1,5 @@
 import { isActivePermission } from './active-permissions.js';
-import { ForbiddenException, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { ForbiddenError } from '../http/errors.js';
 import { Repository } from 'typeorm';
 import { UserRole, Role } from './rbac.entity.js';
 
@@ -9,12 +8,10 @@ export interface Access {
   permissions: string[];
 }
 
-@Injectable()
 export class RbacService {
   constructor(
-    @InjectRepository(UserRole)
     private readonly assignments: Repository<UserRole>,
-    @InjectRepository(Role) private readonly roles: Repository<Role>,
+    private readonly roles: Repository<Role>,
   ) {}
 
   async access(userId: string): Promise<Access> {
@@ -42,7 +39,7 @@ export class RbacService {
         (key) => isActivePermission(key) && access.permissions.includes(key),
       )
     )
-      throw new ForbiddenException(
+      throw new ForbiddenError(
         'You do not have permission to perform this action.',
       );
   }

@@ -2,19 +2,15 @@ import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { DataSource } from 'typeorm';
-import { Test } from '@nestjs/testing';
-import type { INestApplication } from '@nestjs/common';
-import request from 'supertest';
+import multipart from '@fastify/multipart';
+import type { FastifyInstance } from 'fastify';
+import { createHttpServer } from '../http/server.js';
 import { DriverIssue } from './issue.entity.js';
 import { RepairAccess } from './repair-access.js';
 import { RepairOtpService } from './repair-otp.service.js';
 import { OpenWaService, OpenWaError } from './openwa.service.js';
 import { RepairsService, photoType } from './repairs.service.js';
-import {
-  RepairsController,
-  RepairLinkGuard,
-  RepairSubmitGuard,
-} from './repairs.controller.js';
+import { registerPublicRepairRoutes } from './repairs.routes.js';
 import { OperationsEventsService } from '../operations/operations-events.service.js';
 
 const id = '11111111-1111-4111-8111-111111111111';
@@ -219,7 +215,8 @@ describe('OpenWA integration', () => {
   });
 });
 describe('Repair HTTP flow', () => {
-  let app: INestApplication,
+  let app: FastifyInstance,
+    access: RepairAccess,
     row: DriverIssue,
     wa: { isMember: ReturnType<typeof vi.fn>; send: ReturnType<typeof vi.fn> },
     events: { changed: ReturnType<typeof vi.fn> };
@@ -243,111 +240,136 @@ describe('Repair HTTP flow', () => {
       }),
       transaction: async (cb: (m: unknown) => Promise<unknown>) => cb(manager),
     };
-    const { DataSource: DataSourceClass } = await import('typeorm');
-    const module = await Test.createTestingModule({
-      controllers: [RepairsController],
-      providers: [
-        RepairAccess,
-        RepairOtpService,
-        RepairsService,
-        RepairLinkGuard,
-        RepairSubmitGuard,
-        { provide: DataSourceClass, useValue: db },
-        { provide: OpenWaService, useValue: wa },
-        { provide: OperationsEventsService, useValue: events },
-      ],
-    }).compile();
-    app = module.createNestApplication();
-    await app.init();
+    access = new RepairAccess();
+    const otp = new RepairOtpService(wa as unknown as OpenWaService, access);
+    const repairs = new RepairsService(
+      db as unknown as DataSource,
+      otp,
+      events as unknown as OperationsEventsService,
+    );
+    app = createHttpServer();
+    app.register(multipart);
+    registerPublicRepairRoutes(app, repairs, access, otp);
   });
   afterEach(async () => {
     await app.close();
   });
+  function form(note: string, photos: Blob[] = [], name?: string) {
+    const form = new FormData();
+    form.set('note', note);
+    if (name) form.set('name', name);
+    for (const photo of photos) form.append('photos', photo, 'repair.png');
+    return form;
+  }
+
+  function imageFile(content: Buffer<ArrayBuffer> | string = png) {
+    return new Blob([content], { type: 'image/png' });
+  }
+
+  function get(path: string, token?: string) {
+    return app.inject({
+      url: path,
+      headers: token ? { authorization: `Bearer ${token}` } : {},
+    });
+  }
+
+  function post(path: string, token: string, payload: FormData | object) {
+    return app.inject({
+      method: 'POST',
+      url: `/repairs/${id}/${path}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload,
+    });
+  }
+
   it('requires OTP to change data, saves evidence and exposes the committed repair', async () => {
-    const access = app.get(RepairAccess),
-      link = access.sign({
-        issueId: id,
-        purpose: 'view',
-        expires: Date.now() + 60000,
-      });
-    const api = request(app.getHttpServer());
-    await api.get(`/repairs/${id}`).expect(401);
-    await api.get(`/repairs/${id}`).auth(link, { type: 'bearer' }).expect(200);
+    const link = access.sign({
+      issueId: id,
+      purpose: 'view',
+      expires: Date.now() + 60000,
+    });
+    const path = `/repairs/${id}`;
+    expect((await get(path)).statusCode).toBe(401);
+    expect((await get(path, link)).statusCode).toBe(200);
     expect(row.resolvedAt).toBeNull();
-    await api
-      .post(`/repairs/${id}/resolve`)
-      .auth(link, { type: 'bearer' })
-      .field('note', 'Repaired')
-      .attach('photos', png, 'repair.png')
-      .expect(401);
-    const challenge = await api
-      .post(`/repairs/${id}/otp`)
-      .auth(link, { type: 'bearer' })
-      .send({ phone: `+${phone}` })
-      .expect(200);
+    const denied = await post('resolve', link, form('Repaired', [imageFile()]));
+    expect(denied.statusCode).toBe(401);
+
+    const challenge = await post('otp', link, { phone: `+${phone}` });
+    expect(challenge.statusCode).toBe(200);
     const code = String(wa.send.mock.calls[0][1]).match(/code: (\d{6})/)![1];
-    const verified = await api
-      .post(`/repairs/${id}/otp/verify`)
-      .auth(link, { type: 'bearer' })
-      .send({ challengeId: challenge.body.challengeId, code })
-      .expect(200);
-    const grant = verified.body.token;
-    await api
-      .post(`/repairs/${id}/resolve`)
-      .auth(grant, { type: 'bearer' })
-      .field('note', 'Brake pads replaced')
-      .field('name', 'Test mechanic')
-      .attach('photos', png, 'repair.png')
-      .expect(200);
+    const verified = await post('otp/verify', link, {
+      challengeId: challenge.json().challengeId,
+      code,
+    });
+    expect(verified.statusCode).toBe(200);
+    const grant = verified.json().token;
+    const done = await post(
+      'resolve',
+      grant,
+      form(
+        'Brake pads replaced',
+        [imageFile(), imageFile(), imageFile()],
+        'Test mechanic',
+      ),
+    );
+    expect(done.statusCode).toBe(200);
     expect(row.resolvedAt).not.toBeNull();
     expect(row.resolvedById).toBe(other);
     expect(row.resolutionNote).toBe('Brake pads replaced');
     expect(events.changed).toHaveBeenCalledTimes(1);
-    const saved = await api
-      .get(`/repairs/${id}`)
-      .auth(grant, { type: 'bearer' })
-      .expect(200);
-    expect(saved.body.photos).toHaveLength(1);
-    await api.get(`/repairs/${id}/photos/${saved.body.photos[0]}`).expect(401);
-    const image = await api
-      .get(`/repairs/${id}/photos/${saved.body.photos[0]}`)
-      .auth(grant, { type: 'bearer' })
-      .expect(200);
-    expect(image.headers['content-type']).toContain('image/png');
-    expect(image.body).toEqual(png);
-    await api
-      .get(`/repairs/${other}/photos/${saved.body.photos[0]}`)
-      .auth(grant, { type: 'bearer' })
-      .expect(401);
-    await api
-      .post(`/repairs/${id}/resolve`)
-      .auth(grant, { type: 'bearer' })
-      .field('note', 'Overwrite')
-      .expect(409);
+    const saved = await get(path, grant);
+    expect(saved.statusCode).toBe(200);
+    expect(saved.json().photos).toHaveLength(3);
+    const [photo] = saved.json().photos;
+    expect((await get(`${path}/photos/${photo}`)).statusCode).toBe(401);
+    const image = await get(`${path}/photos/${photo}`, grant);
+    expect(image.statusCode).toBe(200);
+    expect(image.headers).toMatchObject({
+      'content-type': 'image/png',
+      'cache-control': 'private, no-store',
+      'x-content-type-options': 'nosniff',
+    });
+    expect(image.rawPayload).toEqual(png);
+    expect(
+      (await get(`/repairs/${other}/photos/${photo}`, grant)).statusCode,
+    ).toBe(401);
+    expect((await post('resolve', grant, form('Overwrite'))).statusCode).toBe(
+      409,
+    );
   });
-  it('refuses forged photos and membership revoked after verification', async () => {
-    const grant = app.get(RepairAccess).sign({
+
+  it('refuses invalid uploads and membership revoked after verification', async () => {
+    const grant = access.sign({
       issueId: id,
       purpose: 'repair',
       phone,
       expires: Date.now() + 60000,
     });
-    const api = request(app.getHttpServer());
-    await api
-      .post(`/repairs/${id}/resolve`)
-      .auth(grant, { type: 'bearer' })
-      .field('note', 'Fixed')
-      .attach('photos', Buffer.from('<script>alert(1)</script>'), {
-        filename: 'fake.png',
-        contentType: 'image/png',
-      })
-      .expect(400);
+    const forged = await post(
+      'resolve',
+      grant,
+      form('Fixed', [imageFile('<script>alert(1)</script>')]),
+    );
+    expect(forged.statusCode).toBe(400);
+    const oversized = await post(
+      'resolve',
+      grant,
+      form('Fixed', [imageFile(Buffer.alloc(5 * 1024 * 1024 + 1))]),
+    );
+    expect(oversized.statusCode).toBe(413);
+    const tooMany = await post(
+      'resolve',
+      grant,
+      form(
+        'Fixed',
+        Array.from({ length: 4 }, () => imageFile()),
+      ),
+    );
+    expect(tooMany.statusCode).toBe(400);
+
     wa.isMember.mockResolvedValue(false);
-    await api
-      .post(`/repairs/${id}/resolve`)
-      .auth(grant, { type: 'bearer' })
-      .field('note', 'Fixed')
-      .expect(403);
+    expect((await post('resolve', grant, form('Fixed'))).statusCode).toBe(403);
     expect(row.resolvedAt).toBeNull();
     expect(events.changed).not.toHaveBeenCalled();
   });

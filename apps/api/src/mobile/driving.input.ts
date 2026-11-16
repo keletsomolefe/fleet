@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestError } from '../http/errors.js';
 import { uuidPattern } from '../fleet/fleet.input.js';
 
 function object(raw: unknown, keys: string[]) {
@@ -8,12 +8,12 @@ function object(raw: unknown, keys: string[]) {
     Array.isArray(raw) ||
     Object.keys(raw).some((k) => !keys.includes(k))
   )
-    throw new BadRequestException('Check the vehicle selection.');
+    throw new BadRequestError('Check the vehicle selection.');
   return raw as Record<string, unknown>;
 }
 export function drivingId(raw: unknown): string {
   if (typeof raw !== 'string' || !uuidPattern.test(raw))
-    throw new BadRequestException('Refresh the vehicle list and try again.');
+    throw new BadRequestError('Refresh the vehicle list and try again.');
   return raw;
 }
 export function parseDrivingStart(raw: unknown) {
@@ -45,7 +45,7 @@ export function parseDisputeResolution(raw: unknown) {
     !v.note.trim() ||
     v.note.trim().length > 1000
   )
-    throw new BadRequestException('Choose a resolution and enter a note.');
+    throw new BadRequestError('Choose a resolution and enter a note.');
   return {
     expectedActiveSessionId:
       v.expectedActiveSessionId === null

@@ -1,12 +1,10 @@
 import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  HttpException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  HttpError,
+  NotFoundError,
+} from '../http/errors.js';
 import { DataSource, EntityManager, IsNull } from 'typeorm';
 import { User } from '../users/user.entity.js';
 import { RbacService } from '../rbac/rbac.service.js';
@@ -21,12 +19,11 @@ import {
 import { DrivingSession } from '../mobile/driving.entity.js';
 import { parseDriver, parseSearch, parseTruck } from './fleet.input.js';
 
-@Injectable()
 export class FleetService {
   constructor(
-    @Inject(DataSource) private readonly db: DataSource,
-    @Inject(AdminUsersService) private readonly users: AdminUsersService,
-    @Inject(RbacService) private readonly rbac: RbacService,
+    private readonly db: DataSource,
+    private readonly users: AdminUsersService,
+    private readonly rbac: RbacService,
   ) {}
 
   private async lock(m: EntityManager) {
@@ -43,9 +40,9 @@ export class FleetService {
     }
   }
   private rethrow(error: unknown): never {
-    if (error instanceof HttpException) throw error;
+    if (error instanceof HttpError) throw error;
     if ((error as { code?: string })?.code === '23505')
-      throw new ConflictException(
+      throw new ConflictError(
         'Identifier, registration, VIN, licence, device or user is already in use.',
       );
     throw error;
@@ -110,7 +107,7 @@ export class FleetService {
   }
   async getTruck(id: string) {
     const truck = await this.db.getRepository(Truck).findOneBy({ id });
-    if (!truck) throw new NotFoundException('Truck not found.');
+    if (!truck) throw new NotFoundError('Truck not found.');
     const [device, driver, deviceHistory] = await Promise.all([
       this.db.getRepository(TruckDevice).findOneBy({ currentTruckId: id }),
       this.db
@@ -122,12 +119,10 @@ export class FleetService {
         order: { startedAt: 'DESC' },
       }),
     ]);
-    const currentDriving = await this.db
-      .getRepository(DrivingSession)
-      .findOne({
-        where: { truckId: id, endedAt: IsNull() },
-        relations: { driver: { user: true } },
-      });
+    const currentDriving = await this.db.getRepository(DrivingSession).findOne({
+      where: { truckId: id, endedAt: IsNull() },
+      relations: { driver: { user: true } },
+    });
     return {
       ...truck,
       currentDriving: this.drivingView(currentDriving),
@@ -146,15 +141,15 @@ export class FleetService {
     const { deviceIdentifier, deviceSerialNumber, ...input } = parseTruck(raw);
     const truckId = await this.write(async (m) => {
       const current = id ? await m.findOneBy(Truck, { id }) : null;
-      if (id && !current) throw new NotFoundException('Truck not found.');
+      if (id && !current) throw new NotFoundError('Truck not found.');
       if (current && input.odometerKm < current.odometerKm)
-        throw new BadRequestException('Odometer cannot decrease.');
+        throw new BadRequestError('Odometer cannot decrease.');
       if (
         id &&
         input.status !== 'active' &&
         (await m.existsBy(DriverProfile, { currentTruckId: id }))
       )
-        throw new ConflictException(
+        throw new ConflictError(
           'Unassign the driver before changing truck availability.',
         );
       if (
@@ -162,7 +157,7 @@ export class FleetService {
         input.status !== 'active' &&
         (await m.existsBy(DrivingSession, { truckId: id, endedAt: IsNull() }))
       )
-        throw new ConflictException(
+        throw new ConflictError(
           'Finish the driving session before changing vehicle availability.',
         );
       const truck = await m.save(
@@ -178,7 +173,7 @@ export class FleetService {
         ? await m.findOneBy(TruckDevice, { identifier: deviceIdentifier })
         : null;
       if (next?.currentTruckId && next.currentTruckId !== truck.id)
-        throw new ConflictException(
+        throw new ConflictError(
           'This device is assigned to another truck. Unbind it there first.',
         );
       if (old && old.id !== next?.id) {
@@ -217,7 +212,7 @@ export class FleetService {
   async listDrivers(q?: string, page?: string, status?: string) {
     const search = parseSearch(q, page, status);
     if (search.status === 'maintenance')
-      throw new BadRequestException('Invalid driver status.');
+      throw new BadRequestError('Invalid driver status.');
     const b = this.db
       .getRepository(DriverProfile)
       .createQueryBuilder('d')
@@ -259,7 +254,7 @@ export class FleetService {
       where: { id },
       relations: { user: true, currentTruck: true },
     });
-    if (!driver) throw new NotFoundException('Driver not found.');
+    if (!driver) throw new NotFoundError('Driver not found.');
     const assignments = await this.db
       .getRepository(DriverTruckAssignment)
       .find({
@@ -325,26 +320,26 @@ export class FleetService {
     const { profile, userId, account } = parseDriver(raw, !id);
     const persist = async (m: EntityManager, newUser?: User) => {
       const current = id ? await m.findOneBy(DriverProfile, { id }) : null;
-      if (id && !current) throw new NotFoundException('Driver not found.');
+      if (id && !current) throw new NotFoundError('Driver not found.');
       const user =
         newUser ??
         (await m.findOneBy(User, { id: current?.userId ?? userId! }));
-      if (!user) throw new NotFoundException('User not found.');
+      if (!user) throw new NotFoundError('User not found.');
       if (!current && !user.isActive)
-        throw new BadRequestException('Select an active user.');
+        throw new BadRequestError('Select an active user.');
       if (profile.currentTruckId) {
         if (!user.isActive)
-          throw new BadRequestException(
+          throw new BadRequestError(
             'An inactive user cannot be assigned a truck.',
           );
         const truck = await m.findOneBy(Truck, { id: profile.currentTruckId });
         if (!truck || truck.status !== 'active')
-          throw new BadRequestException('Select an active truck.');
+          throw new BadRequestError('Select an active truck.');
         const assigned = await m.findOneBy(DriverProfile, {
           currentTruckId: truck.id,
         });
         if (assigned && assigned.id !== id)
-          throw new ConflictException(
+          throw new ConflictError(
             'This truck is already assigned to another driver.',
           );
       }
@@ -379,7 +374,7 @@ export class FleetService {
     let driverId: string;
     if (account) {
       if (!allowCreateUser)
-        throw new ForbiddenException(
+        throw new ForbiddenError(
           'Select an existing user. Creating an account requires user creation access.',
         );
       let createdId = '';

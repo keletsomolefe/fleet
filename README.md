@@ -18,7 +18,7 @@ This repository uses pnpm workspaces and Watt to run three applications:
 
 | Workspace | Stack | Gateway route |
 | --- | --- | --- |
-| `apps/api` | NestJS 12 | `/api` |
+| `apps/api` | [Fastify 5](https://fastify.dev/) / TypeORM | `/api` |
 | `apps/web` | TanStack Start v1 / React | `/` |
 | `apps/gateway` | Platformatic Gateway | Public entrypoint |
 
@@ -58,14 +58,9 @@ database access and authentication behavior.
 See [admin authentication and UI foundation](docs/admin-authentication.md) for
 account provisioning, existing database setup, Kratos sessions/hooks, shadcn/ui and live tests.
 
-The apps were added using `wattpm add`, with the latest NestJS and TanStack
-CLIs generating the framework starters. TanStack packages stay on stable v1.
-Watt 3.72's Nest adapter accepts NestJS 11 only, so the API uses Watt's Node
-adapter with a Nest application factory in `apps/api/src/watt.ts` to support
-NestJS 12, including rebuilding on changes and closing the app on shutdown. The
-gateway forwards `/api` to NestJS and all other routes to TanStack Start.
-The API uses the latest TypeScript 6 because Nest CLI requires its compiler API;
-the web app uses TypeScript 7. Nitro writes the web production build to `.output/`.
+Watt runs the Fastify API through its Node adapter. The gateway forwards `/api`
+to Fastify and everything else to TanStack Start. The API build uses `tsc`; Nitro
+writes the web production build to `.output/`.
 Existing design documentation and assets remain at the repository root.
 
 ## Designing Fleet screens

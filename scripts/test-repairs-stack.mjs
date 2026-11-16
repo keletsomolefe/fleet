@@ -4,7 +4,6 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { mkdtemp, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createRequire } from "node:module";
 import { spawn } from "node:child_process";
 import { parseEnv } from "node:util";
 const root = new URL("../", import.meta.url);
@@ -18,18 +17,9 @@ if (
   )
 )
   throw new Error("Repair stack tests require a local database.");
-const require = createRequire(new URL("apps/api/package.json", root));
-const { NestFactory } = require("@nestjs/core"),
-  { DataSource } = require("typeorm");
-const { AppModule } = await import("../apps/api/dist/app.module.js");
+const { createApi } = await import("../apps/api/dist/app.js");
 const { IssuesService } =
   await import("../apps/api/dist/issues/issues.service.js");
-const { OpenWaService } =
-  await import("../apps/api/dist/issues/openwa.service.js");
-const { RepairsService } =
-  await import("../apps/api/dist/issues/repairs.service.js");
-const { OperationsEventsService } =
-  await import("../apps/api/dist/operations/operations-events.service.js");
 const { User } = await import("../apps/api/dist/users/user.entity.js");
 const { DriverProfile, Truck } =
   await import("../apps/api/dist/fleet/fleet.entity.js");
@@ -95,9 +85,11 @@ const png = Buffer.from(
   "base64",
 );
 try {
-  app = await NestFactory.create(AppModule, { logger: ["error", "warn"] });
-  await app.listen(0, "127.0.0.1");
-  db = app.get(DataSource);
+  const apiApp = createApi({ logger: { level: "warn" } });
+  app = apiApp.app;
+  const { database, openWa: wa, events, repairs } = apiApp.services;
+  db = database;
+  const apiUrl = await app.listen({ port: 0, host: "127.0.0.1" });
   const user = await db
     .getRepository(User)
     .save({
@@ -155,14 +147,13 @@ try {
       status: "active",
       currentTruckId: truck.id,
     });
-  const wa = app.get(OpenWaService);
-  wa.onModuleDestroy();
+  wa.stop();
   const originalFlush = wa.flush.bind(wa);
   wa.flush = async () => {};
   const service = new IssuesService(
     db,
     { context: async () => ({ driver, truck }) },
-    app.get(OperationsEventsService),
+    events,
     wa,
   );
   const report = {
@@ -195,7 +186,6 @@ try {
   );
   const link = new URL(sent[0].text.match(/http:\/\/\S+/)[0]);
   const token = new URLSearchParams(link.hash.slice(1)).get("token");
-  const apiUrl = await app.getUrl();
   const api = async (path = "", options = {}, bearer = token) =>
     fetch(`${apiUrl}/repairs/${ids.issue}${path}`, {
       ...options,
@@ -238,7 +228,7 @@ try {
   assert.ok(row.resolvedAt);
   assert.equal(row.resolvedById, ids.audit);
   assert.equal(row.resolutionNote, "Front brake pads replaced and checked.");
-  const history = await app.get(RepairsService).history();
+  const history = await repairs.history();
   const repair = history.items.find((i) => i.id === ids.issue);
   assert.equal(repair.verifiedPhone, phone);
   assert.equal(repair.photos.length, 1);

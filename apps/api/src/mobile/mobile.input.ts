@@ -1,34 +1,37 @@
 import {
-  BadRequestException,
-  ForbiddenException,
-  UnauthorizedException,
-} from '@nestjs/common';
+  BadRequestError,
+  ForbiddenError,
+  UnauthorizedError,
+} from '../http/errors.js';
 import { uuidPattern } from '../fleet/fleet.input.js';
 
-type NativeHeaders = { get(name: string): string | undefined };
+import type { FastifyRequest } from 'fastify';
+import { header } from '../http/request.js';
+
+type NativeHeaders = Pick<FastifyRequest, 'headers'>;
 export function nativeRequest(request: NativeHeaders) {
   // Native Kratos flows must never replace the browser's cookie/CSRF flow.
   if (
-    request.get('origin') ||
-    request.get('sec-fetch-site') ||
-    request.get('cookie')
+    header(request, 'origin') ||
+    header(request, 'sec-fetch-site') ||
+    header(request, 'cookie')
   )
-    throw new ForbiddenException('Use the installed Fleet app.');
+    throw new ForbiddenError('Use the installed Fleet app.');
 }
 export function bearer(request: NativeHeaders) {
   nativeRequest(request);
   const match = /^Bearer ([A-Za-z0-9._~+/=-]{16,1024})$/.exec(
-    request.get('authorization') ?? '',
+    header(request, 'authorization') ?? '',
   );
-  if (!match) throw new UnauthorizedException('Please sign in.');
+  if (!match) throw new UnauthorizedError('Please sign in.');
   return match[1]!;
 }
 function object(raw: unknown, keys: string[]) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw))
-    throw new BadRequestException('Enter the details.');
+    throw new BadRequestError('Enter the details.');
   const v = raw as Record<string, unknown>;
   if (Object.keys(v).some((k) => !keys.includes(k)))
-    throw new BadRequestException('Unexpected fields.');
+    throw new BadRequestError('Unexpected fields.');
   return v;
 }
 export function parseLogin(raw: unknown) {
@@ -43,7 +46,7 @@ export function parseLogin(raw: unknown) {
     v.password.length > 128 ||
     (v.mode !== undefined && !['driver', 'setup'].includes(String(v.mode)))
   )
-    throw new BadRequestException('Enter your sign-in details.');
+    throw new BadRequestError('Enter your sign-in details.');
   return {
     identifier: v.identifier.trim(),
     password: v.password,
@@ -69,7 +72,7 @@ export function parseEnrollment(raw: unknown) {
         !uuidPattern.test(v.expectedDeviceId))) ||
     typeof v.replaceExisting !== 'boolean'
   )
-    throw new BadRequestException(
+    throw new BadRequestError(
       'Select a truck and enter a valid device identifier.',
     );
   return {
@@ -83,6 +86,6 @@ export function parseEnrollment(raw: unknown) {
 export function parseConfirmation(raw: unknown) {
   const v = object(raw, ['associationId']);
   if (typeof v.associationId !== 'string' || !uuidPattern.test(v.associationId))
-    throw new BadRequestException('Refresh the assigned truck and try again.');
+    throw new BadRequestError('Refresh the assigned truck and try again.');
   return v.associationId;
 }

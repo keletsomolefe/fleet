@@ -28,7 +28,7 @@ User access changes require `users.access` and session-bound CSRF/origin checks.
 
 Run `pnpm db:roles` against an existing schema to apply the role catalogue update. It adds `issues.read` and `issues.resolve` to Owner and Administrator, creates Truck mechanic with only `admin.access`, `issues.read` and `issues.resolve`, and removes Dispatcher. Retired Dispatcher assignments are revoked, never converted into mechanic access. Other role assignments are retained. New bootstrap accounts receive Owner. Bootstrap reruns leave existing roles and account status untouched.
 
-Kratos owns passwords, browser CSRF, the HTTP-only `fleet_kratos_session` cookie, its 24-hour expiry and logout/revocation. There is no `express-session`, secondary session store, or browser-stored authentication token. On each protected request, Nest forwards the incoming cookie to Kratos `/sessions/whoami`, then checks for a linked, active local user with `admin.access`. The server-rendered web routes perform the same validation through the API.
+Kratos owns passwords, browser CSRF, the HTTP-only `fleet_kratos_session` cookie, its 24-hour expiry and logout/revocation. On each protected request, a Fastify hook uses `@fastify/cookie` to find the session cookie, forwards the original Cookie header to Kratos `/sessions/whoami`, and checks for a linked, active local user with `admin.access`. The server-rendered web routes perform the same validation through the API.
 
 Login and verification route loaders retrieve or initialize browser flows on the server. The active Kratos flow ID appears as `?flow=<id>` in the browser URL and in the page data used to submit the form. The first HTML response contains the form and CSRF token. TanStack server functions submit flows and perform logout, forwarding the original Cookie header and every returned Set-Cookie header. Responses are private/no-store, and authentication redirects stay on recognized local routes. Password values are omitted from page data.
 
@@ -48,7 +48,7 @@ The default development email is `patrickkeletso@gmail.com`, with display name P
 | --- | --- |
 | `pnpm db:seed` / `make seed-admin` | Create or reconcile the default development admin |
 
-Database options are shared between Nest and maintenance scripts. The runtime pool has a maximum of eight connections; maintenance uses two. Application tables use the existing `app` schema, no app migrations are registered, `synchronize` is disabled, and TypeORM cannot install extensions. Kratos's database role/schema remain separate. Configuration and repository patterns were adapted from `~/Dev/brocabs` without modifying that repository.
+The Fastify API and maintenance scripts share the same database options. The runtime pool has a maximum of eight connections; maintenance uses two. Application tables use the existing `app` schema, no app migrations are registered, `synchronize` is disabled, and TypeORM cannot install extensions. Kratos's database role/schema remain separate. Configuration and repository patterns were adapted from `~/Dev/brocabs` without modifying that repository.
 
 ## Login hook and local URLs
 

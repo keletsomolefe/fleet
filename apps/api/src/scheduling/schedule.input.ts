@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestError } from '../http/errors.js';
 import { drivingId } from '../mobile/driving.input.js';
 export function object(raw: unknown, keys: string[]) {
   if (
@@ -7,7 +7,7 @@ export function object(raw: unknown, keys: string[]) {
     Array.isArray(raw) ||
     Object.keys(raw).some((k) => !keys.includes(k))
   )
-    throw new BadRequestException('Check the schedule details.');
+    throw new BadRequestError('Check the schedule details.');
   return raw as Record<string, unknown>;
 }
 export function date(raw: unknown): string {
@@ -17,7 +17,7 @@ export function date(raw: unknown): string {
     !Number.isFinite(Date.parse(`${raw}T00:00:00Z`)) ||
     new Date(`${raw}T00:00:00Z`).toISOString().slice(0, 10) !== raw
   )
-    throw new BadRequestException('Enter a valid date.');
+    throw new BadRequestError('Enter a valid date.');
   return raw;
 }
 export function today() {
@@ -30,7 +30,7 @@ export function today() {
 }
 export function note(raw: unknown) {
   if (typeof raw !== 'string' || !raw.trim() || raw.trim().length > 1000)
-    throw new BadRequestException('Enter a note (up to 1000 characters).');
+    throw new BadRequestError('Enter a note (up to 1000 characters).');
   return raw.trim();
 }
 export function parseSchedule(raw: unknown) {
@@ -48,25 +48,25 @@ export function parseSchedule(raw: unknown) {
     to = date(v.to);
   const span = (Date.parse(to) - Date.parse(from)) / 86400000;
   if (span < 0 || span > 92)
-    throw new BadRequestException('Choose a range of up to 93 days.');
+    throw new BadRequestError('Choose a range of up to 93 days.');
   if (
     !Array.isArray(v.weekdays) ||
     !v.weekdays.length ||
     v.weekdays.some((d) => !Number.isInteger(d) || d < 0 || d > 6)
   )
-    throw new BadRequestException('Choose the days of the week.');
+    throw new BadRequestError('Choose the days of the week.');
   if (
     v.note !== undefined &&
     (typeof v.note !== 'string' || v.note.length > 1000)
   )
-    throw new BadRequestException('Enter a note of up to 1000 characters.');
+    throw new BadRequestError('Enter a note of up to 1000 characters.');
   if (v.override !== undefined && typeof v.override !== 'boolean')
-    throw new BadRequestException('Check the override choice.');
+    throw new BadRequestError('Check the override choice.');
   if (
     v.override &&
     (!Array.isArray(v.expectedConflicts) || v.expectedConflicts.length > 186)
   )
-    throw new BadRequestException('Review the conflicting dates first.');
+    throw new BadRequestError('Review the conflicting dates first.');
   const dates: string[] = [];
   for (let i = 0; i <= span; i++) {
     const d = new Date(Date.parse(from) + i * 86400000);
@@ -74,7 +74,7 @@ export function parseSchedule(raw: unknown) {
       dates.push(d.toISOString().slice(0, 10));
   }
   if (!dates.length)
-    throw new BadRequestException('No selected weekdays fall in this range.');
+    throw new BadRequestError('No selected weekdays fall in this range.');
   return {
     driverId: drivingId(v.driverId),
     truckId: drivingId(v.truckId),

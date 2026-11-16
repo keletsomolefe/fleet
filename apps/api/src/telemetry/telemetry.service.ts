@@ -2,14 +2,12 @@ import { today } from '../scheduling/schedule.input.js';
 import { DriverSchedule } from '../scheduling/schedule.entity.js';
 import { VehicleDispute } from '../mobile/driving.entity.js';
 import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Inject,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+} from '../http/errors.js';
 import { DataSource, In, IsNull } from 'typeorm';
 import { DrivingService } from '../mobile/driving.service.js';
 import { DrivingSession } from '../mobile/driving.entity.js';
@@ -31,12 +29,11 @@ import {
   uuid,
 } from './telemetry.input.js';
 
-@Injectable()
 export class TelemetryService {
   constructor(
-    @Inject(DataSource) private readonly db: DataSource,
-    @Inject(DrivingService) private readonly driving: DrivingService,
-    @Inject(KratosService) private readonly kratos: KratosService,
+    private readonly db: DataSource,
+    private readonly driving: DrivingService,
+    private readonly kratos: KratosService,
   ) {}
   async device(token: string) {
     const personal = await this.db
@@ -47,7 +44,7 @@ export class TelemetryService {
       .getRepository(TruckDevice)
       .findOneBy({ credentialHash: hashDeviceToken(token) });
     if (!d)
-      throw new UnauthorizedException(
+      throw new UnauthorizedError(
         'Location sharing access has ended. Start sharing again.',
       );
     return d;
@@ -56,7 +53,7 @@ export class TelemetryService {
     const d = await this.device(token);
     const url = process.env.MQTT_PUBLIC_URL ?? 'ws://127.0.0.1:1884/mqtt';
     if (process.env.NODE_ENV === 'production' && !url.startsWith('wss://'))
-      throw new BadRequestException('Secure MQTT transport is not configured.');
+      throw new BadRequestError('Secure MQTT transport is not configured.');
     return {
       deviceId: d.id,
       mqttUrl: process.env.MQTT_ENABLED === 'true' ? url : null,
@@ -72,7 +69,7 @@ export class TelemetryService {
         (k) => !['streamId', 'drivingSessionId', 'uploadToken'].includes(k),
       )
     )
-      throw new BadRequestException('Invalid tracking start.');
+      throw new BadRequestError('Invalid tracking start.');
     const id = uuid(v.streamId);
     const drivingSessionId = uuid(v.drivingSessionId);
     const uploadTokenHash = hashDeviceToken(
@@ -91,9 +88,7 @@ export class TelemetryService {
         !state.drivingSession?.onThisPhone ||
         state.drivingSession.id !== drivingSessionId
       )
-        throw new ForbiddenException(
-          'Confirm your truck before sharing location.',
-        );
+        throw new ForbiddenError('Confirm your truck before sharing location.');
       const repo = m.getRepository(TrackingStream),
         existing = await repo.findOneBy({ id });
       if (existing) {
@@ -110,7 +105,7 @@ export class TelemetryService {
               .getOne()
           )?.uploadTokenHash !== uploadTokenHash
         )
-          throw new ConflictException('Start a new location sharing session.');
+          throw new ConflictError('Start a new location sharing session.');
         return {
           id: existing.id,
           deviceId: existing.id,
@@ -198,14 +193,14 @@ export class TelemetryService {
         ? null
         : await m.findOneBy(TruckDevice, { credentialHash });
       if (!personal && !device)
-        throw new UnauthorizedException('Location sharing access has ended.');
+        throw new UnauthorizedError('Location sharing access has ended.');
       const stream =
         personal ??
         (await m.findOneBy(TrackingStream, {
           id: batch.streamId,
           deviceId: device!.id,
         }));
-      if (!stream) throw new NotFoundException('Tracking session not found.');
+      if (!stream) throw new NotFoundError('Tracking session not found.');
       const drive = stream.drivingSessionId
         ? await m.findOneBy(DrivingSession, { id: stream.drivingSessionId })
         : null;
@@ -278,7 +273,7 @@ export class TelemetryService {
         try {
           id = uuid((raw as { eventId?: unknown })?.eventId);
         } catch {
-          throw new BadRequestException(
+          throw new BadRequestError(
             'A tracking record has no valid identifier.',
           );
         }
@@ -334,7 +329,9 @@ export class TelemetryService {
         const recorded = instant(sample.recordedAt);
         if (
           recorded < stream.startedAt ||
-          (!stream.drivingSessionId && stream.endedAt && recorded > stream.endedAt)
+          (!stream.drivingSessionId &&
+            stream.endedAt &&
+            recorded > stream.endedAt)
         ) {
           rejected.push({
             eventId: id,
@@ -392,11 +389,11 @@ export class TelemetryService {
           (stream.finalSequence !== null &&
             batch.end.finalSequence < stream.finalSequence)
         )
-          throw new ConflictException(
+          throw new ConflictError(
             'Tracking close sequence is behind stored history.',
           );
         if (batch.end.at.getTime() < stream.startedAt.getTime() - 300000)
-          throw new BadRequestException(
+          throw new BadRequestError(
             'Tracking close time is before the session.',
           );
         stream.endedAt =
@@ -430,7 +427,7 @@ export class TelemetryService {
     const s = await this.db
       .getRepository(TrackingStream)
       .findOneBy({ id: uuid(streamId) });
-    if (!s) throw new NotFoundException('Tracking session not found.');
+    if (!s) throw new NotFoundError('Tracking session not found.');
     const rows = await this.db.query(
       'SELECT sequence FROM app.tracking_events WHERE "streamId"=$1 ORDER BY sequence',
       [s.id],
@@ -464,13 +461,13 @@ export class TelemetryService {
     const from = instant(fromValue),
       to = instant(toValue);
     if (to <= from || to.getTime() - from.getTime() > 31 * 86400000)
-      throw new BadRequestException('Select a history range of up to 31 days.');
+      throw new BadRequestError('Select a history range of up to 31 days.');
     let snapshot = new Date(),
       afterTime: Date | null = null,
       afterId: string | null = null;
     if (cursor) {
       if (cursor.length > 600)
-        throw new BadRequestException('Invalid history cursor.');
+        throw new BadRequestError('Invalid history cursor.');
       try {
         const c = JSON.parse(Buffer.from(cursor, 'base64url').toString());
         if (
@@ -483,7 +480,7 @@ export class TelemetryService {
         afterTime = instant(c.at);
         afterId = uuid(c.id);
       } catch {
-        throw new BadRequestException('Invalid history cursor.');
+        throw new BadRequestError('Invalid history cursor.');
       }
     }
     const rows = await this.db.query(

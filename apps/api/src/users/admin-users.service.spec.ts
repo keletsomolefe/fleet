@@ -1,9 +1,9 @@
 import {
-  BadRequestException,
-  ForbiddenException,
-  ConflictException,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+  BadRequestError,
+  ForbiddenError,
+  ConflictError,
+  ServiceUnavailableError,
+} from '../http/errors.js';
 import type { DataSource, Repository } from 'typeorm';
 import { KratosError, KratosService } from '../auth/kratos.service.js';
 import { AdminUsersService, parseUserInput } from './admin-users.service.js';
@@ -59,10 +59,10 @@ describe('User provisioning', () => {
       parseUserInput({ ...input, email: ' NEW@example.test ' }).email,
     ).toBe(input.email);
     expect(() => parseUserInput({ ...input, isActive: true })).toThrow(
-      BadRequestException,
+      BadRequestError,
     );
     expect(() => parseUserInput({ ...input, password: 'short' })).toThrow(
-      BadRequestException,
+      BadRequestError,
     );
   });
   it('creates an unverified identity and a linked local user without roles without persisting a password', async () => {
@@ -81,21 +81,21 @@ describe('User provisioning', () => {
   it('rejects local duplicates before touching Kratos', async () => {
     users.existsBy.mockResolvedValue(true);
     await expect(service.create(input, {} as User)).rejects.toBeInstanceOf(
-      ConflictException,
+      ConflictError,
     );
     expect(kratos.createIdentity).not.toHaveBeenCalled();
   });
   it('rejects Kratos duplicates without persisting a local account', async () => {
     kratos.createIdentity.mockRejectedValue(new KratosError(409));
     await expect(service.create(input, {} as User)).rejects.toBeInstanceOf(
-      ConflictException,
+      ConflictError,
     );
     expect(users.save).not.toHaveBeenCalled();
   });
   it('cleans up only the newly created identity when local persistence fails', async () => {
     users.save.mockRejectedValue(new Error('database unavailable'));
     await expect(service.create(input, {} as User)).rejects.toBeInstanceOf(
-      ServiceUnavailableException,
+      ServiceUnavailableError,
     );
     expect(kratos.deleteIdentity).toHaveBeenCalledExactlyOnceWith(
       'created-identity',
@@ -118,7 +118,7 @@ describe('User provisioning', () => {
     expect(kratos.deleteIdentity).not.toHaveBeenCalled();
   });
   it('cleans up the new Kratos identity and preserves a profile conflict after rollback', async () => {
-    const conflict = new ConflictException('Driver identifier already exists.');
+    const conflict = new ConflictError('Driver identifier already exists.');
     await expect(
       service.create(input, {} as User, async () => {
         throw conflict;
@@ -179,7 +179,7 @@ describe('Administrator setup links', () => {
       true,
     );
     await expect(service.accountLink('actor', 'target')).rejects.toBeInstanceOf(
-      ForbiddenException,
+      ForbiddenError,
     );
     expect(request).not.toHaveBeenCalled();
   });

@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenError } from '../http/errors.js';
 import type { DataSource } from 'typeorm';
 import { AuthService, type AdminContext } from '../auth/auth.service.js';
 import { KratosService } from '../auth/kratos.service.js';
@@ -104,7 +104,7 @@ describe('Unified native sign-in', () => {
         { identifier: 'user@example.test', password: 'test-only' },
         'source',
       ),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    ).rejects.toBeInstanceOf(ForbiddenError);
     expect(revokeToken).toHaveBeenCalledWith('native-session-token');
   });
   it('rejects inactive or missing driver access even with valid Kratos credentials', async () => {
@@ -114,12 +114,12 @@ describe('Unified native sign-in', () => {
         { identifier: 'driver@example.test', password: 'test-only' },
         'source',
       ),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    ).rejects.toBeInstanceOf(ForbiddenError);
     expect(revokeToken).toHaveBeenCalledWith('native-session-token');
   });
   it('retains verification/session enforcement and revokes a denied login', async () => {
     authenticateNative.mockRejectedValue(
-      new ForbiddenException('Verify your email.'),
+      new ForbiddenError('Verify your email.'),
     );
     await expect(
       service.login(
@@ -131,7 +131,7 @@ describe('Unified native sign-in', () => {
   });
   it('allows Kratos logout even when application access has already ended', async () => {
     authenticateNative.mockRejectedValue(
-      new ForbiddenException('Account is inactive.'),
+      new ForbiddenError('Account is inactive.'),
     );
     await expect(
       service.logout('native-session-token'),

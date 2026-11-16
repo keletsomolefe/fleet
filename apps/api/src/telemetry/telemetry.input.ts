@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestError } from '../http/errors.js';
 import { uuidPattern } from '../fleet/fleet.input.js';
 export interface Sample {
   eventId: string;
@@ -10,7 +10,7 @@ export interface Sample {
 }
 export function uuid(value: unknown): string {
   if (typeof value !== 'string' || !uuidPattern.test(value))
-    throw new BadRequestException('Invalid tracking identifier.');
+    throw new BadRequestError('Invalid tracking identifier.');
   return value;
 }
 export function instant(value: unknown): Date {
@@ -21,7 +21,7 @@ export function instant(value: unknown): Date {
     Date.parse(value) < 946684800000 ||
     Date.parse(value) > Date.now() + 300000
   )
-    throw new BadRequestException('Invalid recording time.');
+    throw new BadRequestError('Invalid recording time.');
   return new Date(value);
 }
 export function parseBatch(value: unknown) {
@@ -37,9 +37,7 @@ export function parseBatch(value: unknown) {
     v.events.length > 100 ||
     JSON.stringify(v).length > 131072
   )
-    throw new BadRequestException(
-      'Send at most 100 tracking records per batch.',
-    );
+    throw new BadRequestError('Send at most 100 tracking records per batch.');
   let end: { at: Date; finalSequence: number } | undefined;
   if (v.end !== undefined) {
     const e = v.end as Record<string, unknown>;
@@ -50,11 +48,11 @@ export function parseBatch(value: unknown) {
       Number(e.finalSequence) < 0 ||
       Number(e.finalSequence) > 2147483647
     )
-      throw new BadRequestException('Invalid tracking close record.');
+      throw new BadRequestError('Invalid tracking close record.');
     end = { at: instant(e.at), finalSequence: Number(e.finalSequence) };
   }
   if (!v.events.length && !end)
-    throw new BadRequestException('No tracking records supplied.');
+    throw new BadRequestError('No tracking records supplied.');
   return {
     batchId: uuid(v.batchId),
     streamId: uuid(v.streamId),
@@ -80,7 +78,7 @@ export function parseSample(value: unknown): Sample {
     Array.isArray(v.data) ||
     JSON.stringify(v.data).length > 8192
   )
-    throw new BadRequestException('Invalid tracking record.');
+    throw new BadRequestError('Invalid tracking record.');
   instant(v.recordedAt);
   uuid(v.eventId);
   if (v.kind === 'location') {
@@ -94,7 +92,7 @@ export function parseSample(value: unknown): Sample {
       !Number.isFinite(c.longitude) ||
       Math.abs(c.longitude) > 180
     )
-      throw new BadRequestException('Invalid GPS coordinates.');
+      throw new BadRequestError('Invalid GPS coordinates.');
     for (const k of [
       'accuracy',
       'altitude',
@@ -103,12 +101,12 @@ export function parseSample(value: unknown): Sample {
       'speed',
     ])
       if (c[k] != null && (typeof c[k] !== 'number' || !Number.isFinite(c[k])))
-        throw new BadRequestException('Invalid GPS measurement.');
+        throw new BadRequestError('Invalid GPS measurement.');
   } else if (
     typeof (v.data as Record<string, unknown>).code !== 'string' ||
     String((v.data as Record<string, unknown>).code).length > 80
   )
-    throw new BadRequestException('Invalid tracking status.');
+    throw new BadRequestError('Invalid tracking status.');
   return v as unknown as Sample;
 }
 export function digest(value: unknown): string {

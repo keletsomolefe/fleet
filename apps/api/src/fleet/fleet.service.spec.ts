@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenError } from '../http/errors.js';
 import type { DataSource } from 'typeorm';
 import type { AdminUsersService } from '../users/admin-users.service.js';
 import type { RbacService } from '../rbac/rbac.service.js';
@@ -30,7 +30,7 @@ describe('Driver onboarding authorization', () => {
         undefined,
         false,
       ),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    ).rejects.toBeInstanceOf(ForbiddenError);
     expect(create).not.toHaveBeenCalled();
     expect(transaction).not.toHaveBeenCalled();
   });

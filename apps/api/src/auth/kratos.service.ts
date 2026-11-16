@@ -1,4 +1,4 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { ServiceUnavailableError } from '../http/errors.js';
 
 export interface KratosIdentity {
   id: string;
@@ -29,7 +29,6 @@ export class KratosError extends Error {
   }
 }
 
-@Injectable()
 export class KratosService {
   async request<T>(
     path: string,
@@ -38,9 +37,7 @@ export class KratosService {
   ): Promise<T> {
     const base = process.env[admin ? 'KRATOS_ADMIN_URL' : 'KRATOS_PUBLIC_URL'];
     if (!base)
-      throw new ServiceUnavailableException(
-        'Authentication is not configured.',
-      );
+      throw new ServiceUnavailableError('Authentication is not configured.');
     let response: Response;
     try {
       response = await fetch(new URL(path, base), {
@@ -54,7 +51,7 @@ export class KratosService {
         },
       });
     } catch {
-      throw new ServiceUnavailableException(
+      throw new ServiceUnavailableError(
         'Authentication is temporarily unavailable.',
       );
     }
@@ -63,7 +60,7 @@ export class KratosService {
         ? undefined
         : await response.json().catch(() => undefined);
     if (response.status >= 500)
-      throw new ServiceUnavailableException(
+      throw new ServiceUnavailableError(
         'Authentication is temporarily unavailable.',
       );
     if (!response.ok) throw new KratosError(response.status, body?.error?.id);

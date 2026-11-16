@@ -1,8 +1,8 @@
 import {
-  BadRequestException,
-  ForbiddenException,
-  UnauthorizedException,
-} from '@nestjs/common';
+  BadRequestError,
+  ForbiddenError,
+  UnauthorizedError,
+} from '../http/errors.js';
 import {
   bearer,
   nativeRequest,
@@ -21,22 +21,20 @@ const enrollment = {
   replaceExisting: false,
 };
 describe('Native request boundaries', () => {
-  const headers = (values: Record<string, string>) => ({
-    get: (name: string) => values[name],
-  });
+  const headers = (values: Record<string, string>) => ({ headers: values });
   it.each(['origin', 'cookie', 'sec-fetch-site'])(
     'rejects browser %s on native endpoints',
     (key) => {
       expect(() => nativeRequest(headers({ [key]: 'present' }))).toThrow(
-        ForbiddenException,
+        ForbiddenError,
       );
     },
   );
   it('requires a bearer credential and never accepts a cookie as fallback', () => {
-    expect(() => bearer(headers({}))).toThrow(UnauthorizedException);
+    expect(() => bearer(headers({}))).toThrow(UnauthorizedError);
     expect(() =>
       bearer(headers({ authorization: 'Bearer token\nwith-header-injection' })),
-    ).toThrow(UnauthorizedException);
+    ).toThrow(UnauthorizedError);
     expect(bearer(headers({ authorization: `Bearer ${'x'.repeat(32)}` }))).toBe(
       'x'.repeat(32),
     );
@@ -52,7 +50,7 @@ describe('Native request boundaries', () => {
       { roleIds: [id] },
     ])
       expect(() => parseEnrollment({ ...enrollment, ...patch })).toThrow(
-        BadRequestException,
+        BadRequestError,
       );
   });
   it('accepts unified credentials and validates legacy mode without trusting it', () => {
@@ -79,10 +77,10 @@ describe('Native request boundaries', () => {
           mode: 'driver',
           ...patch,
         }),
-      ).toThrow(BadRequestException);
+      ).toThrow(BadRequestError);
     expect(parseConfirmation({ associationId: id })).toBe(id);
     expect(() => parseConfirmation({ associationId: id, truckId: id })).toThrow(
-      BadRequestException,
+      BadRequestError,
     );
   });
   it('stores a deterministic digest rather than the device credential', () => {
@@ -90,6 +88,6 @@ describe('Native request boundaries', () => {
     expect(hashDeviceToken(enrollment.deviceToken)).not.toBe(
       enrollment.deviceToken,
     );
-    expect(() => hashDeviceToken('')).toThrow(UnauthorizedException);
+    expect(() => hashDeviceToken('')).toThrow(UnauthorizedError);
   });
 });

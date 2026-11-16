@@ -1,10 +1,8 @@
 import {
-  HttpException,
-  ForbiddenException,
-  Inject,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+  HttpError,
+  ForbiddenError,
+  UnauthorizedError,
+} from '../http/errors.js';
 import { DataSource } from 'typeorm';
 import { AuthService, type AdminContext } from '../auth/auth.service.js';
 import { KratosService, KratosError } from '../auth/kratos.service.js';
@@ -14,15 +12,14 @@ import { parseLogin } from './mobile.input.js';
 import { DrivingService } from './driving.service.js';
 import { canManageVehicles, canReadIssues } from '../rbac/issue-access.js';
 
-@Injectable()
 export class MobileAuthService {
   private attempts = new Map<string, { count: number; until: number }>();
   constructor(
-    @Inject(DataSource) private readonly db: DataSource,
-    @Inject(KratosService) private readonly kratos: KratosService,
-    @Inject(AuthService) private readonly auth: AuthService,
-    @Inject(RbacService) private readonly rbac: RbacService,
-    @Inject(DrivingService) private readonly driving: DrivingService,
+    private readonly db: DataSource,
+    private readonly kratos: KratosService,
+    private readonly auth: AuthService,
+    private readonly rbac: RbacService,
+    private readonly driving: DrivingService,
   ) {}
   async login(raw: unknown, remote: string) {
     const input = parseLogin(raw);
@@ -32,7 +29,7 @@ export class MobileAuthService {
       if (v.until <= now) this.attempts.delete(k);
     const entry = this.attempts.get(key) ?? { count: 0, until: now + 60000 };
     if (++entry.count > 10)
-      throw new HttpException('Too many attempts. Try again in a minute.', 429);
+      throw new HttpError('Too many attempts. Try again in a minute.', 429);
     if (this.attempts.size >= 5000)
       this.attempts.delete(this.attempts.keys().next().value!);
     this.attempts.set(key, entry);
@@ -60,10 +57,10 @@ export class MobileAuthService {
         },
       );
       token = result.session_token;
-      if (!token) throw new UnauthorizedException('Sign in unsuccessful.');
+      if (!token) throw new UnauthorizedError('Sign in unsuccessful.');
     } catch (error) {
       if (error instanceof KratosError)
-        throw new UnauthorizedException(
+        throw new UnauthorizedError(
           process.env.AUTH_REQUIRE_VERIFIED_EMAIL === 'false'
             ? 'Check your identifier and password.'
             : 'Check your identifier and password, and verify your email.',
@@ -95,7 +92,7 @@ export class MobileAuthService {
     }
     if (canManageVehicles(context) || canReadIssues(context)) return 'admin';
     this.rbac.require(context, 'driver.access');
-    throw new ForbiddenException(
+    throw new ForbiddenError(
       'Driver access is not active. Contact your fleet administrator.',
     );
   }
@@ -106,8 +103,7 @@ export class MobileAuthService {
       );
     } catch (error) {
       if (!(
-        error instanceof UnauthorizedException ||
-        error instanceof ForbiddenException
+        error instanceof UnauthorizedError || error instanceof ForbiddenError
       ))
         throw error;
     }

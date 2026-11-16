@@ -1,46 +1,60 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { App } from 'supertest/types.js';
-import { AppModule } from './../src/app.module.js';
+import type { FastifyInstance } from 'fastify';
+import { createApi } from '../src/app.js';
 
-describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
+describe('Fleet API', () => {
+  let app: FastifyInstance;
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    await app.init();
+  beforeAll(() => {
+    ({ app } = createApi());
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
-  });
-
-  it('protects session and administrator APIs before controller execution', async () => {
-    await request(app.getHttpServer()).get('/auth/session').expect(401);
-    await request(app.getHttpServer())
-      .post('/admin/users')
-      .send({})
-      .expect(401);
-    await request(app.getHttpServer())
-      .post('/internal/kratos/after-login')
-      .send({})
-      .expect(401);
-    const response = await request(app.getHttpServer())
-      .get('/auth/config')
-      .expect(200);
-    expect(response.body).not.toHaveProperty('kratosAdminUrl');
-    expect(response.headers['cache-control']).toBe('no-store');
-  });
-
-  afterEach(async () => {
+  afterAll(async () => {
     await app.close();
+  });
+
+  it('serves the gateway health check', async () => {
+    const response = await app.inject('/');
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toBe('Hello World!');
+  });
+
+  it('protects session, administrator APIs, and the internal hook', async () => {
+    const session = await app.inject('/auth/session');
+    expect(session.statusCode).toBe(401);
+    expect(session.headers['cache-control']).toBe('private, no-store');
+
+    const admin = await app.inject({
+      method: 'POST',
+      url: '/admin/users',
+      payload: {},
+    });
+    expect(admin.statusCode).toBe(401);
+    expect(admin.headers['cache-control']).toBe('private, no-store');
+
+    const unknownAdmin = await app.inject({
+      method: 'POST',
+      url: '/admin/drivers/trucks',
+      payload: {},
+    });
+    expect(unknownAdmin.statusCode).toBe(401);
+
+    const mobile = await app.inject({
+      method: 'POST',
+      url: '/mobile/admin/notifications/connection',
+      headers: { 'content-type': 'application/json', 'content-length': '0' },
+    });
+    expect(mobile.statusCode).toBe(401);
+
+    const callback = await app.inject({
+      method: 'POST',
+      url: '/internal/kratos/after-login',
+      payload: {},
+    });
+    expect(callback.statusCode).toBe(401);
+
+    const config = await app.inject('/auth/config');
+    expect(config.statusCode).toBe(200);
+    expect(config.json()).not.toHaveProperty('kratosAdminUrl');
+    expect(config.headers['cache-control']).toBe('no-store');
   });
 });

@@ -1,13 +1,11 @@
 import { createHash } from 'node:crypto';
 import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Inject,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+} from '../http/errors.js';
 import { DataSource, EntityManager, IsNull } from 'typeorm';
 import type { AdminContext } from '../auth/auth.service.js';
 import {
@@ -22,26 +20,25 @@ import { parseConfirmation, parseEnrollment } from './mobile.input.js';
 
 export function hashDeviceToken(token: string) {
   if (!/^[a-f0-9]{64}$/.test(token))
-    throw new UnauthorizedException(
+    throw new UnauthorizedError(
       'Location sharing access has ended. Start sharing again.',
     );
   return createHash('sha256').update(token).digest('hex');
 }
-@Injectable()
 export class MobileDeviceService {
-  constructor(@Inject(DataSource) private readonly db: DataSource) {}
+  constructor(private readonly db: DataSource) {}
   private async lock(m: EntityManager) {
     await m.query("SELECT pg_advisory_xact_lock(hashtext('fleet-assets-v1'))");
   }
   private async driver(context: AdminContext, m = this.db.manager) {
     if (!context.permissions.includes('driver.access'))
-      throw new ForbiddenException('Driver access is not enabled.');
+      throw new ForbiddenError('Driver access is not enabled.');
     const profile = await m.findOneBy(DriverProfile, {
       userId: context.user.id,
       status: 'active',
     });
     if (!profile)
-      throw new ForbiddenException(
+      throw new ForbiddenError(
         'Driver access is not active. Contact your fleet administrator.',
       );
     return profile;
@@ -52,7 +49,7 @@ export class MobileDeviceService {
       relations: { currentTruck: true },
     });
     if (!device)
-      throw new UnauthorizedException(
+      throw new UnauthorizedError(
         'Set up this device with a fleet administrator.',
       );
     const association = device.currentTruckId
@@ -102,7 +99,7 @@ export class MobileDeviceService {
       validateAssignment(profile);
     } catch (error) {
       reason =
-        error instanceof BadRequestException
+        error instanceof BadRequestError
           ? error.message
           : 'Your licence details need review.';
     }
@@ -186,7 +183,7 @@ export class MobileDeviceService {
           id: input.truckId,
           status: 'active',
         });
-        if (!truck) throw new NotFoundException('Select an active truck.');
+        if (!truck) throw new NotFoundError('Select an active truck.');
         const repo = m.getRepository(TruckDevice);
         const old = await repo
           .createQueryBuilder('d')
@@ -201,12 +198,12 @@ export class MobileDeviceService {
           })
           .getOne();
         if ((old?.id ?? null) !== input.expectedDeviceId)
-          throw new ConflictException(
+          throw new ConflictError(
             'This truck’s device changed. Refresh the truck list.',
           );
         const tokenOwner = await m.findOneBy(TruckDevice, { credentialHash });
         if (tokenOwner && tokenOwner.id !== device?.id)
-          throw new ConflictException(
+          throw new ConflictError(
             'Device credentials are already in use. Restart device setup.',
           );
         const replacing = !!(
@@ -216,7 +213,7 @@ export class MobileDeviceService {
           (device?.currentTruckId && device.currentTruckId !== truck.id)
         );
         if (replacing && !input.replaceExisting)
-          throw new ConflictException(
+          throw new ConflictError(
             'Confirm replacement to change this device’s truck or access.',
           );
         if (old && old.id !== device?.id) {
@@ -271,7 +268,7 @@ export class MobileDeviceService {
       });
     } catch (error) {
       if ((error as { code?: string })?.code === '23505')
-        throw new ConflictException(
+        throw new ConflictError(
           'Device identifier or credentials are already in use.',
         );
       throw error;
@@ -284,11 +281,11 @@ export class MobileDeviceService {
       const profile = await this.driver(context, m),
         { device, association } = await this.device(token, m);
       if (!association || association.id !== expected)
-        throw new ConflictException(
+        throw new ConflictError(
           'The assigned truck changed. Check the registration again.',
         );
       if (device.currentTruck?.status !== 'active')
-        throw new ConflictException(
+        throw new ConflictError(
           'This truck is unavailable. Contact your fleet administrator.',
         );
       validateAssignment(profile);

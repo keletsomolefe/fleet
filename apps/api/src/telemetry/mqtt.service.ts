@@ -1,18 +1,10 @@
 import { OperationsEventsService } from '../operations/operations-events.service.js';
 import { createServer, type Server } from 'node:http';
-import {
-  Inject,
-  Injectable,
-  Logger,
-  type OnModuleDestroy,
-  type OnModuleInit,
-} from '@nestjs/common';
 import { Aedes, type Client } from 'aedes';
 import { WebSocketServer, createWebSocketStream } from 'ws';
 import { TelemetryService } from './telemetry.service.js';
 
-@Injectable()
-export class FleetMqttService implements OnModuleInit, OnModuleDestroy {
+export class FleetMqttService {
   private broker?: Aedes;
   private server?: Server;
   private sockets?: WebSocketServer;
@@ -25,13 +17,12 @@ export class FleetMqttService implements OnModuleInit, OnModuleDestroy {
     { userId: string; timer: ReturnType<typeof setTimeout> }
   >();
   private publishAttention?: () => void;
-  private readonly logger = new Logger(FleetMqttService.name);
   constructor(
-    @Inject(TelemetryService) private readonly telemetry: TelemetryService,
-    @Inject(OperationsEventsService)
+    private readonly telemetry: TelemetryService,
     private readonly events: OperationsEventsService,
+    private readonly logger: Pick<Console, 'info' | 'warn' | 'error'> = console,
   ) {}
-  async onModuleInit() {
+  async start() {
     if (process.env.MQTT_ENABLED !== 'true' || process.env.NODE_ENV === 'test')
       return;
     const broker = await Aedes.createBroker({
@@ -204,11 +195,11 @@ export class FleetMqttService implements OnModuleInit, OnModuleDestroy {
         resolve();
       });
     });
-    this.logger.log(
+    this.logger.info(
       `Device MQTT WebSocket transport listening on port ${port}`,
     );
   }
-  async onModuleDestroy() {
+  async stop() {
     if (this.publishAttention)
       this.events.changes.off('changed', this.publishAttention);
     for (const a of this.admins.values()) clearTimeout(a.timer);

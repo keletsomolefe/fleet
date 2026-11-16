@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestError } from '../http/errors.js';
 import { parseDriver, parseTruck, parseSearch } from './fleet.input.js';
 
 export const validTruck = {
@@ -51,18 +51,18 @@ describe('Fleet input validation', () => {
     { isActive: true },
   ])('rejects invalid truck facts %j', (patch) =>
     expect(() => parseTruck({ ...validTruck, ...patch })).toThrow(
-      BadRequestException,
+      BadRequestError,
     ),
   );
   it('requires exactly one account source for a new driver and disallows changing it later', () => {
     expect(() => parseDriver(validDriver, true)).not.toThrow();
     expect(() => parseDriver({ ...validDriver, account: {} }, true)).toThrow(
-      BadRequestException,
+      BadRequestError,
     );
     expect(() => parseDriver({ ...validDriver, userId: null }, true)).toThrow(
-      BadRequestException,
+      BadRequestError,
     );
-    expect(() => parseDriver(validDriver)).toThrow(BadRequestException);
+    expect(() => parseDriver(validDriver)).toThrow(BadRequestError);
   });
   it('retains incomplete eligibility as an unassigned profile but rejects assigning expired or incomplete credentials', () => {
     const { userId, ...profile } = validDriver;
@@ -77,17 +77,17 @@ describe('Fleet input validation', () => {
     ])
       expect(() =>
         parseDriver({ ...profile, currentTruckId: userId, ...patch }),
-      ).toThrow(BadRequestException);
+      ).toThrow(BadRequestError);
   });
   it('validates paired contact and PrDP fields and rejects privilege injection', () => {
     expect(() =>
       parseDriver({ ...validDriver, prdpNumber: null }, true),
-    ).toThrow(BadRequestException);
+    ).toThrow(BadRequestError);
     expect(() =>
       parseDriver({ ...validDriver, emergencyContactName: 'Contact' }, true),
-    ).toThrow(BadRequestException);
+    ).toThrow(BadRequestError);
     expect(() => parseDriver({ ...validDriver, roleIds: [] }, true)).toThrow(
-      BadRequestException,
+      BadRequestError,
     );
   });
   it.each([
@@ -96,6 +96,6 @@ describe('Fleet input validation', () => {
     ['x'.repeat(201), '1'],
     ['', '1', 'invalid'],
   ])('rejects invalid search %j', (q, page, status?: string) =>
-    expect(() => parseSearch(q, page, status)).toThrow(BadRequestException),
+    expect(() => parseSearch(q, page, status)).toThrow(BadRequestError),
   );
 });

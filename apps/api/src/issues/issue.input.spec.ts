@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestError } from '../http/errors.js';
 import { parseIssue, parseIssueResolution } from './issue.input.js';
 
 const valid = {
@@ -26,9 +26,7 @@ describe('Driver issue input', () => {
     { driverId: valid.id },
     { resolvedAt: new Date().toISOString() },
   ])('rejects invalid or server-owned fields %j', (patch) => {
-    expect(() => parseIssue({ ...valid, ...patch })).toThrow(
-      BadRequestException,
-    );
+    expect(() => parseIssue({ ...valid, ...patch })).toThrow(BadRequestError);
   });
   it('requires a bounded resolution note and rejects injected fields', () => {
     expect(parseIssueResolution({ note: ' Repaired ' })).toBe('Repaired');
@@ -39,6 +37,6 @@ describe('Driver issue input', () => {
       { note: 'x'.repeat(1001) },
       { note: 'OK', resolvedById: valid.id },
     ])
-      expect(() => parseIssueResolution(raw)).toThrow(BadRequestException);
+      expect(() => parseIssueResolution(raw)).toThrow(BadRequestError);
   });
 });
