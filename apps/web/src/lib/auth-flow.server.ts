@@ -86,6 +86,7 @@ class KratosBrowserRequest {
 function publicFlow(body: KratosBody): BrowserFlow | undefined {
   if (!isFlowId(body.id) || !body.ui?.nodes) return undefined;
   return {
+    id: body.id,
     state: body.state,
     ui: {
       messages: body.ui.messages ?? [],
@@ -215,11 +216,16 @@ export async function submitFlowServer(
       return { error: "Could not submit this form. Please try again." };
     const client = new KratosBrowserRequest();
     let state = readFlowState(input.kind);
-    // A second tab may have replaced the flow cookie. Refresh privately rather
-    // than exposing flow identifiers or reporting an implementation detail.
-    if (!state || state.csrfToken !== input.csrfToken) {
-      const fresh = await retrieveFlow(client, input.kind);
+    let refreshedFlow: BrowserFlow | undefined;
+    // Another tab can replace the cookie while this tab still has a valid flow.
+    if (
+      !state ||
+      state.csrfToken !== input.csrfToken ||
+      (input.flowId && state.id !== input.flowId)
+    ) {
+      const fresh = await retrieveFlow(client, input.kind, input.flowId);
       state = rememberFlow(input.kind, fresh.body);
+      refreshedFlow = publicFlow(fresh.body);
     }
     for (let attempt = 0; attempt < 2 && state; attempt++) {
       const payload =
@@ -244,6 +250,7 @@ export async function submitFlowServer(
       if ([404, 410].includes(response.status) && attempt === 0) {
         const fresh = await retrieveFlow(client, input.kind);
         state = rememberFlow(input.kind, fresh.body);
+        refreshedFlow = publicFlow(fresh.body);
         continue;
       }
       const verification = verificationTransition(body);
@@ -253,8 +260,10 @@ export async function submitFlowServer(
           "verification",
           verification.flowId,
         );
-        rememberFlow("verification", fresh.body);
-        return { redirect: "/verify-email" };
+        const flow = rememberFlow("verification", fresh.body);
+        return {
+          redirect: flow ? `/verify-email?flow=${flow.id}` : "/verify-email",
+        };
       }
       if (
         body.error?.id === "session_already_available" ||
@@ -265,7 +274,7 @@ export async function submitFlowServer(
       }
       if (response.ok && body.state === "passed_challenge") {
         clearFlowState("verification");
-        return { complete: true };
+        return { complete: true, flow: publicFlow(body) ?? refreshedFlow };
       }
       const flow = publicFlow(body);
       if (flow) {
@@ -273,13 +282,14 @@ export async function submitFlowServer(
         return { flow };
       }
       return {
+        flow: refreshedFlow,
         error:
           response.status >= 500
             ? "Could not connect. Please try again."
             : "Check your details and try again.",
       };
     }
-    return { error: "Could not connect. Please try again." };
+    return { flow: refreshedFlow, error: "Could not connect. Please try again." };
   } catch {
     return { error: "Could not connect. Please try again." };
   }

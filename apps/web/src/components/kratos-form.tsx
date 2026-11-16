@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { AuthLayout } from "@/components/auth-layout";
 import { FormField } from "@/components/form-field";
@@ -22,6 +23,7 @@ export function KratosForm({
   initial: FlowPageData;
   reason?: string;
 }) {
+  const navigate = useNavigate();
   const [flow, setFlow] = useState(initial.flow);
   const [error, setError] = useState(initial.error ?? "");
   const [busy, setBusy] = useState(false);
@@ -32,6 +34,18 @@ export function KratosForm({
   const [alreadyAuthenticated, setAlreadyAuthenticated] = useState(
     initial.alreadyAuthenticated,
   );
+  const [loaded, setLoaded] = useState(initial);
+  if (loaded !== initial) {
+    setLoaded(initial);
+    // An action can update the flow before navigation loads that same ID.
+    if (!flow || flow.id !== initial.flow?.id) {
+      setFlow(initial.flow);
+      setError(initial.error ?? "");
+      setComplete(initial.flow?.state === "passed_challenge");
+      setAlreadyAuthenticated(initial.alreadyAuthenticated);
+      setShowPassword(false);
+    }
+  }
   const denied = reason === "access-denied";
   const unavailable = reason === "unavailable";
   const verification = kind === "verification";
@@ -39,14 +53,25 @@ export function KratosForm({
     flow?.ui.nodes.find((n) => n.attributes.name === "csrf_token")?.attributes
       .value ?? "";
 
+  function syncFlowUrl(id: string) {
+    if (id === initial.flow?.id) return;
+    return navigate({
+      to: verification ? "/verify-email" : "/login",
+      search: { flow: id, reason },
+      replace: true,
+      resetScroll: false,
+    });
+  }
+
   async function initialize() {
     setBusy(true);
     setError("");
     try {
-      const result = await loadAuthFlow({ data: { kind } });
+      const result = await loadAuthFlow({ data: { kind, flowId: flow?.id } });
       setFlow(result.flow);
       setError(result.error ?? "");
       setAlreadyAuthenticated(result.alreadyAuthenticated);
+      if (result.flow) await syncFlowUrl(result.flow.id);
     } catch {
       setError("Could not connect. Please try again.");
     } finally {
@@ -67,7 +92,7 @@ export function KratosForm({
     setError("");
     try {
       const result = await submitAuthFlow({
-        data: { kind, csrfToken, values },
+        data: { kind, flowId: flow.id, csrfToken, values },
       });
       if (result.redirect) {
         window.location.assign(result.redirect);
@@ -76,6 +101,7 @@ export function KratosForm({
       if (result.flow) setFlow(result.flow);
       if (result.complete) setComplete(true);
       if (result.error) setError(result.error);
+      if (result.flow) await syncFlowUrl(result.flow.id);
     } catch {
       setError("Could not connect. Please try again.");
     } finally {
@@ -140,7 +166,7 @@ export function KratosForm({
               <a href="/admin">Open VHH Fleet</a>
             </Button>
           ) : flow ? (
-            <form onSubmit={submit} className="space-y-6">
+            <form key={flow.id} onSubmit={submit} className="space-y-6">
               <input
                 type="hidden"
                 name="csrf_token"

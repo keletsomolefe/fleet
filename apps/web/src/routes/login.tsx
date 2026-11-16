@@ -29,10 +29,10 @@ export const Route = createFileRoute('/login')({
     const result = await loadAuthFlow({
       data: { kind: 'login', flowId: deps.flow },
     })
-    if (deps.flow && result.flow)
+    if (result.flow && deps.flow !== result.flow.id)
       throw redirect({
         to: '/login',
-        search: { flow: undefined, reason: deps.reason },
+        search: { flow: result.flow.id, reason: deps.reason },
         replace: true,
       })
     return result
@@ -43,12 +43,8 @@ export const Route = createFileRoute('/login')({
 })
 function Login() {
   const data = Route.useLoaderData()
-  const key =
-    data.flow?.ui.nodes.find((node) => node.attributes.name === 'csrf_token')
-      ?.attributes.value ?? 'login'
   return (
     <KratosForm
-      key={key}
       kind="login"
       initial={data}
       reason={Route.useSearch().reason}

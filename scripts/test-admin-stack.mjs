@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createDecipheriv, createHash, randomBytes } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { parseEnv } from 'node:util';
@@ -64,31 +64,33 @@ try {
 
   for (const hostname of ['127.0.0.1', 'localhost']) {
     const origin = new URL(app); origin.hostname = hostname;
-    const flowCookies = new Map();
-    const page = await request(origin, 'login', { headers: { Accept: 'text/html' } }, flowCookies);
-    assert.equal(page.status, 200);
-    assert.ok(page.body.includes('name="identifier"') && page.body.includes('name="password"'));
-    assert.ok(page.body.includes('name="csrf_token"'));
-    assert.ok(!page.body.includes('Preparing secure sign in'));
-    assert.match(page.headers.get('cache-control'), /no-store/);
-    assert.ok([...flowCookies.keys()].some(key => key.includes('csrf')));
-    assert.ok(!page.body.includes('name="flow_id"'));
-    const flowCookie = flowCookies.get('fleet_login_flow'); assert.ok(flowCookie);
-    const encrypted = Buffer.from(flowCookie, 'base64url');
-    const decipher = createDecipheriv('aes-256-gcm', createHash('sha256').update(env.APP_CSRF_SECRET).digest(), encrypted.subarray(0, 12));
-    decipher.setAAD(Buffer.from('fleet-browser-flow:login')); decipher.setAuthTag(encrypted.subarray(12, 28));
-    const { id } = JSON.parse(Buffer.concat([decipher.update(encrypted.subarray(28)), decipher.final()]).toString('utf8'));
-    assert.ok(!page.body.includes(id), 'Flow IDs are not serialized into the page');
-    const restored = await request(origin, `login?flow=${id}`, { headers: { Accept: 'text/html' } }, flowCookies);
-    assert.equal(restored.status, 307);
-    assert.ok(!restored.headers.get('location').includes('flow='));
-    const expired = await request(origin, 'login?flow=00000000-0000-0000-0000-000000000000', { headers: { Accept: 'text/html' } }, flowCookies);
-    assert.equal(expired.status, 307);
-    const refreshed = await request(origin, 'login', { headers: { Accept: 'text/html' } }, flowCookies);
-    assert.ok(refreshed.body.includes('name="identifier"'));
-    assert.ok(!refreshed.body.includes('This form expired'));
+    for (const [path, fields] of [['login', ['identifier', 'password']], ['verify-email', ['email']]]) {
+      const flowCookies = new Map();
+      const html = { headers: { Accept: 'text/html' } };
+      const started = await request(origin, path, html, flowCookies);
+      assert.equal(started.status, 307);
+      const callback = new URL(started.headers.get('location'), origin);
+      assert.equal(callback.origin, origin.origin);
+      assert.equal(callback.pathname, `/${path}`);
+      const id = callback.searchParams.get('flow');
+      assert.match(id, /^[0-9a-f-]{36}$/i);
+      assert.ok([...flowCookies.keys()].some(key => key.includes('csrf')));
+      const page = await request(origin, callback, html, flowCookies);
+      assert.equal(page.status, 200);
+      for (const field of [...fields, 'csrf_token']) assert.ok(page.body.includes(`name="${field}"`));
+      assert.ok(page.body.includes(id), 'The rendered form uses the flow in the URL');
+      assert.match(page.headers.get('cache-control'), /no-store/);
+      const expired = await request(origin, `${path}?flow=00000000-0000-0000-0000-000000000000`, html, flowCookies);
+      assert.equal(expired.status, 307);
+      const refreshed = new URL(expired.headers.get('location'), origin);
+      assert.equal(refreshed.pathname, `/${path}`);
+      assert.match(refreshed.searchParams.get('flow'), /^[0-9a-f-]{36}$/i);
+      assert.notEqual(refreshed.searchParams.get('flow'), id);
+      assert.notEqual(refreshed.searchParams.get('flow'), '00000000-0000-0000-0000-000000000000');
+      assert.equal((await request(origin, refreshed, html, flowCookies)).status, 200);
+    }
   }
-  pass('Login forms render server-side with CSRF cookies on both local hosts; valid flows reload and expired flows restart');
+  pass('Login and verification render with CSRF cookies and show the active flow ID on both local hosts');
 
   const result = await login(env.BOOTSTRAP_ADMIN_EMAIL, env.BOOTSTRAP_ADMIN_PASSWORD, cookies);
   assert.equal(result.status, 200, 'Default administrator login');

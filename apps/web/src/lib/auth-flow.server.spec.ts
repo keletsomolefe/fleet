@@ -70,7 +70,7 @@ describe("Server-rendered Kratos flows", () => {
     expect((await loadFlowServer({ kind: "login" })).recoveryUrl).toBe("");
   });
 
-  it("forwards individual CSRF cookies and returns no flow IDs or password values", async () => {
+  it("forwards individual CSRF cookies and returns the flow ID without password values", async () => {
     fetchMock.mockResolvedValue(
       json(rawFlow(), 200, [
         "ory_csrf=new; Path=/; HttpOnly",
@@ -78,8 +78,7 @@ describe("Server-rendered Kratos flows", () => {
       ]),
     );
     const result = await loadFlowServer({ kind: "login" });
-    expect(result.flow).toBeDefined();
-    expect(JSON.stringify(result)).not.toContain(newId);
+    expect(result.flow?.id).toBe(newId);
     expect(JSON.stringify(result)).not.toContain("must-never-be-returned");
     expect(context.appended).toHaveBeenCalledTimes(2);
     expect(context.cache).toHaveBeenCalledWith(
@@ -114,7 +113,7 @@ describe("Server-rendered Kratos flows", () => {
       .mockResolvedValueOnce(json(rawFlow()));
     const result = await loadFlowServer({ kind: "login" });
     expect(result.error).toBeNull();
-    expect(result.flow).toBeDefined();
+    expect(result.flow?.id).toBe(newId);
     expect(readFlowState("login")?.id).toBe(newId);
   });
 
@@ -149,21 +148,23 @@ describe("Server-rendered Kratos flows", () => {
     expect(context.cookies.has("fleet_login_flow")).toBe(false);
   });
 
-  it("recovers a form replaced by another tab without exposing flow state", async () => {
-    writeFlowState("login", { id: oldId, csrfToken: "other-tab-csrf" });
+  it("submits the original verification flow after another tab replaces its cookie", async () => {
+    writeFlowState("verification", { id: newId, csrfToken: "other-tab-csrf" });
     fetchMock
-      .mockResolvedValueOnce(json(rawFlow()))
-      .mockResolvedValueOnce(json({ session: {} }));
+      .mockResolvedValueOnce(json(rawFlow(oldId, "old-tab-csrf")))
+      .mockResolvedValueOnce(json({ state: "passed_challenge" }));
     expect(
       await submitFlowServer({
-        kind: "login",
+        kind: "verification",
+        flowId: oldId,
         csrfToken: "old-tab-csrf",
-        values: {
-          identifier: "admin@example.test",
-          password: "correct-password",
-        },
+        values: { code: "123456" },
       }),
-    ).toEqual({ redirect: "/admin" });
+    ).toMatchObject({ complete: true });
+    expect(fetchMock.mock.calls.map(([url]) => new URL(url).search)).toEqual([
+      `?id=${oldId}`,
+      `?flow=${oldId}`,
+    ]);
   });
 
   it("does not retry indefinitely when authentication is unavailable", async () => {
@@ -178,6 +179,7 @@ describe("Server-rendered Kratos flows", () => {
       values: {},
     });
     expect(result.error).toBeDefined();
+    expect(result.flow?.id).toBe(newId);
     expect(result.error).not.toMatch(/flow|expired|11111111/i);
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
@@ -201,7 +203,7 @@ describe("Server-rendered Kratos flows", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("stores verification continuations privately and returns a clean local URL", async () => {
+  it("returns a local verification URL with the active flow ID", async () => {
     writeFlowState("login", { id: oldId, csrfToken: "old-csrf" });
     fetchMock
       .mockResolvedValueOnce(
@@ -220,7 +222,7 @@ describe("Server-rendered Kratos flows", () => {
       csrfToken: "old-csrf",
       values: {},
     });
-    expect(result).toEqual({ redirect: "/verify-email" });
+    expect(result).toEqual({ redirect: `/verify-email?flow=${newId}` });
     expect(readFlowState("verification")?.id).toBe(newId);
   });
 

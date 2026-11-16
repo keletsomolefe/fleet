@@ -7,6 +7,7 @@ export interface FlowMessage {
   type?: string
 }
 export interface BrowserFlow {
+  id: string
   state?: string
   ui: {
     messages: FlowMessage[]
@@ -26,8 +27,7 @@ export interface LoadFlowInput {
   kind: FlowKind
   flowId?: string
 }
-export interface SubmitFlowInput {
-  kind: FlowKind
+export interface SubmitFlowInput extends LoadFlowInput {
   csrfToken: string
   values: Record<string, string>
 }
@@ -60,7 +60,7 @@ export const loadAuthFlow = createServerFn({ method: 'GET' })
 
 export const submitAuthFlow = createServerFn({ method: 'POST' })
   .validator((input: SubmitFlowInput): SubmitFlowInput => {
-    validateLoad(input)
+    const flow = validateLoad(input)
     if (
       typeof input.csrfToken !== 'string' ||
       input.csrfToken.length > 512 ||
@@ -76,7 +76,7 @@ export const submitAuthFlow = createServerFn({ method: 'POST' })
       )
         throw new Error('Could not submit this form. Please try again.')
     }
-    return input
+    return { ...flow, csrfToken: input.csrfToken, values: input.values }
   })
   .handler(async ({ data }): Promise<FlowSubmission> => {
     const { submitFlowServer } = await import('./auth-flow.server')

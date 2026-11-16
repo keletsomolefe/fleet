@@ -11,10 +11,10 @@ export const Route = createFileRoute('/verify-email')({
     const result = await loadAuthFlow({
       data: { kind: 'verification', flowId: deps.flow },
     })
-    if (deps.flow && result.flow)
+    if (result.flow && deps.flow !== result.flow.id)
       throw redirect({
         to: '/verify-email',
-        search: { flow: undefined },
+        search: { flow: result.flow.id },
         replace: true,
       })
     return result
@@ -24,9 +24,5 @@ export const Route = createFileRoute('/verify-email')({
   component: Verification,
 })
 function Verification() {
-  const data = Route.useLoaderData()
-  const key =
-    data.flow?.ui.nodes.find((node) => node.attributes.name === 'csrf_token')
-      ?.attributes.value ?? 'verification'
-  return <KratosForm key={key} kind="verification" initial={data} />
+  return <KratosForm kind="verification" initial={Route.useLoaderData()} />
 }
