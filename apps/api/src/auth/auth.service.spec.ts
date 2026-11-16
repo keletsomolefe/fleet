@@ -1,9 +1,9 @@
+import { Repository } from '../database/database.js';
 import {
   ForbiddenError,
   ServiceUnavailableError,
   UnauthorizedError,
 } from '../http/errors.js';
-import type { Repository } from 'typeorm';
 import { RbacService } from '../rbac/rbac.service.js';
 import { User } from '../users/user.entity.js';
 import { AuthService, type AdminRequest } from './auth.service.js';

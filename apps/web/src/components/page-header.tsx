@@ -15,7 +15,12 @@ export function BackLink({
   to,
   children,
 }: {
-  to: "/admin/users" | "/admin/drivers" | "/admin/trucks";
+  to:
+    | "/admin/users"
+    | "/admin/drivers"
+    | "/admin/trucks"
+    | "/admin/jobs"
+    | "/admin/providers";
   children: ReactNode;
 }) {
   return (
@@ -30,7 +35,11 @@ export function BackLink({
         search={
           to === "/admin/users"
             ? { q: "", page: 1 }
-            : { q: "", page: 1, status: "" }
+            : to === "/admin/jobs"
+              ? { q: "", page: 1, status: "active", providerId: "" }
+              : to === "/admin/providers"
+                ? { q: "", page: 1, status: "" }
+                : { q: "", page: 1, status: "" }
         }
       >
         <ArrowLeft aria-hidden="true" />

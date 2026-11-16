@@ -1,14 +1,19 @@
+import { Database, EntityManager } from './database/database.js';
 import 'reflect-metadata';
 import cookie from '@fastify/cookie';
 import multipart from '@fastify/multipart';
 import type { FastifyServerOptions } from 'fastify';
-import { DataSource } from 'typeorm';
+import {
+  type MikroORM,
+  MikroORM as MikroOrm,
+  RequestContext,
+} from '@mikro-orm/postgresql';
 import { protectAdminRoutes } from './auth/admin-session.js';
 import { registerAuthRoutes } from './auth/auth.routes.js';
 import { AuthService } from './auth/auth.service.js';
 import { registerKratosHook } from './auth/kratos-hook.routes.js';
 import { KratosService } from './auth/kratos.service.js';
-import { databaseOptions } from './database/database.config.js';
+import { databaseConfig } from './database/database.config.js';
 import {
   registerDriverRoutes,
   registerTruckRoutes,
@@ -21,13 +26,7 @@ import {
   registerMobileIssueRoutes,
 } from './issues/issues.routes.js';
 import { IssuesService } from './issues/issues.service.js';
-import { OpenWaService } from './issues/openwa.service.js';
-import { RepairAccess } from './issues/repair-access.js';
-import { RepairOtpService } from './issues/repair-otp.service.js';
-import {
-  registerAdminRepairRoutes,
-  registerPublicRepairRoutes,
-} from './issues/repairs.routes.js';
+import { registerAdminRepairRoutes } from './issues/repairs.routes.js';
 import { RepairsService } from './issues/repairs.service.js';
 import {
   registerAdminVehicleDisputeRoutes,
@@ -37,7 +36,13 @@ import { DrivingService } from './mobile/driving.service.js';
 import { MobileAuthService } from './mobile/mobile-auth.service.js';
 import { registerMobileAuthRoutes } from './mobile/mobile.routes.js';
 import { OperationsEventsService } from './operations/operations-events.service.js';
-import { Role, UserRole } from './rbac/rbac.entity.js';
+import { UserRole, Role } from './rbac/rbac.entity.js';
+import { ServiceJobAccess } from './service-jobs/service-job-access.js';
+import { ServiceJobsService } from './service-jobs/service-jobs.service.js';
+import {
+  registerAdminServiceJobRoutes,
+  registerPublicServiceJobRoutes,
+} from './service-jobs/service-jobs.routes.js';
 import { RbacService } from './rbac/rbac.service.js';
 import { registerRoleRoutes } from './rbac/roles.routes.js';
 import {
@@ -55,66 +60,110 @@ import { TelemetryService } from './telemetry/telemetry.service.js';
 import { registerAdminUserRoutes } from './users/admin-users.routes.js';
 import { AdminUsersService } from './users/admin-users.service.js';
 import { User } from './users/user.entity.js';
+import { JobAlertWorker } from './whatsapp/job-alert.worker.js';
+import { WhatsAppCloudService } from './whatsapp/whatsapp-cloud.service.js';
+import { WhatsAppWebhookService } from './whatsapp/whatsapp-webhook.service.js';
+import { registerWhatsAppWebhookRoutes } from './whatsapp/whatsapp-webhook.routes.js';
 
-type ApiOptions = FastifyServerOptions & { database?: DataSource };
+type ApiOptions = FastifyServerOptions & {
+  database?: Database;
+  orm?: MikroORM;
+};
 
-export function createApi({
-  database = new DataSource(databaseOptions()),
+export async function createApi({
+  database,
+  orm,
   ...serverOptions
-}: ApiOptions = {}) {
+}: ApiOptions = {}): Promise<{
+  app: ReturnType<typeof createHttpServer>;
+  services: {
+    orm: MikroORM;
+    database: Database;
+    events: OperationsEventsService;
+    repairs: RepairsService;
+    serviceJobs: ServiceJobsService;
+    alertWorker: JobAlertWorker;
+    whatsapp: WhatsAppCloudService;
+  };
+}> {
+  const mikro = orm ?? (await MikroOrm.init(databaseConfig() as never));
+  const db = database ?? new Database(mikro);
   const app = createHttpServer(serverOptions);
-  const users = database.getRepository(User);
+  const users = db.getRepository(User);
   const kratos = new KratosService();
   const rbac = new RbacService(
-    database.getRepository(UserRole),
-    database.getRepository(Role),
+    db.getRepository(UserRole),
+    db.getRepository(Role),
   );
   const auth = new AuthService(kratos, users, rbac);
   const adminUsers = new AdminUsersService(
     users,
     kratos,
-    database,
+    db,
     rbac,
     app.log.child({ service: 'users' }),
   );
-  const fleet = new FleetService(database, adminUsers, rbac);
-  const events = new OperationsEventsService(database, auth);
-  const schedules = new SchedulingService(database, events);
-  const driving = new DrivingService(database, schedules, events);
-  const telemetry = new TelemetryService(database, driving, kratos);
+  const fleet = new FleetService(db, adminUsers, rbac);
+  const events = new OperationsEventsService(db, auth);
+  const schedules = new SchedulingService(db, events);
+  const driving = new DrivingService(db, schedules, events);
+  const telemetry = new TelemetryService(db, driving, kratos);
   const mqtt = new FleetMqttService(
     telemetry,
     events,
     app.log.child({ service: 'mqtt' }),
   );
   const mobileAuth = new MobileAuthService(
-    database,
+    db,
     kratos,
     auth,
     rbac,
     driving,
   );
-  const repairAccess = new RepairAccess();
-  const openWa = new OpenWaService(
-    database,
-    repairAccess,
-    app.log.child({ service: 'openwa' }),
+  const serviceJobAccess = new ServiceJobAccess();
+  const serviceJobs = new ServiceJobsService(
+    db,
+    events,
+    serviceJobAccess,
+    app.log.child({ service: 'service-jobs' }),
   );
-  const repairOtp = new RepairOtpService(openWa, repairAccess);
-  const repairs = new RepairsService(database, repairOtp, events);
-  const issues = new IssuesService(database, driving, events, openWa);
+  const whatsapp = new WhatsAppCloudService(
+    app.log.child({ service: 'whatsapp' }),
+  );
+  const alertWorker = new JobAlertWorker(
+    db,
+    serviceJobs,
+    whatsapp,
+    app.log.child({ service: 'job-alerts' }),
+  );
+  const whatsappWebhook = new WhatsAppWebhookService(
+    db,
+    serviceJobs,
+    whatsapp,
+    app.log.child({ service: 'whatsapp-webhook' }),
+  );
+  serviceJobs.onAlertsQueued = () => alertWorker.wake();
+  const repairs = new RepairsService(db, events);
+  const issues = new IssuesService(db, driving, events, serviceJobs);
+
+  // Every HTTP request gets its own MikroORM EntityManager. The global
+  // EntityManager stays disabled (allowGlobalContext: false).
+  app.addHook('onRequest', (_request, _reply, done) => {
+    RequestContext.create(mikro.em, done);
+  });
 
   app.addHook('onReady', async () => {
-    if (!database.isInitialized) await database.initialize();
-    await openWa.start();
+    await alertWorker.start();
+    whatsappWebhook.start();
     await mqtt.start();
   });
   app.addHook('onClose', async () => {
-    openWa.stop();
+    alertWorker.stop();
+    whatsappWebhook.stop();
     try {
       await mqtt.stop();
     } finally {
-      if (database.isInitialized) await database.destroy();
+      await db.destroy();
     }
   });
 
@@ -123,6 +172,7 @@ export function createApi({
   app.get('/', async () => 'Hello World!');
   registerAuthRoutes(app, auth);
   registerKratosHook(app, users);
+  registerWhatsAppWebhookRoutes(app, whatsappWebhook);
 
   app.register(
     async (admin) => {
@@ -133,6 +183,7 @@ export function createApi({
       registerTruckRoutes(admin, fleet);
       registerDriverRoutes(admin, fleet);
       registerAdminIssueRoutes(admin, issues);
+      registerAdminServiceJobRoutes(admin, serviceJobs);
       admin.register(async (repair) => {
         repair.register(multipart);
         registerAdminRepairRoutes(repair, repairs);
@@ -152,10 +203,21 @@ export function createApi({
     registerMobileScheduleRoutes(mobile, schedules, events, auth);
     registerMobileTelemetryRoutes(mobile, auth, telemetry);
   });
-  app.register(async (publicRepairs) => {
-    publicRepairs.register(multipart);
-    registerPublicRepairRoutes(publicRepairs, repairs, repairAccess, repairOtp);
+  app.register(async (publicJobs) => {
+    publicJobs.register(multipart);
+    registerPublicServiceJobRoutes(publicJobs, serviceJobs);
   });
 
-  return { app, services: { database, openWa, events, repairs } };
+  return {
+    app,
+    services: {
+      orm: mikro,
+      database: db,
+      events,
+      repairs,
+      serviceJobs,
+      alertWorker,
+      whatsapp,
+    },
+  };
 }

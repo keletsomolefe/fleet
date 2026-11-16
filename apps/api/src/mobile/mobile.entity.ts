@@ -1,34 +1,54 @@
+import { entityId } from '../database/database.js';
 import {
-  Column,
-  CreateDateColumn,
   Entity,
-  Index,
-  JoinColumn,
   ManyToOne,
-  PrimaryGeneratedColumn,
-  type Relation,
-} from 'typeorm';
+  PrimaryKey,
+  Property,
+  Unique,
+} from '@mikro-orm/decorators/legacy';
+import type { Rel } from '@mikro-orm/postgresql';
 import {
-  DriverProfile,
   DeviceTruckAssociation,
+  DriverProfile,
 } from '../fleet/fleet.entity.js';
 
-@Entity({ name: 'driver_truck_confirmations' })
-@Index(
-  'uq_driver_session_truck_confirmation',
-  ['kratosSessionId', 'associationId'],
-  { unique: true },
-)
+@Entity({ tableName: 'driver_truck_confirmations', schema: 'app' })
+@Unique({
+  name: 'uq_driver_session_truck_confirmation',
+  properties: ['kratosSessionId', 'association'],
+})
 export class DriverTruckConfirmation {
-  @PrimaryGeneratedColumn('uuid') id: string;
-  @Column({ type: 'uuid' }) driverId: string;
-  @ManyToOne(() => DriverProfile, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'driverId' })
-  driver: Relation<DriverProfile>;
-  @Column({ type: 'uuid' }) associationId: string;
-  @ManyToOne(() => DeviceTruckAssociation, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'associationId' })
-  association: Relation<DeviceTruckAssociation>;
-  @Column({ type: 'uuid' }) kratosSessionId: string;
-  @CreateDateColumn({ type: 'timestamptz' }) confirmedAt: Date;
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string;
+
+  @ManyToOne(() => DriverProfile, {
+    fieldName: 'driverId',
+    deleteRule: 'restrict',
+  })
+  driver!: Rel<DriverProfile>;
+
+  @ManyToOne(() => DeviceTruckAssociation, {
+    fieldName: 'associationId',
+    deleteRule: 'restrict',
+  })
+  association!: Rel<DeviceTruckAssociation>;
+
+  @Property({ type: 'uuid' })
+  kratosSessionId!: string;
+
+  get driverId(): string {
+    return entityId(this.driver);
+  }
+
+  get associationId(): string {
+    return entityId(this.association);
+  }
+
+  @Property({
+    type: 'datetime',
+    columnType: 'timestamptz',
+    defaultRaw: 'now()',
+    onCreate: () => new Date(),
+  })
+  confirmedAt!: Date;
 }

@@ -1,3 +1,4 @@
+import { Database, EntityManager, IsNull, save } from '../database/database.js';
 import { SchedulingService } from '../scheduling/scheduling.service.js';
 import { today } from '../scheduling/schedule.input.js';
 import { OperationsEventsService } from '../operations/operations-events.service.js';
@@ -8,7 +9,6 @@ import {
   ForbiddenError,
   NotFoundError,
 } from '../http/errors.js';
-import { DataSource, EntityManager, IsNull } from 'typeorm';
 import type { AdminContext } from '../auth/auth.service.js';
 import { DriverProfile, Truck } from '../fleet/fleet.entity.js';
 import { parseSearch, validateAssignment } from '../fleet/fleet.input.js';
@@ -23,7 +23,7 @@ import {
 
 export class DrivingService {
   constructor(
-    private readonly db: DataSource,
+    private readonly db: Database,
     private readonly scheduling: SchedulingService,
     private readonly events: OperationsEventsService,
   ) {}

@@ -15,6 +15,7 @@
     "infra:migrate": "docker compose run --rm kratos-migrate",
     "infra:test": "node scripts/test-dev-stack.mjs",
     "db:seed": "pnpm --filter api seed:admin",
+    "db:migrate": "pnpm --filter api migrate",
     "test:admin": "node scripts/test-admin-stack.mjs",
     "test:fleet": "node scripts/test-fleet-stack.mjs",
     "test:mobile": "node scripts/test-mobile-stack.mjs",
@@ -32,8 +33,16 @@
     "test:issues": "node scripts/test-driver-issues-stack.mjs",
     "test:deployment": "node scripts/test-deploy-safety.mjs",
     "test:downloads": "node scripts/test-android-download.mjs",
-    "test:repairs": "pnpm --filter api build && node scripts/test-repairs-stack.mjs",
-    "db:roles": "pnpm --filter api configure:roles"
+    "db:roles": "pnpm --filter api configure:roles",
+    "db:seed:run": "pnpm --filter api seed",
+    "db:seed:roles": "pnpm --filter api seed:roles",
+    "db:migration:create": "pnpm --filter api migration:create",
+    "db:migration:list": "pnpm --filter api migration:list",
+    "db:migration:pending": "pnpm --filter api migration:pending",
+    "db:check-schema": "pnpm --filter api check-schema",
+    "test:db-queries": "node scripts/test-service-job-queries.mjs",
+    "test:service-jobs": "pnpm --filter api build && node --env-file=.env scripts/test-service-jobs-stack.mjs",
+    "test:whatsapp-jobs": "pnpm --filter api build && node --env-file=.env scripts/test-whatsapp-jobs-stack.mjs"
   },
   "dependencies": {
     "@platformatic/runtime": "^3.72.0",

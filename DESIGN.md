@@ -26,6 +26,7 @@ The running app and the relevant feature docs define current behavior. See the [
 - Use the existing desktop sidebar and header; keep the narrow-screen navigation drawer. Give each page one title and put its main action in the header when appropriate.
 - Put search and filters directly above the results. Use existing list or table patterns so vehicle registrations, driver names, dates and statuses can be compared. Keep row actions close to the record; use the narrower layout to prioritize the identity, status and next action without hiding essential information.
 - Put unresolved items where staff can act on them. The Exceptions count means unresolved work; opening the menu does not resolve anything. Keep empty results, loading and failed requests distinct. For scheduling and handovers, show the affected date and vehicle before the user commits. [Scheduling and exceptions](docs/driver-scheduling.md) define the details.
+- Service jobs lead with the action that changes the state: alert again while waiting, assign while open, close once completed. Show the assigned provider, per-provider alert state and the audited timeline together so staff can see who is handling the work. The provider web link is a mobile-first, login-free page; show only that provider's job and make accept, decline, progress and complete obvious without exposing internal notes or other providers.
 
 ## Driver app
 

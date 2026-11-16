@@ -1,17 +1,15 @@
-import dataSource from './data-source.js';
-import { configureRoles } from '../rbac/configure-roles.js';
+import { withMaintenanceDatabase } from './orm.js';
+import { configureRoles } from '../rbac/role-catalogue.js';
 
+// Update role data in the app schema; schema changes belong in migrations.
 try {
-  await dataSource.initialize();
-  await configureRoles(dataSource);
-  console.log(
-    'Roles updated. Dispatcher and Terminal operator retired. Truck mechanic can view and resolve issues.',
-  );
+  await withMaintenanceDatabase(async (db) => {
+    await db.transaction((em) => configureRoles(em));
+  });
+  console.log('Role catalogue is ready.');
 } catch (error) {
   console.error(
     error instanceof Error ? error.message : 'Role configuration failed.',
   );
   process.exitCode = 1;
-} finally {
-  if (dataSource.isInitialized) await dataSource.destroy();
 }

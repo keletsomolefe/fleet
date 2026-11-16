@@ -1,10 +1,10 @@
+import { Database, EntityManager, In, IsNull, save } from '../database/database.js';
 import {
   BadRequestError,
   ConflictError,
   ForbiddenError,
   NotFoundError,
 } from '../http/errors.js';
-import { DataSource, EntityManager, In, IsNull } from 'typeorm';
 import type { AdminContext } from '../auth/auth.service.js';
 import { DriverProfile, Truck } from '../fleet/fleet.entity.js';
 import { DrivingSession, VehicleDispute } from '../mobile/driving.entity.js';
@@ -22,7 +22,7 @@ import { drivingId } from '../mobile/driving.input.js';
 
 export class SchedulingService {
   constructor(
-    private readonly db: DataSource,
+    private readonly db: Database,
     private readonly events: OperationsEventsService,
   ) {}
   private require(c: AdminContext) {

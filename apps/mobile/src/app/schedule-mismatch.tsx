@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useForm, useStore } from "@tanstack/react-form";
 import { useRouter } from "expo-router";
 import {
   Button,
@@ -14,27 +14,30 @@ import { useFleet } from "@/state/fleet";
 export default function ScheduleMismatch() {
   const router = useRouter();
   const fleet = useFleet(),
-    action = useAction(),
-    [note, setNote] = useState("");
+    action = useAction();
   const scheduled = fleet.driver?.schedule,
     requested = fleet.selection?.truck;
   const alternative =
     requested && requested.id !== scheduled?.truck.id ? requested : null;
+  const form = useForm({
+    defaultValues: { note: "" },
+    onSubmit: ({ value }) =>
+      action.run(async () => {
+        if (!scheduled || !value.note.trim() || fleet.driver?.pendingDispute)
+          return;
+        await fleet.reportMismatch(alternative?.id ?? null, value.note);
+        router.replace("/truck");
+      }),
+  });
+  const hasNote = useStore(form.store, (state) => !!state.values.note.trim());
   return (
     <Screen
       actions={
         <>
           <Button
             loading={action.busy}
-            disabled={
-              !scheduled || !note.trim() || !!fleet.driver?.pendingDispute
-            }
-            onPress={() =>
-              void action.run(async () => {
-                await fleet.reportMismatch(alternative?.id ?? null, note);
-                router.replace("/truck");
-              })
-            }
+            disabled={!scheduled || !hasNote || !!fleet.driver?.pendingDispute}
+            onPress={() => void form.handleSubmit()}
           >
             Send to administrator
           </Button>
@@ -68,13 +71,19 @@ export default function ScheduleMismatch() {
           <TruckCard truck={alternative} />
         </>
       )}
-      <Field
-        label="What needs to change?"
-        value={note}
-        onChangeText={setNote}
-        multiline
-        maxLength={1000}
-      />
+      <form.Field name="note">
+        {(field) => (
+          <Field
+            label="What needs to change?"
+            value={field.state.value}
+            onChangeText={field.handleChange}
+            onBlur={field.handleBlur}
+            editable={!action.busy}
+            multiline
+            maxLength={1000}
+          />
+        )}
+      </form.Field>
       <Copy small>
         Your administrator must resolve this before you start driving.
       </Copy>

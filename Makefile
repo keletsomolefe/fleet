@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help setup install dev build start typecheck test test-e2e up down restart status logs migrate infra-test db-shell seed-admin admin-test
+.PHONY: help setup install dev build start typecheck test test-e2e up down restart status logs migrate db-migrate db-seed db-check-schema infra-test db-shell seed-admin admin-test
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -46,6 +46,15 @@ logs: ## Follow development service logs (SERVICE=kratos for one service)
 
 migrate: ## Apply pending Kratos database migrations
 	pnpm infra:migrate
+
+db-migrate: ## Apply pending Fleet application schema migrations
+	pnpm db:migrate
+
+db-seed: ## Seed the role and permission catalogue (never resets data)
+	pnpm db:seed:run
+
+db-check-schema: ## Verify the app schema matches mapped entities (read-only)
+	pnpm db:check-schema
 
 infra-test: ## Verify schema isolation and authentication flows
 	pnpm infra:test

@@ -1,5 +1,5 @@
+import { Repository } from '../database/database.js';
 import type { FastifyInstance } from 'fastify';
-import type { Repository } from 'typeorm';
 import { BadRequestError, UnauthorizedError } from '../http/errors.js';
 import { header } from '../http/request.js';
 import { User } from '../users/user.entity.js';

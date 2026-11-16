@@ -1,13 +1,13 @@
+import { entityId } from '../database/database.js';
 import {
-  Column,
-  CreateDateColumn,
   Entity,
   Index,
-  JoinColumn,
   ManyToOne,
-  PrimaryColumn,
-  type Relation,
-} from 'typeorm';
+  PrimaryKey,
+  Property,
+  Unique,
+} from '@mikro-orm/decorators/legacy';
+import type { Rel } from '@mikro-orm/postgresql';
 import {
   DeviceTruckAssociation,
   DriverProfile,
@@ -15,57 +15,152 @@ import {
 } from '../fleet/fleet.entity.js';
 import { DrivingSession } from '../mobile/driving.entity.js';
 
-@Entity({ name: 'tracking_streams' })
-@Index('idx_tracking_stream_device', ['deviceId', 'startedAt'])
+@Entity({ tableName: 'tracking_streams', schema: 'app' })
+@Index({
+  name: 'idx_tracking_stream_device',
+  properties: ['device', 'startedAt'],
+})
+@Index({
+  name: 'idx_tracking_driving_session',
+  properties: ['drivingSession'],
+})
+@Unique({
+  name: 'uq_tracking_upload_token',
+  properties: ['uploadTokenHash'],
+  where: '"uploadTokenHash" IS NOT NULL',
+})
 export class TrackingStream {
-  @PrimaryColumn('uuid') id: string;
-  @Column({ type: 'uuid', nullable: true }) deviceId: string | null;
-  @ManyToOne(() => TruckDevice, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'deviceId' })
-  device: Relation<TruckDevice>;
-  @Column('uuid') driverId: string;
-  @ManyToOne(() => DriverProfile, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'driverId' })
-  driver: Relation<DriverProfile>;
-  @Column({ type: 'uuid', nullable: true }) associationId: string | null;
-  @ManyToOne(() => DeviceTruckAssociation, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'associationId' })
-  association: Relation<DeviceTruckAssociation>;
-  @Column({ type: 'uuid', nullable: true }) drivingSessionId: string | null;
-  @ManyToOne(() => DrivingSession, { nullable: true, onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'drivingSessionId' })
-  drivingSession: Relation<DrivingSession> | null;
-  @Column({ type: 'varchar', length: 64, nullable: true, select: false })
-  uploadTokenHash: string | null;
-  @Column('uuid') kratosSessionId: string;
-  @CreateDateColumn({ type: 'timestamptz' }) startedAt: Date;
-  @Column({ type: 'timestamptz', nullable: true }) endedAt: Date | null;
-  @Column({ type: 'int', nullable: true }) finalSequence: number | null;
+  @PrimaryKey({ type: 'uuid' })
+  id!: string;
+
+  @ManyToOne(() => TruckDevice, {
+    fieldName: 'deviceId',
+    nullable: true,
+    deleteRule: 'restrict',
+  })
+  device!: Rel<TruckDevice> | null;
+
+  @ManyToOne(() => DriverProfile, {
+    fieldName: 'driverId',
+    deleteRule: 'restrict',
+  })
+  driver!: Rel<DriverProfile>;
+
+  @ManyToOne(() => DeviceTruckAssociation, {
+    fieldName: 'associationId',
+    nullable: true,
+    deleteRule: 'restrict',
+  })
+  association!: Rel<DeviceTruckAssociation> | null;
+
+  @ManyToOne(() => DrivingSession, {
+    fieldName: 'drivingSessionId',
+    nullable: true,
+    deleteRule: 'restrict',
+  })
+  drivingSession!: Rel<DrivingSession> | null;
+
+  get deviceId(): string | null {
+    return entityId(this.device);
+  }
+
+  get driverId(): string {
+    return entityId(this.driver);
+  }
+
+  get associationId(): string | null {
+    return entityId(this.association);
+  }
+
+  get drivingSessionId(): string | null {
+    return entityId(this.drivingSession);
+  }
+
+  @Property({ type: 'string', length: 64, nullable: true })
+  uploadTokenHash!: string | null;
+
+  @Property({ type: 'uuid' })
+  kratosSessionId!: string;
+
+  @Property({
+    type: 'datetime',
+    columnType: 'timestamptz',
+    defaultRaw: 'now()',
+    onCreate: () => new Date(),
+  })
+  startedAt!: Date;
+
+  @Property({ type: 'datetime', columnType: 'timestamptz', nullable: true })
+  endedAt!: Date | null;
+
+  @Property({ type: 'integer', nullable: true })
+  finalSequence!: number | null;
 }
 
-@Entity({ name: 'tracking_events' })
-@Index('uq_tracking_stream_sequence', ['streamId', 'sequence'], {
-  unique: true,
+@Entity({ tableName: 'tracking_events', schema: 'app' })
+@Unique({
+  name: 'uq_tracking_stream_sequence',
+  properties: ['stream', 'sequence'],
 })
-@Index('idx_tracking_event_time', ['recordedAt', 'id'])
+@Index({
+  name: 'idx_tracking_event_time',
+  properties: ['recordedAt', 'id'],
+})
 export class TrackingEvent {
-  @Column({ type: 'boolean', default: false }) unconfirmed: boolean;
-  @PrimaryColumn('uuid') id: string;
-  @Column('uuid') streamId: string;
-  @ManyToOne(() => TrackingStream, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'streamId' })
-  stream: Relation<TrackingStream>;
-  @Column('int') sequence: number;
-  @Column({ type: 'varchar', length: 16 }) kind: string;
-  @Column('timestamptz') recordedAt: Date;
-  @CreateDateColumn({ type: 'timestamptz' }) receivedAt: Date;
-  @Column({ type: 'double precision', nullable: true }) latitude: number | null;
-  @Column({ type: 'double precision', nullable: true }) longitude:
-    number | null;
-  @Column({ type: 'double precision', nullable: true }) accuracy: number | null;
-  @Column({ type: 'double precision', nullable: true }) speed: number | null;
-  @Column({ type: 'double precision', nullable: true }) heading: number | null;
-  @Column({ type: 'boolean', nullable: true }) mocked: boolean | null;
-  @Column({ type: 'varchar', length: 64 }) digest: string;
-  @Column('jsonb') raw: Record<string, unknown>;
+  @Property({ type: 'boolean', default: false })
+  unconfirmed!: boolean;
+
+  @PrimaryKey({ type: 'uuid' })
+  id!: string;
+
+  @ManyToOne(() => TrackingStream, {
+    fieldName: 'streamId',
+    deleteRule: 'restrict',
+  })
+  stream!: Rel<TrackingStream>;
+
+  get streamId(): string {
+    return entityId(this.stream);
+  }
+
+  @Property({ type: 'integer' })
+  sequence!: number;
+
+  @Property({ type: 'string', length: 16 })
+  kind!: string;
+
+  @Property({ type: 'datetime', columnType: 'timestamptz' })
+  recordedAt!: Date;
+
+  @Property({
+    type: 'datetime',
+    columnType: 'timestamptz',
+    defaultRaw: 'now()',
+    onCreate: () => new Date(),
+  })
+  receivedAt!: Date;
+
+  @Property({ type: 'double', nullable: true })
+  latitude!: number | null;
+
+  @Property({ type: 'double', nullable: true })
+  longitude!: number | null;
+
+  @Property({ type: 'double', nullable: true })
+  accuracy!: number | null;
+
+  @Property({ type: 'double', nullable: true })
+  speed!: number | null;
+
+  @Property({ type: 'double', nullable: true })
+  heading!: number | null;
+
+  @Property({ type: 'boolean', nullable: true })
+  mocked!: boolean | null;
+
+  @Property({ type: 'string', length: 64 })
+  digest!: string;
+
+  @Property({ type: 'json', columnType: 'jsonb' })
+  raw!: Record<string, unknown>;
 }

@@ -39,6 +39,23 @@ Stop states: Pending → Arrived → Loading or offloading → Completed / Parti
 
 Proof policy is selected before dispatch and downloaded with the job. Active work retains its policy version until a job update is acknowledged.
 
+### Service jobs and provider dispatch (2026-11-16)
+
+| ID | Requirement |
+| --- | --- |
+| SVC-01 | Maintain a directory of service providers with company, contact, WhatsApp number, other contact details, services, coverage area, operational status, WhatsApp alert consent and opt-out state. Provider records are retained when paused. |
+| SVC-02 | A vehicle breakdown report creates one service job and one driver issue in one transaction. The job records the vehicle, driver, service type, description, optional location and urgency. One active service job per vehicle is enforced. |
+| SVC-03 | Alert every active, opted-in service provider at once through an approved Meta WhatsApp utility template with job reference, vehicle, issue, location and a signed View job link with Accept job and Can't take quick replies. |
+| SVC-04 | The first provider to accept is assigned atomically; later responses are informed that the job is already covered. The office can assign or reassign a provider with a recorded reason. |
+| SVC-05 | The office sees a Service jobs list and detail page with status, assigned provider, per-provider alert delivery/read state, progress timeline, completion note/photos/amount and the audit actor/channel. |
+| SVC-06 | A provider can accept, decline, update progress (on the way, arrived, working) and mark completed from WhatsApp or the signed web link. Completion requires a note. The web link needs no Fleet account and shows only that provider's job. |
+| SVC-07 | The office reviews completed work and closes the job, optionally resolving the linked driver report. Closing and reopening are audited. A linked report cannot be resolved while its service job is active. |
+| SVC-08 | WhatsApp failures never lose the driver report or job. Failed alerts are visible, resendable and never auto-retried after an ambiguous send. Duplicate webhook deliveries and duplicate accepts are idempotent. |
+| SVC-09 | Provider consent and opt-out (`STOP`) are respected. Re-enabling alerts or changing the WhatsApp number requires recorded consent. |
+| SVC-10 | The old OpenWA group repair flow is not used for new reports. Completed repairs are no longer a separate navigation section; service jobs cover mechanical, towing, tyre, electrical, body, fuel and other provider work. |
+
+Provider alerts are delivered by Meta Cloud API. Provider web links are bearer credentials; attribution records the provider, channel, timestamp and WhatsApp profile/self-reported name. The app does not expose driver phone numbers to providers or other providers' details.
+
 ## 3 Activities, shifts and proof
 
 | ID | Requirement and fields |
@@ -141,6 +158,8 @@ The fixed Fleet header is 48px, followed by a separate 32px registration/truck b
 | AC-09 | A driver selects Puncture or Stuck, or supplies a custom title/description, without linking a job. Offline save is visibly not yet received; after sync admin can acknowledge and resolve with original details retained. |
 | AC-10 | Thabo clocks in at 07:56 with 284,560 km and out at 16:20 with 284,742 km. Admin sees both photos and 182 km. Missing-photo branches retain a reason and a proof exception. |
 | AC-11 | Registration is in the bar below the header. Shown and collapsed designs preserve the same truck; production scrolling hides downward and reveals upward without losing captured data. |
+
+| AC-12 | Driver reports a breakdown with service type and location. One WhatsApp template is queued per active provider. The first provider to accept is assigned, the others are told it is covered, progress and completion appear on the dashboard, and the office closes the job and resolves the report. WhatsApp failure leaves the report and job intact and visible for resend. |
 
 Production follow-up tests: persistence, idempotency, revocation after reconnect, cross-driver privacy, protected files and real screen-off tracking. Figma demonstrates states rather than validating these services.
 

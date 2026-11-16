@@ -1,0 +1,38 @@
+{
+  "name": "vhh_service_job_alert",
+  "language": "en_US",
+  "category": "UTILITY",
+  "components": [
+    {
+      "type": "HEADER",
+      "format": "TEXT",
+      "text": "Service request"
+    },
+    {
+      "type": "BODY",
+      "text": "VHH Fleet service request {{1}}\nVehicle: {{2}} ({{3}})\nIssue: {{4}}\nLocation: {{5}}\n\nTap Accept job to take this request, or View job for details.",
+      "example": {
+        "body_text": [
+          ["SJ-001042", "GP 24 VH GP", "VHH-012", "Mechanical: Engine overheating, truck stopped", "N1 North, near Polokwane"]
+        ]
+      }
+    },
+    {
+      "type": "FOOTER",
+      "text": "First provider to accept is assigned."
+    },
+    {
+      "type": "BUTTONS",
+      "buttons": [
+        { "type": "QUICK_REPLY", "text": "Accept job" },
+        { "type": "QUICK_REPLY", "text": "Can't take" },
+        {
+          "type": "URL",
+          "text": "View job",
+          "url": "https://fleet.nativesounds.co.za/j/{{1}}",
+          "example": ["https://fleet.nativesounds.co.za/j/9dd37640-3ec7-44d5-8557-66fcf8fca990.dummy-signature-for-approval"]
+        }
+      ]
+    }
+  ]
+}

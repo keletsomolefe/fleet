@@ -16,17 +16,22 @@ import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminSectionRouteImport } from './routes/admin.$section'
 import { Route as AdminDriversRouteImport } from './routes/admin.drivers'
-import { Route as AdminRepairsRouteImport } from './routes/admin.repairs'
 import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AdminSchedulesRouteImport } from './routes/admin.schedules'
 import { Route as AdminSignupRouteImport } from './routes/admin.signup'
 import { Route as AdminTrucksRouteImport } from './routes/admin.trucks'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminVehicleDisputesRouteImport } from './routes/admin.vehicle-disputes'
-import { Route as RepairsIssueIdRouteImport } from './routes/repairs.$issueId'
+import { Route as JCodeRouteImport } from './routes/j.$code'
 import { Route as AdminDriversIndexRouteImport } from './routes/admin.drivers.index'
 import { Route as AdminDriversDriverIdRouteImport } from './routes/admin.drivers.$driverId'
 import { Route as AdminDriversNewRouteImport } from './routes/admin.drivers.new'
+import { Route as AdminJobsIndexRouteImport } from './routes/admin.jobs.index'
+import { Route as AdminJobsJobIdRouteImport } from './routes/admin.jobs.$jobId'
+import { Route as AdminJobsNewRouteImport } from './routes/admin.jobs.new'
+import { Route as AdminProvidersIndexRouteImport } from './routes/admin.providers.index'
+import { Route as AdminProvidersProviderIdRouteImport } from './routes/admin.providers.$providerId'
+import { Route as AdminProvidersNewRouteImport } from './routes/admin.providers.new'
 import { Route as AdminTrucksIndexRouteImport } from './routes/admin.trucks.index'
 import { Route as AdminTrucksTruckIdRouteImport } from './routes/admin.trucks.$truckId'
 import { Route as AdminTrucksNewRouteImport } from './routes/admin.trucks.new'
@@ -69,11 +74,6 @@ const AdminDriversRoute = AdminDriversRouteImport.update({
   path: '/drivers',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminRepairsRoute = AdminRepairsRouteImport.update({
-  id: '/repairs',
-  path: '/repairs',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminRolesRoute = AdminRolesRouteImport.update({
   id: '/roles',
   path: '/roles',
@@ -104,9 +104,9 @@ const AdminVehicleDisputesRoute = AdminVehicleDisputesRouteImport.update({
   path: '/vehicle-disputes',
   getParentRoute: () => AdminRoute,
 } as any)
-const RepairsIssueIdRoute = RepairsIssueIdRouteImport.update({
-  id: '/repairs/$issueId',
-  path: '/repairs/$issueId',
+const JCodeRoute = JCodeRouteImport.update({
+  id: '/j/$code',
+  path: '/j/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminDriversIndexRoute = AdminDriversIndexRouteImport.update({
@@ -123,6 +123,37 @@ const AdminDriversNewRoute = AdminDriversNewRouteImport.update({
   id: '/new',
   path: '/new',
   getParentRoute: () => AdminDriversRoute,
+} as any)
+const AdminJobsIndexRoute = AdminJobsIndexRouteImport.update({
+  id: '/jobs/',
+  path: '/jobs/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminJobsJobIdRoute = AdminJobsJobIdRouteImport.update({
+  id: '/jobs/$jobId',
+  path: '/jobs/$jobId',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminJobsNewRoute = AdminJobsNewRouteImport.update({
+  id: '/jobs/new',
+  path: '/jobs/new',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProvidersIndexRoute = AdminProvidersIndexRouteImport.update({
+  id: '/providers/',
+  path: '/providers/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProvidersProviderIdRoute =
+  AdminProvidersProviderIdRouteImport.update({
+    id: '/providers/$providerId',
+    path: '/providers/$providerId',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminProvidersNewRoute = AdminProvidersNewRouteImport.update({
+  id: '/providers/new',
+  path: '/providers/new',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminTrucksIndexRoute = AdminTrucksIndexRouteImport.update({
   id: '/',
@@ -162,22 +193,27 @@ export interface FileRoutesByFullPath {
   '/verify-email': typeof VerifyEmailRoute
   '/admin/$section': typeof AdminSectionRoute
   '/admin/drivers': typeof AdminDriversRouteWithChildren
-  '/admin/repairs': typeof AdminRepairsRoute
   '/admin/roles': typeof AdminRolesRoute
   '/admin/schedules': typeof AdminSchedulesRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin/trucks': typeof AdminTrucksRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/vehicle-disputes': typeof AdminVehicleDisputesRoute
-  '/repairs/$issueId': typeof RepairsIssueIdRoute
+  '/j/$code': typeof JCodeRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
   '/admin/drivers/new': typeof AdminDriversNewRoute
+  '/admin/jobs/$jobId': typeof AdminJobsJobIdRoute
+  '/admin/jobs/new': typeof AdminJobsNewRoute
+  '/admin/providers/$providerId': typeof AdminProvidersProviderIdRoute
+  '/admin/providers/new': typeof AdminProvidersNewRoute
   '/admin/trucks/$truckId': typeof AdminTrucksTruckIdRoute
   '/admin/trucks/new': typeof AdminTrucksNewRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/new': typeof AdminUsersNewRoute
   '/admin/drivers/': typeof AdminDriversIndexRoute
+  '/admin/jobs/': typeof AdminJobsIndexRoute
+  '/admin/providers/': typeof AdminProvidersIndexRoute
   '/admin/trucks/': typeof AdminTrucksIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
 }
@@ -186,20 +222,25 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/$section': typeof AdminSectionRoute
-  '/admin/repairs': typeof AdminRepairsRoute
   '/admin/roles': typeof AdminRolesRoute
   '/admin/schedules': typeof AdminSchedulesRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin/vehicle-disputes': typeof AdminVehicleDisputesRoute
-  '/repairs/$issueId': typeof RepairsIssueIdRoute
+  '/j/$code': typeof JCodeRoute
   '/admin': typeof AdminIndexRoute
   '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
   '/admin/drivers/new': typeof AdminDriversNewRoute
+  '/admin/jobs/$jobId': typeof AdminJobsJobIdRoute
+  '/admin/jobs/new': typeof AdminJobsNewRoute
+  '/admin/providers/$providerId': typeof AdminProvidersProviderIdRoute
+  '/admin/providers/new': typeof AdminProvidersNewRoute
   '/admin/trucks/$truckId': typeof AdminTrucksTruckIdRoute
   '/admin/trucks/new': typeof AdminTrucksNewRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/new': typeof AdminUsersNewRoute
   '/admin/drivers': typeof AdminDriversIndexRoute
+  '/admin/jobs': typeof AdminJobsIndexRoute
+  '/admin/providers': typeof AdminProvidersIndexRoute
   '/admin/trucks': typeof AdminTrucksIndexRoute
   '/admin/users': typeof AdminUsersIndexRoute
 }
@@ -211,22 +252,27 @@ export interface FileRoutesById {
   '/verify-email': typeof VerifyEmailRoute
   '/admin/$section': typeof AdminSectionRoute
   '/admin/drivers': typeof AdminDriversRouteWithChildren
-  '/admin/repairs': typeof AdminRepairsRoute
   '/admin/roles': typeof AdminRolesRoute
   '/admin/schedules': typeof AdminSchedulesRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin/trucks': typeof AdminTrucksRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/vehicle-disputes': typeof AdminVehicleDisputesRoute
-  '/repairs/$issueId': typeof RepairsIssueIdRoute
+  '/j/$code': typeof JCodeRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
   '/admin/drivers/new': typeof AdminDriversNewRoute
+  '/admin/jobs/$jobId': typeof AdminJobsJobIdRoute
+  '/admin/jobs/new': typeof AdminJobsNewRoute
+  '/admin/providers/$providerId': typeof AdminProvidersProviderIdRoute
+  '/admin/providers/new': typeof AdminProvidersNewRoute
   '/admin/trucks/$truckId': typeof AdminTrucksTruckIdRoute
   '/admin/trucks/new': typeof AdminTrucksNewRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/new': typeof AdminUsersNewRoute
   '/admin/drivers/': typeof AdminDriversIndexRoute
+  '/admin/jobs/': typeof AdminJobsIndexRoute
+  '/admin/providers/': typeof AdminProvidersIndexRoute
   '/admin/trucks/': typeof AdminTrucksIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
 }
@@ -239,22 +285,27 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/admin/$section'
     | '/admin/drivers'
-    | '/admin/repairs'
     | '/admin/roles'
     | '/admin/schedules'
     | '/admin/signup'
     | '/admin/trucks'
     | '/admin/users'
     | '/admin/vehicle-disputes'
-    | '/repairs/$issueId'
+    | '/j/$code'
     | '/admin/'
     | '/admin/drivers/$driverId'
     | '/admin/drivers/new'
+    | '/admin/jobs/$jobId'
+    | '/admin/jobs/new'
+    | '/admin/providers/$providerId'
+    | '/admin/providers/new'
     | '/admin/trucks/$truckId'
     | '/admin/trucks/new'
     | '/admin/users/$userId'
     | '/admin/users/new'
     | '/admin/drivers/'
+    | '/admin/jobs/'
+    | '/admin/providers/'
     | '/admin/trucks/'
     | '/admin/users/'
   fileRoutesByTo: FileRoutesByTo
@@ -263,20 +314,25 @@ export interface FileRouteTypes {
     | '/login'
     | '/verify-email'
     | '/admin/$section'
-    | '/admin/repairs'
     | '/admin/roles'
     | '/admin/schedules'
     | '/admin/signup'
     | '/admin/vehicle-disputes'
-    | '/repairs/$issueId'
+    | '/j/$code'
     | '/admin'
     | '/admin/drivers/$driverId'
     | '/admin/drivers/new'
+    | '/admin/jobs/$jobId'
+    | '/admin/jobs/new'
+    | '/admin/providers/$providerId'
+    | '/admin/providers/new'
     | '/admin/trucks/$truckId'
     | '/admin/trucks/new'
     | '/admin/users/$userId'
     | '/admin/users/new'
     | '/admin/drivers'
+    | '/admin/jobs'
+    | '/admin/providers'
     | '/admin/trucks'
     | '/admin/users'
   id:
@@ -287,22 +343,27 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/admin/$section'
     | '/admin/drivers'
-    | '/admin/repairs'
     | '/admin/roles'
     | '/admin/schedules'
     | '/admin/signup'
     | '/admin/trucks'
     | '/admin/users'
     | '/admin/vehicle-disputes'
-    | '/repairs/$issueId'
+    | '/j/$code'
     | '/admin/'
     | '/admin/drivers/$driverId'
     | '/admin/drivers/new'
+    | '/admin/jobs/$jobId'
+    | '/admin/jobs/new'
+    | '/admin/providers/$providerId'
+    | '/admin/providers/new'
     | '/admin/trucks/$truckId'
     | '/admin/trucks/new'
     | '/admin/users/$userId'
     | '/admin/users/new'
     | '/admin/drivers/'
+    | '/admin/jobs/'
+    | '/admin/providers/'
     | '/admin/trucks/'
     | '/admin/users/'
   fileRoutesById: FileRoutesById
@@ -312,7 +373,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   LoginRoute: typeof LoginRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
-  RepairsIssueIdRoute: typeof RepairsIssueIdRoute
+  JCodeRoute: typeof JCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -366,13 +427,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDriversRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/repairs': {
-      id: '/admin/repairs'
-      path: '/repairs'
-      fullPath: '/admin/repairs'
-      preLoaderRoute: typeof AdminRepairsRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/roles': {
       id: '/admin/roles'
       path: '/roles'
@@ -415,11 +469,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminVehicleDisputesRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/repairs/$issueId': {
-      id: '/repairs/$issueId'
-      path: '/repairs/$issueId'
-      fullPath: '/repairs/$issueId'
-      preLoaderRoute: typeof RepairsIssueIdRouteImport
+    '/j/$code': {
+      id: '/j/$code'
+      path: '/j/$code'
+      fullPath: '/j/$code'
+      preLoaderRoute: typeof JCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/drivers/': {
@@ -442,6 +496,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/drivers/new'
       preLoaderRoute: typeof AdminDriversNewRouteImport
       parentRoute: typeof AdminDriversRoute
+    }
+    '/admin/jobs/': {
+      id: '/admin/jobs/'
+      path: '/jobs'
+      fullPath: '/admin/jobs/'
+      preLoaderRoute: typeof AdminJobsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/jobs/$jobId': {
+      id: '/admin/jobs/$jobId'
+      path: '/jobs/$jobId'
+      fullPath: '/admin/jobs/$jobId'
+      preLoaderRoute: typeof AdminJobsJobIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/jobs/new': {
+      id: '/admin/jobs/new'
+      path: '/jobs/new'
+      fullPath: '/admin/jobs/new'
+      preLoaderRoute: typeof AdminJobsNewRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/providers/': {
+      id: '/admin/providers/'
+      path: '/providers'
+      fullPath: '/admin/providers/'
+      preLoaderRoute: typeof AdminProvidersIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/providers/$providerId': {
+      id: '/admin/providers/$providerId'
+      path: '/providers/$providerId'
+      fullPath: '/admin/providers/$providerId'
+      preLoaderRoute: typeof AdminProvidersProviderIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/providers/new': {
+      id: '/admin/providers/new'
+      path: '/providers/new'
+      fullPath: '/admin/providers/new'
+      preLoaderRoute: typeof AdminProvidersNewRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/trucks/': {
       id: '/admin/trucks/'
@@ -539,7 +635,6 @@ const AdminUsersRouteWithChildren = AdminUsersRoute._addFileChildren(
 interface AdminRouteChildren {
   AdminSectionRoute: typeof AdminSectionRoute
   AdminDriversRoute: typeof AdminDriversRouteWithChildren
-  AdminRepairsRoute: typeof AdminRepairsRoute
   AdminRolesRoute: typeof AdminRolesRoute
   AdminSchedulesRoute: typeof AdminSchedulesRoute
   AdminSignupRoute: typeof AdminSignupRoute
@@ -547,12 +642,17 @@ interface AdminRouteChildren {
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminVehicleDisputesRoute: typeof AdminVehicleDisputesRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminJobsJobIdRoute: typeof AdminJobsJobIdRoute
+  AdminJobsNewRoute: typeof AdminJobsNewRoute
+  AdminProvidersProviderIdRoute: typeof AdminProvidersProviderIdRoute
+  AdminProvidersNewRoute: typeof AdminProvidersNewRoute
+  AdminJobsIndexRoute: typeof AdminJobsIndexRoute
+  AdminProvidersIndexRoute: typeof AdminProvidersIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminSectionRoute: AdminSectionRoute,
   AdminDriversRoute: AdminDriversRouteWithChildren,
-  AdminRepairsRoute: AdminRepairsRoute,
   AdminRolesRoute: AdminRolesRoute,
   AdminSchedulesRoute: AdminSchedulesRoute,
   AdminSignupRoute: AdminSignupRoute,
@@ -560,6 +660,12 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminVehicleDisputesRoute: AdminVehicleDisputesRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminJobsJobIdRoute: AdminJobsJobIdRoute,
+  AdminJobsNewRoute: AdminJobsNewRoute,
+  AdminProvidersProviderIdRoute: AdminProvidersProviderIdRoute,
+  AdminProvidersNewRoute: AdminProvidersNewRoute,
+  AdminJobsIndexRoute: AdminJobsIndexRoute,
+  AdminProvidersIndexRoute: AdminProvidersIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
@@ -569,7 +675,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   LoginRoute: LoginRoute,
   VerifyEmailRoute: VerifyEmailRoute,
-  RepairsIssueIdRoute: RepairsIssueIdRoute,
+  JCodeRoute: JCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

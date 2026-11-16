@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/empty-state";
 import { RefreshButton } from "@/components/refresh-button";
 import { PageHeader } from "@/components/page-header";
 import { useEffect, useRef, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   adminOperationsKey,
@@ -64,6 +64,10 @@ function Page() {
   });
   const items = data?.items ?? [];
   const pageError = error || data?.error || loadError?.message;
+  const selectedJobActive =
+    selected?.kind === "issue" &&
+    selected.job &&
+    ["open", "assigned", "in_progress"].includes(selected.job.status);
   const form = useForm({
     defaultValues: { resolution: "", note: "" },
     onSubmit: async ({ value: { resolution, note }, formApi }) => {
@@ -195,9 +199,31 @@ function Page() {
               {selected.currentDriver?.driverName ?? "No active driver"}
             </p>
           )}
-          {selected.kind === "issue" &&
+          {selected.kind === "issue" && selectedJobActive && selected.job ? (
+            <div className="space-y-3 rounded-md border bg-muted p-4 text-sm">
+              <p className="font-semibold">
+                Service job {selected.job.reference}
+              </p>
+              <p className="text-muted-foreground">
+                {selected.job.status === "open"
+                  ? "Waiting for a provider to accept."
+                  : selected.job.provider
+                    ? `${selected.job.provider.companyName} is handling this job.`
+                    : "This job is active."}
+              </p>
+              <Button asChild>
+                <Link
+                  to="/admin/jobs/$jobId"
+                  params={{ jobId: selected.job.id }}
+                >
+                  View service job
+                </Link>
+              </Button>
+            </div>
+          ) : selected.kind === "issue" &&
           selected.category === "vehicle" &&
-          selected.truck ? (
+          selected.truck &&
+          !selected.job ? (
             <RepairForm
               endpoint={`/api/admin/issues/${selected.id}/repair/resolve`}
               headers={{ "X-CSRF-Token": session.csrfToken }}
@@ -318,6 +344,11 @@ function Page() {
                 {d.kind === "issue" && (
                   <p className="max-w-prose whitespace-pre-wrap break-words text-sm">
                     {d.description}
+                  </p>
+                )}
+                {d.kind === "issue" && d.job && (
+                  <p className="text-xs text-muted-foreground">
+                    Service job {d.job.reference}
                   </p>
                 )}
                 {d.kind === "schedule" && (

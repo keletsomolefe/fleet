@@ -302,17 +302,23 @@ export function Button({
   secondary = false,
   disabled = false,
   loading = false,
+  selected,
 }: {
   children: string;
   onPress: () => void;
   secondary?: boolean;
   disabled?: boolean;
   loading?: boolean;
+  selected?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ disabled: disabled || loading, busy: loading }}
+      accessibilityState={{
+        disabled: disabled || loading,
+        busy: loading,
+        selected,
+      }}
       disabled={disabled || loading}
       onPress={onPress}
       style={({ pressed }) => ({

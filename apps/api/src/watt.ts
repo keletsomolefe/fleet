@@ -1,7 +1,7 @@
 import { createApi } from './app.js';
 
 export async function create() {
-  const { app } = createApi({
+  const { app } = await createApi({
     logger: { level: process.env.PLT_SERVER_LOGGER_LEVEL || 'info' },
   });
   try {

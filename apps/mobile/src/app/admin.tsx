@@ -1,3 +1,4 @@
+import { useForm, useStore } from "@tanstack/react-form";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { useRouter } from "expo-router";
@@ -27,7 +28,6 @@ export default function VehicleFlags() {
     [selected, setSelected] = useState<VehicleDispute | DriverIssue | null>(
       null,
     ),
-    [note, setNote] = useState(""),
     [error, setError] = useState(""),
     [outcome, setOutcome] = useState("");
   const canManageVehicles = ["trucks.read", "trucks.write"].every((p) =>
@@ -67,11 +67,19 @@ export default function VehicleFlags() {
     }, 0);
     return () => clearTimeout(timer);
   }, [load, fleet.attention.version, selected]);
-  async function resolve(
-    resolution:
-      "keep_current" | "release_vehicle" | "keep_schedule" | "change_schedule",
-  ) {
-    if (!selected) return;
+  type Resolution =
+    "keep_current" | "release_vehicle" | "keep_schedule" | "change_schedule";
+  const form = useForm({
+    defaultValues: { note: "" },
+    onSubmitMeta: { resolution: "release_vehicle" } as {
+      resolution: Resolution;
+    },
+    onSubmit: ({ value, meta }) =>
+      action.run(() => resolve(meta.resolution, value.note)),
+  });
+  const hasNote = useStore(form.store, (state) => !!state.values.note.trim());
+  async function resolve(resolution: Resolution, note: string) {
+    if (!selected || !note.trim()) return;
     if (selected.kind === "issue") {
       await request(`admin/issues/${selected.id}/resolve`, {
         method: "POST",
@@ -80,7 +88,7 @@ export default function VehicleFlags() {
       });
       setOutcome("Issue resolved.");
       setSelected(null);
-      setNote("");
+      form.resetField("note");
       await load();
       await fleet.refreshAttention();
       return;
@@ -113,7 +121,7 @@ export default function VehicleFlags() {
             : "Resolved. The current driver can continue.",
     );
     setSelected(null);
-    setNote("");
+    form.resetField("note");
     await load();
     await fleet.refreshAttention();
   }
@@ -125,17 +133,16 @@ export default function VehicleFlags() {
             <Button
               loading={action.busy}
               disabled={
-                !note.trim() ||
+                !hasNote ||
                 (selected.kind === "schedule" && !selected.requestedTruck)
               }
               onPress={() =>
-                void action.run(() =>
-                  resolve(
+                void form.handleSubmit({
+                  resolution:
                     selected.kind === "schedule"
                       ? "change_schedule"
                       : "release_vehicle",
-                  ),
-                )
+                })
               }
             >
               {selected.kind === "issue"
@@ -149,19 +156,18 @@ export default function VehicleFlags() {
                 secondary
                 disabled={
                   action.busy ||
-                  !note.trim() ||
+                  !hasNote ||
                   (selected.kind === "schedule"
                     ? !selected.schedule
                     : !selected.currentDriver)
                 }
                 onPress={() =>
-                  void action.run(() =>
-                    resolve(
+                  void form.handleSubmit({
+                    resolution:
                       selected.kind === "schedule"
                         ? "keep_schedule"
                         : "keep_current",
-                    ),
-                  )
+                  })
                 }
               >
                 {selected.kind === "schedule"
@@ -244,13 +250,19 @@ export default function VehicleFlags() {
               </Copy>
             )}
           </View>
-          <Field
-            label="What was decided?"
-            value={note}
-            onChangeText={setNote}
-            multiline
-            maxLength={1000}
-          />
+          <form.Field name="note">
+            {(field) => (
+              <Field
+                label="What was decided?"
+                value={field.state.value}
+                onChangeText={field.handleChange}
+                onBlur={field.handleBlur}
+                editable={!action.busy}
+                multiline
+                maxLength={1000}
+              />
+            )}
+          </form.Field>
         </>
       ) : items ? (
         <View style={{ gap: 12 }}>
@@ -271,7 +283,7 @@ export default function VehicleFlags() {
                   secondary
                   onPress={() => {
                     setSelected(item);
-                    setNote("");
+                    form.resetField("note");
                     setOutcome("");
                   }}
                 >
@@ -285,7 +297,7 @@ export default function VehicleFlags() {
                 meta={`${item.kind === "schedule" ? "Schedule problem" : "Vehicle in use"} · ${item.requestedBy}`}
                 onPress={() => {
                   setSelected(item);
-                  setNote("");
+                  form.resetField("note");
                   setOutcome("");
                 }}
               />

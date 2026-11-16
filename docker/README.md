@@ -63,7 +63,7 @@ provides working authentication while Fleet's own screens are implemented.
 
 ## Initialization and migrations
 
-App migrations and app-schema reset commands are temporarily removed. Infrastructure startup retains existing application data. Fresh application database setup is deferred; use an already initialized `app` schema. Kratos migration jobs continue unchanged.
+Fleet application schema changes use explicit additive MikroORM migrations, run with `pnpm db:migrate` (and seed with `pnpm db:seed:run`). Infrastructure startup retains existing application data; never reset or drop the `app` schema. A fresh database is initialized by the baseline migration and seeders. Kratos migration jobs continue unchanged. See [application database](../docs/database.md).
 
 PostgreSQL runs the numbered SQL files in `docker/postgres` on its first start.
 They create the roles and schemas and install the extensions as the administrator.

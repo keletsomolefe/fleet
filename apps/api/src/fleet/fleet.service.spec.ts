@@ -1,5 +1,5 @@
+import { Database } from '../database/database.js';
 import { ForbiddenError } from '../http/errors.js';
-import type { DataSource } from 'typeorm';
 import type { AdminUsersService } from '../users/admin-users.service.js';
 import type { RbacService } from '../rbac/rbac.service.js';
 import type { User } from '../users/user.entity.js';
@@ -10,7 +10,7 @@ describe('Driver onboarding authorization', () => {
     const create = vi.fn(),
       transaction = vi.fn();
     const fleet = new FleetService(
-      { transaction } as unknown as DataSource,
+      { transaction } as unknown as Database,
       { create } as unknown as AdminUsersService,
       {} as RbacService,
     );

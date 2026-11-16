@@ -23,4 +23,4 @@ Reply **Hi** from the recipient's WhatsApp, then send the demo alert within 24 h
 pnpm exec node --env-file=.env scripts/demo-whatsapp-alert.mjs --alert
 ```
 
-Check WhatsApp for **DEMO-01** and the **Acknowledge** and **Repair completed** buttons. The script submits messages and reports Meta's acceptance. The WhatsApp chat confirms delivery. The buttons send replies in the chat. Recording those replies against a Fleet repair requires a webhook integration.
+Check WhatsApp for the demo message and buttons. The script submits messages and reports Meta's acceptance. The WhatsApp chat confirms delivery. This demo is separate from the production Service jobs integration; see [whatsapp-service-jobs.md](whatsapp-service-jobs.md) for the approved job template, webhook and provider links.

@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import { createRequire } from "node:module";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseEnv } from "node:util";
 const root = new URL("../", import.meta.url),
   env = parseEnv(await readFile(new URL(".env", root), "utf8"));
@@ -97,6 +99,7 @@ async function fixture(n, role = "driver") {
 }
 
 let socket;
+let repairEvidenceDir;
 await db.connect();
 try {
   const adminSession = await mobile("auth/login", {
@@ -230,7 +233,7 @@ try {
   const issue = {
     id: randomUUID(),
     truckId: trucks[0],
-    category: "vehicle",
+    category: "other",
     description: "Front tyre is damaged.",
   };
   assert.equal((await report({ ...issue, description: "  " })).status, 400);
@@ -552,6 +555,37 @@ try {
   })).status, 200);
   pass("Truck mechanics sign in on web/native, see only issue notifications and resolve reports with an audit, without fleet or user access");
 
+  // Legacy vehicle issue with no associated service job, as shown in Exceptions.
+  const repairId = randomUUID();
+  await db.query(
+    'INSERT INTO app.driver_issues (id,"driverId","truckId",category,description) VALUES ($1,$2,$3,$4,$5)',
+    [repairId, a.id, trucks[0], "vehicle", "Tyre evidence for a legacy report."],
+  );
+  repairEvidenceDir = join(env.FLEET_DATA_DIR || fileURLToPath(new URL(".fleet-data/", root)), "repairs", repairId);
+  const path = `api/admin/issues/${repairId}/repair/resolve`;
+  const repair = new FormData();
+  const sample = Buffer.from("89504e470d0a1a0a0000", "hex");
+  repair.set("note", "Tyre replaced and tested by the workshop.");
+  repair.set("photos", new Blob([sample], { type: "image/png" }), "work.png");
+
+  const repairPost = (headers) => fetch(new URL(path, env.APP_URL), {
+    method: "POST", body: repair, headers, signal: AbortSignal.timeout(10_000),
+  });
+  assert.equal((await repairPost({})).status, 401);
+  assert.equal((await repairPost({ Cookie: cookies(), Origin: new URL(env.APP_URL).origin })).status, 403);
+  const savedRepair = await repairPost({
+    Cookie: cookies(), Origin: new URL(env.APP_URL).origin,
+    "X-CSRF-Token": mechanicWebSession.body.csrfToken,
+  });
+  assert.equal(savedRepair.status, 200, await savedRepair.text());
+  const [repairRow] = (await db.query('SELECT "resolvedById", "resolutionNote" FROM app.driver_issues WHERE id=$1', [repairId])).rows;
+  assert.equal(repairRow.resolvedById, mechanicWebSession.body.user.id);
+  assert.equal(repairRow.resolutionNote, repair.get("note"));
+  const receipt = JSON.parse(await readFile(join(repairEvidenceDir, "receipt.json"), "utf8"));
+  assert.equal(receipt.photos.length, 1);
+  assert.deepEqual(await readFile(join(repairEvidenceDir, receipt.photos[0].id)), sample);
+  pass("Signed-in Exceptions repair evidence requires a session and CSRF token and stores the note, photo and administrator");
+
   const logout = await browser(
     "self-service/logout/browser",
     {},
@@ -560,11 +594,16 @@ try {
   await browser(logout.body.logout_url, {}, env.KRATOS_PUBLIC_URL);
 } finally {
   socket?.end(true);
+  if (repairEvidenceDir) await rm(repairEvidenceDir, { recursive: true, force: true });
   for (const token of tokens)
     await mobile("auth/session", { method: "DELETE", token }).catch(
       () => undefined,
     );
   if (drivers.length) {
+    await db.query(
+      'DELETE FROM app.service_jobs WHERE "driverId"=ANY($1::uuid[])',
+      [drivers],
+    );
     await db.query(
       'DELETE FROM app.driver_issues WHERE "driverId"=ANY($1::uuid[])',
       [drivers],

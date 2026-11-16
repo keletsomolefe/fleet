@@ -6,7 +6,7 @@ import {
 } from "@tanstack/react-start/server";
 import { getSession } from "./auth";
 export const issueLabels = {
-  vehicle: "Vehicle problem",
+  vehicle: "Breakdown or damage",
   safety: "Safety concern",
   other: "Other issue",
 };
@@ -20,6 +20,13 @@ export interface DriverIssue {
   createdAt: string;
   resolvedAt: string | null;
   resolutionNote: string | null;
+  job?: {
+    id: string;
+    reference: string;
+    status: string;
+    serviceType: string;
+    provider: { id: string; companyName: string } | null;
+  } | null;
 }
 export interface VehicleDispute {
   kind: "occupancy" | "schedule";

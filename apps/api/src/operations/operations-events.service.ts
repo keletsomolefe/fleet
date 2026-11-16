@@ -1,7 +1,7 @@
+import { Database } from '../database/database.js';
 import { randomBytes } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { ForbiddenError, UnauthorizedError } from '../http/errors.js';
-import { DataSource } from 'typeorm';
 import { AuthService, type AdminContext } from '../auth/auth.service.js';
 import { canManageVehicles, canReadIssues } from '../rbac/issue-access.js';
 
@@ -12,7 +12,7 @@ export class OperationsEventsService {
     { userId: string; expires: number; native?: string; cookie?: string }
   >();
   constructor(
-    private readonly db: DataSource,
+    private readonly db: Database,
     private readonly auth: AuthService,
   ) {}
   require(c: AdminContext) {
@@ -23,11 +23,17 @@ export class OperationsEventsService {
     if (!canManageVehicles(c) && !canReadIssues(c))
       throw new ForbiddenError('Issue access is required.');
   }
+  private requireUpdates(c: AdminContext, native?: string) {
+    if (!native && c.permissions.includes('admin.access') &&
+        ['service_jobs.read', 'service_providers.read'].some((p) => c.permissions.includes(p)))
+      return;
+    this.requireInbox(c);
+  }
   changed() {
     this.changes.emit('changed');
   }
   ticket(c: AdminContext, credentials: { native?: string; cookie?: string }) {
-    this.requireInbox(c);
+    this.requireUpdates(c, credentials.native);
     for (const [key, value] of this.tickets)
       if (value.expires < Date.now()) this.tickets.delete(key);
     if (this.tickets.size >= 2000)
@@ -70,7 +76,7 @@ export class OperationsEventsService {
     const c = value.native
       ? await this.auth.authenticateNative(value.native)
       : await this.auth.authenticate(value.cookie);
-    this.requireInbox(c);
+    this.requireUpdates(c, value.native);
     if (c.user.id !== value.userId) throw new UnauthorizedError();
     return c.user.id;
   }

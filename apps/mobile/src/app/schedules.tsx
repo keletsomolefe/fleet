@@ -1,3 +1,4 @@
+import { useForm, useStore } from "@tanstack/react-form";
 import { useEffect, useState, useCallback } from "react";
 import { View } from "react-native";
 import { useRouter } from "expo-router";
@@ -36,15 +37,7 @@ export default function Schedules() {
   const fleet = useFleet(),
     action = useAction(),
     token = fleet.session?.sessionToken;
-  const [from, setFrom] = useState(day),
-    [to, setTo] = useState(day),
-    [driverQuery, setDriverQuery] = useState(""),
-    [truckQuery, setTruckQuery] = useState(""),
-    [options, setOptions] = useState<Options>({ drivers: [], trucks: [] }),
-    [driver, setDriver] = useState(""),
-    [truck, setTruck] = useState(""),
-    [weekdays, setWeekdays] = useState([1, 2, 3, 4, 5]),
-    [note, setNote] = useState(""),
+  const [options, setOptions] = useState<Options>({ drivers: [], trucks: [] }),
     [items, setItems] = useState<Entry[]>([]),
     [conflicts, setConflicts] = useState<
       { id: string; date: string; driverName: string; registration: string }[]
@@ -52,6 +45,53 @@ export default function Schedules() {
     [error, setError] = useState(""),
     [outcome, setOutcome] = useState(""),
     [cancel, setCancel] = useState<Entry | null>(null);
+  const today = day();
+  const form = useForm({
+    defaultValues: {
+      from: today,
+      to: today,
+      driver: "",
+      truck: "",
+      weekdays: [1, 2, 3, 4, 5],
+      note: "",
+    },
+    validators: {
+      onSubmit: ({ value }) => {
+        if (cancel) return value.note.trim() ? undefined : "Enter a reason.";
+        const isDate = (date: string) =>
+          /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+          Number.isFinite(Date.parse(date)) &&
+          new Date(date).toISOString().slice(0, 10) === date;
+        if (!isDate(value.from) || !isDate(value.to))
+          return "Enter valid dates.";
+        if (
+          value.from > value.to ||
+          Date.parse(value.to) - Date.parse(value.from) > 92 * 86400000
+        )
+          return "Choose a range of up to 93 days.";
+        if (!value.driver || !value.truck)
+          return "Choose a driver and vehicle.";
+        if (!value.weekdays.length) return "Choose the days of the week.";
+        if (conflicts.length && !value.note.trim()) return "Enter a reason.";
+      },
+    },
+    onSubmit: ({ value, formApi }) =>
+      action.run(async () => {
+        await save(value);
+        formApi.resetField("note");
+      }),
+  });
+  const { from, to, driver, truck, weekdays, note } = useStore(
+    form.store,
+    (state) => state.values,
+  );
+  const busy = useStore(form.store, (state) => state.isSubmitting);
+  const validationError = useStore(
+    form.store,
+    (state) => state.errorMap.onSubmit,
+  );
+  const [driverQuery, setDriverQuery] = useState("");
+  const [truckQuery, setTruckQuery] = useState("");
   const load = useCallback(async () => {
     try {
       const result = await request<{ items: Entry[] }>(
@@ -107,11 +147,18 @@ export default function Schedules() {
       d.setUTCDate(1);
       end.setUTCMonth(end.getUTCMonth() + 1, 0);
     }
-    setFrom(d.toISOString().slice(0, 10));
-    setTo(end.toISOString().slice(0, 10));
+    form.setFieldValue("from", d.toISOString().slice(0, 10));
+    form.setFieldValue("to", end.toISOString().slice(0, 10));
     setConflicts([]);
   }
-  async function save() {
+  async function save({
+    from,
+    to,
+    driver,
+    truck,
+    weekdays,
+    note,
+  }: typeof form.state.values) {
     // A conflict preview is returned by the same strict endpoint; an explicit second tap confirms it.
     const body = cancel
       ? { note }
@@ -133,7 +180,6 @@ export default function Schedules() {
       setOutcome(cancel ? "Scheduled day cancelled." : "Schedule saved.");
       setCancel(null);
       setConflicts([]);
-      setNote("");
       await load();
     } catch (cause) {
       if (cause instanceof ApiError && Array.isArray(cause.details?.conflicts))
@@ -154,7 +200,7 @@ export default function Schedules() {
       actions={
         <>
           <Button
-            loading={action.busy}
+            loading={busy}
             disabled={
               cancel
                 ? !note.trim()
@@ -163,7 +209,7 @@ export default function Schedules() {
                   !weekdays.length ||
                   (!!conflicts.length && !note.trim())
             }
-            onPress={() => void action.run(save)}
+            onPress={() => void form.handleSubmit()}
           >
             {cancel
               ? "Cancel scheduled day"
@@ -171,7 +217,11 @@ export default function Schedules() {
                 ? "Replace scheduled days"
                 : "Save schedule"}
           </Button>
-          <Button secondary onPress={() => router.replace("/admin")}>
+          <Button
+            secondary
+            disabled={busy}
+            onPress={() => router.replace("/admin")}
+          >
             Back to review
           </Button>
         </>
@@ -180,26 +230,28 @@ export default function Schedules() {
       <Heading title="Driver schedule" />
       {!!outcome && <Copy>{outcome}</Copy>}
       <View style={{ gap: 8 }}>
-        <Button secondary onPress={() => preset("week")}>
+        <Button secondary disabled={busy} onPress={() => preset("week")}>
           This week
         </Button>
-        <Button secondary onPress={() => preset("month")}>
+        <Button secondary disabled={busy} onPress={() => preset("month")}>
           This month
         </Button>
       </View>
       <Field
         label="From (YYYY-MM-DD)"
         value={from}
+        editable={!busy}
         onChangeText={(v) => {
-          setFrom(v);
+          form.setFieldValue("from", v);
           setConflicts([]);
         }}
       />
       <Field
         label="To (YYYY-MM-DD)"
         value={to}
+        editable={!busy}
         onChangeText={(v) => {
-          setTo(v);
+          form.setFieldValue("to", v);
           setConflicts([]);
         }}
       />
@@ -208,7 +260,7 @@ export default function Schedules() {
           <Copy>
             {cancel.date} · {cancel.driverName} · {cancel.registration}
           </Copy>
-          <Button secondary onPress={() => setCancel(null)}>
+          <Button secondary disabled={busy} onPress={() => setCancel(null)}>
             Back to schedule
           </Button>
         </>
@@ -217,9 +269,10 @@ export default function Schedules() {
           <Field
             label="Search drivers"
             value={driverQuery}
+            editable={!busy}
             onChangeText={(v) => {
               setDriverQuery(v);
-              setDriver("");
+              form.setFieldValue("driver", "");
               setConflicts([]);
             }}
           />
@@ -228,8 +281,9 @@ export default function Schedules() {
             <Button
               key={d.id}
               secondary={driver !== d.id}
+              disabled={busy}
               onPress={() => {
-                setDriver(d.id);
+                form.setFieldValue("driver", d.id);
                 setConflicts([]);
               }}
             >
@@ -239,9 +293,10 @@ export default function Schedules() {
           <Field
             label="Search vehicles"
             value={truckQuery}
+            editable={!busy}
             onChangeText={(v) => {
               setTruckQuery(v);
-              setTruck("");
+              form.setFieldValue("truck", "");
               setConflicts([]);
             }}
           />
@@ -251,10 +306,14 @@ export default function Schedules() {
               key={t.id}
               truck={t}
               selected={truck === t.id}
-              onPress={() => {
-                setTruck(t.id);
-                setConflicts([]);
-              }}
+              onPress={
+                busy
+                  ? undefined
+                  : () => {
+                      form.setFieldValue("truck", t.id);
+                      setConflicts([]);
+                    }
+              }
             />
           ))}
           <Copy>Repeat on</Copy>
@@ -264,8 +323,9 @@ export default function Schedules() {
                 <Button
                   key={label}
                   secondary={!weekdays.includes(d)}
+                  disabled={busy}
                   onPress={() => {
-                    setWeekdays((v) =>
+                    form.setFieldValue("weekdays", (v) =>
                       v.includes(d) ? v.filter((x) => x !== d) : [...v, d],
                     );
                     setConflicts([]);
@@ -288,13 +348,19 @@ export default function Schedules() {
           {c.date} · {c.driverName} · {c.registration}
         </Copy>
       ))}
-      <Field
-        label={cancel || conflicts.length ? "Reason" : "Note (optional)"}
-        value={note}
-        onChangeText={setNote}
-        multiline
-        maxLength={1000}
-      />
+      <form.Field name="note">
+        {(field) => (
+          <Field
+            label={cancel || conflicts.length ? "Reason" : "Note (optional)"}
+            value={field.state.value}
+            onChangeText={field.handleChange}
+            onBlur={field.handleBlur}
+            editable={!busy}
+            multiline
+            maxLength={1000}
+          />
+        )}
+      </form.Field>
       <Copy>Scheduled days</Copy>
       {items.length ? (
         items.map((item) => (
@@ -305,9 +371,10 @@ export default function Schedules() {
             <Copy small>{item.driverName}</Copy>
             <Button
               secondary
+              disabled={busy}
               onPress={() => {
                 setCancel(item);
-                setNote("");
+                form.resetField("note");
                 setConflicts([]);
               }}
             >
@@ -318,7 +385,7 @@ export default function Schedules() {
       ) : (
         <Copy small>No drivers scheduled.</Copy>
       )}
-      <Notice message={action.error || error} />
+      <Notice message={validationError || action.error || error} />
     </Screen>
   );
 }

@@ -48,6 +48,8 @@ for (const name of [
   'KRATOS_COOKIE_SECRET',
   'KRATOS_UI_COOKIE_SECRET',
   'KRATOS_UI_CSRF_SECRET',
+  'SERVICE_JOB_LINK_SECRET',
+  'META_WHATSAPP_WEBHOOK_VERIFY_TOKEN',
 ]) setDefault(name, randomBytes(32).toString('hex'));
 // XChaCha20-Poly1305 requires exactly 32 bytes, not a 64-character hex key.
 setDefault('KRATOS_CIPHER_SECRET', randomBytes(24).toString('base64url'));

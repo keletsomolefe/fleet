@@ -1,4 +1,6 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
+import { useForm, useStore } from "@tanstack/react-form";
+import { submitForm, textFieldProps } from "@/lib/form";
 import { useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { AuthLayout } from "@/components/auth-layout";
@@ -26,7 +28,7 @@ export function KratosForm({
   const navigate = useNavigate();
   const [flow, setFlow] = useState(initial.flow);
   const [error, setError] = useState(initial.error ?? "");
-  const [busy, setBusy] = useState(false);
+  const [initializing, setInitializing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [complete, setComplete] = useState(
     initial.flow?.state === "passed_challenge",
@@ -64,7 +66,7 @@ export function KratosForm({
   }
 
   async function initialize() {
-    setBusy(true);
+    setInitializing(true);
     setError("");
     try {
       const result = await loadAuthFlow({ data: { kind, flowId: flow?.id } });
@@ -75,39 +77,41 @@ export function KratosForm({
     } catch {
       setError("Could not connect. Please try again.");
     } finally {
-      setBusy(false);
+      setInitializing(false);
     }
   }
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!flow || busy) return;
-    const form = new FormData(event.currentTarget);
-    const values: Record<string, string> = {};
-    for (const name of ["identifier", "password", "email", "code"]) {
-      const value = form.get(name);
-      if (typeof value === "string") values[name] = value;
-    }
-    setBusy(true);
-    setError("");
-    try {
-      const result = await submitAuthFlow({
-        data: { kind, flowId: flow.id, csrfToken, values },
-      });
-      if (result.redirect) {
-        window.location.assign(result.redirect);
-        return;
+  const form = useForm({
+    defaultValues: { identifier: "", password: "", email: "", code: "" },
+    onSubmit: async ({ value, formApi }) => {
+      if (!flow || initializing) return;
+      const values: Record<string, string> = verification
+        ? { email: value.email, ...(needsCode ? { code: value.code } : {}) }
+        : { identifier: value.identifier, password: value.password };
+      setError("");
+      try {
+        const result = await submitAuthFlow({
+          data: { kind, flowId: flow.id, csrfToken, values },
+        });
+        if (result.redirect) {
+          window.location.assign(result.redirect);
+          return;
+        }
+        if (result.flow) setFlow(result.flow);
+        if (result.complete) formApi.reset();
+        if (result.complete) setComplete(true);
+        if (result.error) setError(result.error);
+        if (result.flow) await syncFlowUrl(result.flow.id);
+      } catch {
+        setError("Could not connect. Please try again.");
       }
-      if (result.flow) setFlow(result.flow);
-      if (result.complete) setComplete(true);
-      if (result.error) setError(result.error);
-      if (result.flow) await syncFlowUrl(result.flow.id);
-    } catch {
-      setError("Could not connect. Please try again.");
-    } finally {
-      setBusy(false);
-    }
-  }
+    },
+  });
+  const isSubmitting = useStore(form.store, (state) => state.isSubmitting);
+  const busy = initializing || isSubmitting;
+  useEffect(() => {
+    form.reset();
+  }, [form, kind, flow?.id]);
 
   const messages = [
     ...(flow?.ui.messages ?? []),
@@ -153,9 +157,7 @@ export function KratosForm({
           {complete ? (
             <div className="space-y-6">
               <Alert>
-                <AlertDescription>
-                  Email verified.
-                </AlertDescription>
+                <AlertDescription>Email verified.</AlertDescription>
               </Alert>
               <Button asChild className="w-full">
                 <a href="/login">Sign in</a>
@@ -166,7 +168,11 @@ export function KratosForm({
               <a href="/admin">Open VHH Fleet</a>
             </Button>
           ) : flow ? (
-            <form key={flow.id} onSubmit={submit} className="space-y-6">
+            <form
+              key={flow.id}
+              onSubmit={submitForm(form)}
+              className="space-y-6"
+            >
               <input
                 type="hidden"
                 name="csrf_token"
@@ -175,47 +181,63 @@ export function KratosForm({
               />
               {verification ? (
                 <>
-                  <FormField
-                    label="Email address"
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="you@example.com"
-                    required={!needsCode}
-                  />
+                  <form.Field name="email">
+                    {(field) => (
+                      <FormField
+                        {...textFieldProps(field)}
+                        label="Email address"
+                        id="email"
+                        type="email"
+                        autoComplete="email"
+                        placeholder="you@example.com"
+                        required={!needsCode}
+                      />
+                    )}
+                  </form.Field>
                   {needsCode && (
-                    <FormField
-                      label="Verification code"
-                      id="code"
-                      name="code"
-                      autoComplete="one-time-code"
-                      inputMode="numeric"
-                      placeholder="Enter your code"
-                      required
-                    />
+                    <form.Field name="code">
+                      {(field) => (
+                        <FormField
+                          {...textFieldProps(field)}
+                          label="Verification code"
+                          id="code"
+                          autoComplete="one-time-code"
+                          inputMode="numeric"
+                          placeholder="Enter your code"
+                          required
+                        />
+                      )}
+                    </form.Field>
                   )}
                 </>
               ) : (
                 <>
-                  <FormField
-                    label="Email address"
-                    id="identifier"
-                    name="identifier"
-                    type="email"
-                    autoComplete="username"
-                    placeholder="you@example.com"
-                    required
-                  />
+                  <form.Field name="identifier">
+                    {(field) => (
+                      <FormField
+                        {...textFieldProps(field)}
+                        label="Email address"
+                        id="identifier"
+                        type="email"
+                        autoComplete="username"
+                        placeholder="you@example.com"
+                        required
+                      />
+                    )}
+                  </form.Field>
                   <div className="relative">
-                    <FormField
-                      label="Password"
-                      id="password"
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      autoComplete="current-password"
-                      required
-                    />
+                    <form.Field name="password">
+                      {(field) => (
+                        <FormField
+                          {...textFieldProps(field)}
+                          label="Password"
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          autoComplete="current-password"
+                          required
+                        />
+                      )}
+                    </form.Field>
                     <Button
                       type="button"
                       size="icon"

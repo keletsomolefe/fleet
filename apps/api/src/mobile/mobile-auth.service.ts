@@ -1,9 +1,9 @@
+import { Database } from '../database/database.js';
 import {
   HttpError,
   ForbiddenError,
   UnauthorizedError,
 } from '../http/errors.js';
-import { DataSource } from 'typeorm';
 import { AuthService, type AdminContext } from '../auth/auth.service.js';
 import { KratosService, KratosError } from '../auth/kratos.service.js';
 import { RbacService } from '../rbac/rbac.service.js';
@@ -15,7 +15,7 @@ import { canManageVehicles, canReadIssues } from '../rbac/issue-access.js';
 export class MobileAuthService {
   private attempts = new Map<string, { count: number; until: number }>();
   constructor(
-    private readonly db: DataSource,
+    private readonly db: Database,
     private readonly kratos: KratosService,
     private readonly auth: AuthService,
     private readonly rbac: RbacService,

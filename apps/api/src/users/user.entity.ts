@@ -1,48 +1,62 @@
+import { entityId } from '../database/database.js';
 import {
-  Column,
-  CreateDateColumn,
   Entity,
-  Index,
-  JoinColumn,
   ManyToOne,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+  PrimaryKey,
+  Property,
+  Unique,
+} from '@mikro-orm/decorators/legacy';
+import type { Rel } from '@mikro-orm/postgresql';
 
-@Entity({ name: 'users' })
+@Entity({ tableName: 'users', schema: 'app' })
 export class User {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string;
 
-  @Column({ type: 'uuid', unique: true })
-  kratosIdentityId: string;
+  @Property({ type: 'uuid', unique: true })
+  kratosIdentityId!: string;
 
-  @Index('uq_users_email', { unique: true })
-  @Column({ type: 'varchar', length: 320 })
-  email: string;
+  @Unique({ name: 'uq_users_email', properties: ['email'] })
+  @Property({ type: 'string', length: 320 })
+  email!: string;
 
-  @Column({ type: 'varchar', length: 100 })
-  firstName: string;
+  @Property({ type: 'string', length: 100 })
+  firstName!: string;
 
-  @Column({ type: 'varchar', length: 100 })
-  lastName: string;
+  @Property({ type: 'string', length: 100 })
+  lastName!: string;
 
-  @Column({ type: 'boolean', default: true })
-  isActive: boolean;
+  @Property({ type: 'boolean', default: true })
+  isActive!: boolean;
 
-  @Column({ type: 'uuid', nullable: true })
-  createdById: string | null;
+  @ManyToOne(() => User, {
+    fieldName: 'createdById',
+    nullable: true,
+    deleteRule: 'set null',
+  })
+  createdBy!: Rel<User> | null;
 
-  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'createdById' })
-  createdBy: User | null;
+  get createdById(): string | null {
+    return entityId(this.createdBy);
+  }
 
-  @Column({ type: 'timestamptz', nullable: true })
-  lastLoginAt: Date | null;
+  @Property({ type: 'datetime', columnType: 'timestamptz', nullable: true })
+  lastLoginAt!: Date | null;
 
-  @CreateDateColumn({ type: 'timestamptz' })
-  createdAt: Date;
+  @Property({
+    type: 'datetime',
+    columnType: 'timestamptz',
+    defaultRaw: 'now()',
+    onCreate: () => new Date(),
+  })
+  createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
-  updatedAt: Date;
+  @Property({
+    type: 'datetime',
+    columnType: 'timestamptz',
+    defaultRaw: 'now()',
+    onCreate: () => new Date(),
+    onUpdate: () => new Date(),
+  })
+  updatedAt!: Date;
 }

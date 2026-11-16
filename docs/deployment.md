@@ -21,9 +21,9 @@ Application sessions/credentials remain in Kratos. The application and Kratos ha
 
 ## Deployment and recovery
 
-`deploy/receive.sh` serializes server deployments with `flock`, pulls the immutable image and downloads matching configuration. `deploy/deploy.sh` starts dependencies, applies Kratos migrations, checks that the existing application tables and columns are present, initializes an owner only when there are no owners, then starts the application and verifies public HTTPS. Existing owner passwords and roles are never reset on a later push.
+`deploy/receive.sh` serializes server deployments with `flock`, pulls the immutable image and downloads matching configuration. `deploy/deploy.sh` starts dependencies, applies Kratos migrations, applies pending additive Fleet application migrations, checks that the existing application tables and columns are present, initializes an owner only when there are no owners, then starts the application and verifies public HTTPS. Existing owner passwords and roles are never reset on a later push.
 
-Application migrations and schema-reset tooling are temporarily removed. Deployment does not create, migrate or clear the `app` schema. The read-only preflight in `apps/api/src/database/check-schema.ts` stops a deployment with a missing or incomplete schema before owner bootstrap or application replacement. Fresh database initialization is deferred. Kratos identities, passwords, sessions, extensions, roles and other services are retained.
+Fleet application schema changes use explicit, additive MikroORM migrations (see [application database](database.md)). Deployment runs `apps/api/dist/database/migrate.js` before the read-only preflight in `apps/api/src/database/check-schema.ts`; the preflight stops a deployment with a missing or incomplete schema before owner bootstrap or application replacement. Deployment never drops tables or clears application data; a fresh database is initialized from the baseline migration and the permission/role catalogue. Kratos identities, passwords, sessions, extensions, roles and other services are retained.
 
 If application health fails, the script attempts to restore the previous application's image/configuration. Application data stays in place. Fleet remains pre-production; this is not a guarantee of database-compatible rollback after future schema changes. Old Fleet image tags are pruned while preserving the current and previous releases. No other project's containers, images or volumes are pruned.
 
@@ -71,4 +71,19 @@ Run `pnpm test:downloads` to check atomic publication, checksum rejection, respo
 
 The deployment runs `apps/api/dist/database/configure-roles.js` after the read-only schema preflight. This idempotent data update creates Truck mechanic with issue read/resolve access, grants those issue permissions to Owner and Administrator, and removes Dispatcher, Terminal operator and `terminal.access` from the catalogue. Removing the roles revokes their assignments.
 
-WhatsApp repair links, OTP verification, private photos and the optional OpenWA service are described in [whatsapp-repairs-poc.md](whatsapp-repairs-poc.md).
+Service-job provider alerts, the Meta WhatsApp template/webhook setup and provider links are described in [service-jobs.md](service-jobs.md) and [whatsapp-service-jobs.md](whatsapp-service-jobs.md). The retired group gateway and its public repair pages are no longer deployed.
+
+
+### Move existing private evidence before rollout
+
+The app now reads `FLEET_DATA_DIR=/app/.fleet-data` on the `fleet_data` volume. Fresh deployments need no copy. For an existing deployment, pause the app and back up the old private data volume before the first rollout. The Docker volume names below use the project's default name, `fleet`. Run these on the Fleet host after the app has stopped writing files:
+
+```sh
+docker volume create fleet_fleet_data
+docker run --rm \
+  -v fleet_repair_data:/from:ro \
+  -v fleet_fleet_data:/to \
+  alpine sh -ec 'cp -a /from/. /to/; if [ -d /from/repairs/service-jobs ]; then mkdir -p /to/service-jobs; cp -an /from/repairs/service-jobs/. /to/service-jobs/; fi'
+```
+
+Verify that `repairs/` and `service-jobs/` on the new volume contain the expected evidence before rollout. The old copy remains available for rollback. Do not delete the old volume as part of deployment. For a custom local directory, set `FLEET_DATA_DIR` in the root `.env` and copy existing issue folders to its `repairs/` subdirectory and job evidence to its `service-jobs/` subdirectory.

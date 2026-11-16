@@ -18,7 +18,12 @@ stage_config() {
   install -m 0644 "$source/Caddyfile" /opt/fleet/config/Caddyfile
   install -m 0644 "$source"/postgres/*.sql /opt/fleet/config/postgres/
 }
-python3 "$release/init-repairs.py" /opt/fleet/.env
+if docker volume inspect fleet_repair_data >/dev/null 2>&1 &&
+   ! docker volume inspect fleet_fleet_data >/dev/null 2>&1; then
+  printf 'Copy the Fleet private-data volume before rollout; see docs/deployment.md.\n' >&2
+  exit 1
+fi
+python3 "$release/init-messaging.py" /opt/fleet/.env
 compose config --quiet
 install -d -m 0755 /opt/fleet/downloads/android/releases
 install -d -m 0700 /opt/fleet/downloads/incoming
@@ -31,10 +36,10 @@ else
   compose up -d --wait --wait-timeout 180 kratos
 fi
 compose up -d --wait --wait-timeout 120 kratos-ui
+compose run --rm -T --no-deps app node apps/api/dist/database/migrate.js
 compose run --rm -T --no-deps app node apps/api/dist/database/check-schema.js
 compose run --rm -T --no-deps app node apps/api/dist/database/configure-roles.js
 compose run --rm -T --no-deps owner-bootstrap
-compose run --rm -T --no-deps app node apps/api/dist/database/configure-repairs.js
 previous=$(readlink -f /opt/fleet/current || true)
 rollout() {
   compose up -d --wait --wait-timeout 300 app || return 1

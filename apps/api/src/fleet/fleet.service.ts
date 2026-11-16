@@ -1,3 +1,4 @@
+import { Database, EntityManager, IsNull, save } from '../database/database.js';
 import {
   BadRequestError,
   ConflictError,
@@ -5,7 +6,6 @@ import {
   HttpError,
   NotFoundError,
 } from '../http/errors.js';
-import { DataSource, EntityManager, IsNull } from 'typeorm';
 import { User } from '../users/user.entity.js';
 import { RbacService } from '../rbac/rbac.service.js';
 import { AdminUsersService } from '../users/admin-users.service.js';
@@ -21,7 +21,7 @@ import { parseDriver, parseSearch, parseTruck } from './fleet.input.js';
 
 export class FleetService {
   constructor(
-    private readonly db: DataSource,
+    private readonly db: Database,
     private readonly users: AdminUsersService,
     private readonly rbac: RbacService,
   ) {}
@@ -68,7 +68,7 @@ export class FleetService {
       ? await this.db
           .getRepository(TruckDevice)
           .createQueryBuilder('d')
-          .where('d.currentTruckId IN (:...ids)', {
+          .where('d."currentTruckId" IN (:...ids)', {
             ids: items.map((t) => t.id),
           })
           .getMany()
@@ -79,8 +79,8 @@ export class FleetService {
           .createQueryBuilder('s')
           .leftJoinAndSelect('s.driver', 'p')
           .leftJoinAndSelect('p.user', 'u')
-          .where('s.truckId IN (:...ids)', { ids: items.map((t) => t.id) })
-          .andWhere('s.endedAt IS NULL')
+          .where('s."truckId" IN (:...ids)', { ids: items.map((t) => t.id) })
+          .andWhere('s."endedAt" IS NULL')
           .getMany()
       : [];
     return {
@@ -221,7 +221,7 @@ export class FleetService {
       .orderBy('d.identifier', 'ASC');
     if (search.q)
       b.andWhere(
-        '(d.identifier ILIKE :q OR u.firstName ILIKE :q OR u.lastName ILIKE :q OR u.email ILIKE :q OR t.registration ILIKE :q)',
+        '(d.identifier ILIKE :q OR u."firstName" ILIKE :q OR u."lastName" ILIKE :q OR u.email ILIKE :q OR t.registration ILIKE :q)',
         { q: `%${search.q.replace(/[\\%_]/g, '\\$&')}%` },
       );
     if (search.status)
@@ -240,6 +240,8 @@ export class FleetService {
   private driverView(d: DriverProfile) {
     return {
       ...d,
+      userId: d.userId,
+      currentTruckId: d.currentTruckId,
       user: {
         id: d.user.id,
         firstName: d.user.firstName,
@@ -277,13 +279,13 @@ export class FleetService {
       .where(
         'NOT EXISTS (SELECT 1 FROM app.driver_profiles d WHERE d."userId"=u.id)',
       )
-      .andWhere('u.isActive=true')
+      .andWhere('u."isActive"=true')
       .orderBy('u.firstName', 'ASC')
       .addOrderBy('u.id', 'ASC')
       .take(20);
     if (q)
       b.andWhere(
-        '(u.firstName ILIKE :q OR u.lastName ILIKE :q OR u.email ILIKE :q)',
+        '(u."firstName" ILIKE :q OR u."lastName" ILIKE :q OR u.email ILIKE :q)',
         { q: `%${q.replace(/[\\%_]/g, '\\$&')}%` },
       );
     return (await b.getMany()).map((u) => ({
@@ -351,6 +353,12 @@ export class FleetService {
           userId: user.id,
           ...(id ? {} : { createdById: actor.id }),
         }),
+      );
+      // MikroORM does not always persist a relation changed through a merged
+      // entity, so write the FK explicitly before recording the assignment.
+      await m.query(
+        'UPDATE app.driver_profiles SET "currentTruckId"=$1 WHERE id=$2',
+        [profile.currentTruckId, driver.id],
       );
       if ((current?.currentTruckId ?? null) !== profile.currentTruckId) {
         await m.update(

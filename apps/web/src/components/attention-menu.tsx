@@ -40,6 +40,8 @@ export function AttentionMenu({ session }: { session: AdminSession }) {
       ["trucks.read", "trucks.write"].every((p) =>
         session.permissions.includes(p),
       ));
+  const canReceiveUpdates = allowed || (session.permissions.includes("admin.access") &&
+    ["service_jobs.read", "service_providers.read"].some((permission) => session.permissions.includes(permission)));
   const { data, isError } = useQuery({
     queryKey: adminNotificationsKey(userId),
     enabled: allowed,
@@ -71,7 +73,7 @@ export function AttentionMenu({ session }: { session: AdminSession }) {
   }, [allowed, data, queryClient, userId]);
 
   useEffect(() => {
-    if (!allowed) return;
+    if (!canReceiveUpdates) return;
     const controller = new AbortController();
     const refresh = () => {
       if (!controller.signal.aborted)
@@ -131,7 +133,7 @@ export function AttentionMenu({ session }: { session: AdminSession }) {
       window.removeEventListener("focus", reconnect);
       socket?.end(true);
     };
-  }, [allowed, queryClient, session.csrfToken, userId]);
+  }, [canReceiveUpdates, queryClient, session.csrfToken, userId]);
   if (!allowed) return null;
   return (
     <details

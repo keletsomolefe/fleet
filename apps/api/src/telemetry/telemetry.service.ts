@@ -1,3 +1,4 @@
+import { Database, In, IsNull, save } from '../database/database.js';
 import { today } from '../scheduling/schedule.input.js';
 import { DriverSchedule } from '../scheduling/schedule.entity.js';
 import { VehicleDispute } from '../mobile/driving.entity.js';
@@ -8,7 +9,6 @@ import {
   NotFoundError,
   UnauthorizedError,
 } from '../http/errors.js';
-import { DataSource, In, IsNull } from 'typeorm';
 import { DrivingService } from '../mobile/driving.service.js';
 import { DrivingSession } from '../mobile/driving.entity.js';
 import type { AdminContext } from '../auth/auth.service.js';
@@ -31,7 +31,7 @@ import {
 
 export class TelemetryService {
   constructor(
-    private readonly db: DataSource,
+    private readonly db: Database,
     private readonly driving: DrivingService,
     private readonly kratos: KratosService,
   ) {}
@@ -97,13 +97,12 @@ export class TelemetryService {
           existing.driverId !== state.driver.id ||
           existing.kratosSessionId !== context.session.id ||
           existing.endedAt ||
-          (
-            await repo
-              .createQueryBuilder('s')
-              .addSelect('s.uploadTokenHash')
-              .where('s.id=:id', { id })
-              .getOne()
-          )?.uploadTokenHash !== uploadTokenHash
+          ((
+            await m.query(
+              'SELECT "uploadTokenHash" FROM app.tracking_streams WHERE id=$1',
+              [id],
+            )
+          )[0]?.uploadTokenHash ?? null) !== uploadTokenHash
         )
           throw new ConflictError('Start a new location sharing session.');
         return {
@@ -360,12 +359,12 @@ export class TelemetryService {
           JSON.stringify(sample.data),
           !!(stream.endedAt && recorded > stream.endedAt),
         ]);
-        const record = Object.assign(new TrackingEvent(), {
+        const record = {
           id,
           streamId: stream.id,
           sequence: sample.sequence,
           digest: hash,
-        });
+        } as TrackingEvent;
         byId.set(id, record);
         bySequence.set(sample.sequence, record);
         acceptedIds.push(id);

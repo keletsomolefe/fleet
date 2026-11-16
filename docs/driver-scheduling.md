@@ -26,7 +26,7 @@ Drivers use **Report an issue** on their vehicle screen for a vehicle problem, s
 
 The report is committed through the authenticated mobile API before MQTT alerts are emitted. A client-generated report ID makes retries idempotent; the mobile form retains the same ID and payload after an uncertain response until it receives confirmation. Unsent reports are not queued for offline delivery and the draft does not survive closing the screen. Drivers see their latest 50 reports and can check for resolution notes. Both web and native administrators resolve an issue with a required note of up to 1,000 characters. The API retains the original report, resolution time and administrator, and rejects conflicting attempts to overwrite a resolution.
 
-The existing `app.driver_issues` table retains driver, optional vehicle and resolver foreign keys plus unresolved/history indexes. App migrations are currently deferred. Existing vehicle-management permissions (`admin.access`, `trucks.read`, `trucks.write`) protect review, resolution and notification connections. Driver reporting/history requires an active driver profile and `driver.access`. Browser writes require the existing origin and session-bound CSRF checks; native writes use Kratos bearer sessions.
+The existing `app.driver_issues` table retains driver, optional vehicle and resolver foreign keys plus unresolved/history indexes. Application schema changes use explicit additive migrations. Existing vehicle-management permissions (`admin.access`, `trucks.read`, `trucks.write`) protect review, resolution and notification connections. Driver reporting/history requires an active driver profile and `driver.access`. Browser writes require the existing origin and session-bound CSRF checks; native writes use Kratos bearer sessions.
 
 | API | Operation |
 | --- | --- |
@@ -42,7 +42,7 @@ The existing MQTT WebSocket broker sends `attention.changed` invalidations to th
 
 A short-lived, single-use MQTT connection ticket is issued only to an authenticated administrator with vehicle-management permission. It is scoped to that user's topic, rechecks Kratos and local permissions at connection, and allows subscription only. Clients cannot publish administrator events, subscribe to another user's topic, or use a location-upload token for administrator subscriptions. Connections expire after two minutes and reconnect with a fresh ticket. Production uses WSS; native session credentials and browser cookies are not sent to the MQTT broker as its password.
 
-Application data remains in `app` through TypeORM with synchronization disabled. Schedules use the existing date-plan, daily-confirmation and schedule-dispute tables. App migrations are currently deferred. Kratos continues to own sign-in and credentials. Fleet is pre-production, so local development migrations/data may be rewritten/reset.
+Application data remains in `app` through MikroORM with synchronization disabled. Schedules use the existing date-plan, daily-confirmation and schedule-dispute tables. Application schema changes use explicit additive migrations. Kratos continues to own sign-in and credentials. Fleet is pre-production, so local development migrations/data may be rewritten/reset.
 
 ## Verification
 

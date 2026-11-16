@@ -281,16 +281,12 @@ try {
     body: streamInput,
   });
   assert.equal(stream.status, 200, JSON.stringify(stream.body));
-  assert.equal(
-    (
-      await mobile("telemetry/streams", {
-        method: "POST",
-        token: loser.sessionToken,
-        body: streamInput,
-      })
-    ).body.id,
-    streamId,
-  );
+  const secondStream = await mobile("telemetry/streams", {
+    method: "POST",
+    token: loser.sessionToken,
+    body: streamInput,
+  });
+  assert.equal(secondStream.body.id, streamId);
   assert.equal(
     (
       await db.query(

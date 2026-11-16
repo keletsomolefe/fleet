@@ -1,6 +1,6 @@
+import { Repository } from '../database/database.js';
 import { isActivePermission } from './active-permissions.js';
 import { ForbiddenError } from '../http/errors.js';
-import { Repository } from 'typeorm';
 import { UserRole, Role } from './rbac.entity.js';
 
 export interface Access {

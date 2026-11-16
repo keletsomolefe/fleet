@@ -1,3 +1,4 @@
+import { useForm, useStore } from "@tanstack/react-form";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { useRouter } from "expo-router";
@@ -19,15 +20,28 @@ export default function ChooseVehicle() {
   const [query, setQuery] = useState(""),
     [page, setPage] = useState(1),
     [result, setResult] = useState<TruckList | null>(null),
-    [selected, setSelected] = useState<Truck | null>(null),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true),
     [reload, setReload] = useState(0);
+  const form = useForm({
+    defaultValues: { truck: null as Truck | null },
+    onSubmit: ({ value }) => {
+      const truck = value.truck;
+      if (!truck || loading || !fleet.driver?.canDrive) return;
+      fleet.selectTruck(truck);
+      router.push(
+        fleet.driver.schedule && fleet.driver.schedule.truck.id !== truck.id
+          ? "/schedule-mismatch"
+          : "/vehicle-review",
+      );
+    },
+  });
+  const selected = useStore(form.store, (state) => state.values.truck);
   useEffect(() => {
     let current = true;
     const timer = setTimeout(() => {
       setLoading(true);
-      setSelected(null);
+      form.resetField("truck");
       setResult(null);
       void request<TruckList>(
         `driver/vehicles?q=${encodeURIComponent(query)}&page=${page}`,
@@ -55,24 +69,14 @@ export default function ChooseVehicle() {
       current = false;
       clearTimeout(timer);
     };
-  }, [query, page, reload, fleet.session?.sessionToken]);
+  }, [form, query, page, reload, fleet.session?.sessionToken]);
   return (
     <Screen
       actions={
         <>
           <Button
             disabled={!selected || loading || !fleet.driver?.canDrive}
-            onPress={() => {
-              if (selected) {
-                fleet.selectTruck(selected);
-                router.push(
-                  fleet.driver?.schedule &&
-                    fleet.driver.schedule.truck.id !== selected.id
-                    ? "/schedule-mismatch"
-                    : "/vehicle-review",
-                );
-              }
-            }}
+            onPress={() => void form.handleSubmit()}
           >
             Continue
           </Button>
@@ -90,7 +94,7 @@ export default function ChooseVehicle() {
         onChangeText={(value) => {
           setQuery(value);
           setPage(1);
-          setSelected(null);
+          form.resetField("truck");
           setLoading(true);
         }}
         autoCapitalize="characters"
@@ -107,7 +111,7 @@ export default function ChooseVehicle() {
               key={truck.id}
               truck={truck}
               selected={selected?.id === truck.id}
-              onPress={() => setSelected(truck)}
+              onPress={() => form.setFieldValue("truck", truck)}
               meta={
                 truck.disputed
                   ? "Needs review"
@@ -146,7 +150,7 @@ export default function ChooseVehicle() {
                 disabled={page === 1}
                 onPress={() => {
                   setLoading(true);
-                  setSelected(null);
+                  form.resetField("truck");
                   setPage((p) => p - 1);
                 }}
               >
@@ -157,7 +161,7 @@ export default function ChooseVehicle() {
                 disabled={page * result.pageSize >= result.total}
                 onPress={() => {
                   setLoading(true);
-                  setSelected(null);
+                  form.resetField("truck");
                   setPage((p) => p + 1);
                 }}
               >

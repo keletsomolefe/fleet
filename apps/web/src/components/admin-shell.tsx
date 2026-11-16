@@ -37,6 +37,23 @@ export const navigation = [
     ],
   },
   {
+    label: "Operations",
+    items: [
+      {
+        title: "Service jobs",
+        section: "jobs",
+        icon: "wrench",
+        permission: "service_jobs.read",
+      },
+      {
+        title: "Service providers",
+        section: "providers",
+        icon: "users",
+        permission: "service_providers.read",
+      },
+    ],
+  },
+  {
     label: "Company",
     items: [
       {
@@ -83,12 +100,6 @@ export const navigation = [
         title: "Exceptions",
         section: "vehicle-disputes",
         icon: "alert",
-        permission: "issues.read",
-      },
-      {
-        title: "Completed repairs",
-        section: "repairs",
-        icon: "wrench",
         permission: "issues.read",
       },
     ],
@@ -289,21 +300,30 @@ export function AdminShell({
         `/admin${i.section ? `/${i.section}` : ""}`,
     );
   const title =
-    pathname.endsWith("/new") || pathname.endsWith("/signup")
-      ? pathname.startsWith("/admin/drivers")
-        ? "Add a driver"
-        : pathname.startsWith("/admin/trucks")
-          ? "Add vehicle"
-          : "Create user"
-      : pathname.startsWith("/admin/users/")
-        ? "Users"
-        : pathname.startsWith("/admin/drivers/")
-          ? "Driver profile"
-          : pathname.startsWith("/admin/trucks/")
-            ? "Vehicle profile"
-            : item?.title === "Overview"
-              ? "Fleet overview"
-              : (item?.title ?? "Administration");
+    pathname.startsWith("/admin/jobs/new") ||
+    pathname.startsWith("/admin/providers/new")
+      ? pathname.startsWith("/admin/jobs")
+        ? "New service job"
+        : "Add service provider"
+      : pathname.startsWith("/admin/jobs/")
+        ? "Service job"
+        : pathname.startsWith("/admin/providers/")
+          ? "Service provider"
+          : pathname.endsWith("/new") || pathname.endsWith("/signup")
+            ? pathname.startsWith("/admin/drivers")
+              ? "Add a driver"
+              : pathname.startsWith("/admin/trucks")
+                ? "Add vehicle"
+                : "Create user"
+            : pathname.startsWith("/admin/users/")
+              ? "Users"
+              : pathname.startsWith("/admin/drivers/")
+                ? "Driver profile"
+                : pathname.startsWith("/admin/trucks/")
+                  ? "Vehicle profile"
+                  : item?.title === "Overview"
+                    ? "Fleet overview"
+                    : (item?.title ?? "Administration");
   return (
     <SidebarProvider style={{ "--sidebar-width": "240px" } as CSSProperties}>
       <Navigation session={session} />

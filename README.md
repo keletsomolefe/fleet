@@ -2,15 +2,15 @@
 
 ## Current scope
 
-The current app focuses on sign-in, drivers, vehicles, driver schedules and issue reporting. Administrators review and resolve reports in **Exceptions**. Existing vehicle confirmation, location logging and account access controls remain in place.
+The current app focuses on sign-in, drivers, vehicles, driver schedules, issue reporting and **Service jobs**. A breakdown report can alert service providers through Meta WhatsApp, track who accepted and how the job is progressing, and close the completed work. Administrators review unresolved reports in **Exceptions**. Existing vehicle confirmation, location logging and account access controls remain in place.
 
 Customers, saved locations, products, transport rates, dispatch, collections/deliveries/fuel activity and truck earnings are deferred. Their screens, APIs and permissions are removed, along with empty future-feature links in the sidebar. Existing transport and issue records are retained.
 
 The **Truck mechanic** role can view and resolve reported issues. It replaces Dispatcher and has no driver, schedule, vehicle-management or user-management access.
 
-Next: send reported issues to a WhatsApp group and let an external mechanic mark them resolved. That workflow will be specified separately; WhatsApp delivery and completion links are not enabled yet.
+Service jobs use Meta WhatsApp and signed provider links. See [WhatsApp service jobs](docs/whatsapp-service-jobs.md) to submit the utility template for approval, configure the webhook and onboard providers.
 
-Application migrations and reset commands have been removed for now. Use an existing initialized `app` schema; fresh application database setup is deferred. Automatic schema synchronization remains disabled, and Kratos migrations are retained.
+Application schema changes use explicit additive MikroORM migrations. Run `pnpm db:migrate` before starting or deploying, and seed the permission/role catalogue with `pnpm db:seed:run`. A fresh database is initialized from the baseline migration and seeders; automatic schema synchronization remains disabled and Kratos migrations are retained. See [application database](docs/database.md). Never reset or drop existing application data.
 
 ## Development
 
@@ -18,7 +18,7 @@ This repository uses pnpm workspaces and Watt to run three applications:
 
 | Workspace | Stack | Gateway route |
 | --- | --- | --- |
-| `apps/api` | [Fastify 5](https://fastify.dev/) / TypeORM | `/api` |
+| `apps/api` | [Fastify 5](https://fastify.dev/) / MikroORM 7 | `/api` |
 | `apps/web` | TanStack Start v1 / React | `/` |
 | `apps/gateway` | Platformatic Gateway | Public entrypoint |
 
@@ -34,7 +34,7 @@ make up    # PostgreSQL, Ory Kratos, login UI and Mailpit
 make dev   # Fleet API, web and gateway
 ```
 
-With an existing application schema, run `pnpm db:roles` to configure issue permissions and retire Dispatcher and Terminal operator. This updates role data only, with no schema migration or reset. Then set `BOOTSTRAP_ADMIN_PASSWORD` in the root `.env` and run `pnpm db:seed` if a development owner is needed. `make up` starts infrastructure only.
+Run `pnpm db:migrate` for application schema changes and `pnpm db:seed:run` for the permission/role catalogue. `pnpm db:roles` remains available to re-apply the catalogue explicitly (it updates data only). Set `BOOTSTRAP_ADMIN_PASSWORD` in the root `.env` and run `pnpm db:seed` if a development owner is needed. `make up` starts infrastructure only.
 Open <http://127.0.0.1:3042> (or <http://localhost:3042>) for Fleet admin.
 Change `GATEWAY_PORT` in `.env`
 if that port is already in use.
@@ -45,6 +45,8 @@ make start         # run the production build through the gateway
 make typecheck     # check API and web TypeScript
 make test          # run API unit tests
 make test-e2e      # run API end-to-end tests
+pnpm test:service-jobs   # service-job API, provider link and alert queue
+pnpm test:whatsapp-jobs  # signed webhook and interactive WhatsApp replies
 make infra-test    # check database isolation and Kratos authentication
 make help          # show all commands
 ```
@@ -80,6 +82,9 @@ Latest extension: [durable background location logging](docs/background-location
 ## Documents
 
 - [Functional specification](FUNCTIONAL_PLAN.md) — numbered requirements, permissions, fields, states, offline rules and acceptance scenarios.
+- [Service jobs](docs/service-jobs.md) — provider dispatch, lifecycle, provider links and the dashboard.
+- [WhatsApp service jobs](docs/whatsapp-service-jobs.md) — Meta template, webhook, consent and setup.
+- [Application database](docs/database.md) — MikroORM configuration, migrations, seeders and the clean-database flow.
 - [Market research](MARKET_RESEARCH.md) — six fleet products, official sources and specific offline limitations.
 - [Design direction](DESIGN_DIRECTION.md) — LinkAToday and Mobbin references, approved B + C layouts, typography and SVG icons.
 - [Full visual review](design/VISUAL_REVIEW.md) — all 128 screens, refinement details and before/after evidence.

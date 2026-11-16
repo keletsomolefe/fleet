@@ -1,5 +1,5 @@
+import { Repository } from '../database/database.js';
 import { BadRequestError, UnauthorizedError } from '../http/errors.js';
-import type { Repository } from 'typeorm';
 import { User } from '../users/user.entity.js';
 import { syncKratosLogin } from './kratos-hook.routes.js';
 

@@ -12,6 +12,12 @@ describe('Driver issue input', () => {
     expect(parseIssue(valid)).toEqual({
       ...valid,
       description: 'Tyre damaged',
+      serviceType: 'mechanical',
+      locationText: null,
+      latitude: null,
+      longitude: null,
+      locationAccuracyM: null,
+      locationCapturedAt: null,
     });
   });
   it.each([

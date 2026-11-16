@@ -1,3 +1,4 @@
+import { Database, EntityManager, Repository, In, save, exists } from '../database/database.js';
 import {
   BadRequestError,
   ConflictError,
@@ -6,7 +7,6 @@ import {
   NotFoundError,
   ServiceUnavailableError,
 } from '../http/errors.js';
-import { DataSource, EntityManager, In, Repository } from 'typeorm';
 import { KratosError, KratosService } from '../auth/kratos.service.js';
 import { User } from './user.entity.js';
 import { Role, UserRole } from '../rbac/rbac.entity.js';
@@ -56,7 +56,7 @@ export class AdminUsersService {
   constructor(
     private readonly users: Repository<User>,
     private readonly kratos: KratosService,
-    private readonly database: DataSource,
+    private readonly database: Database,
     private readonly rbac: RbacService,
     private readonly logger: Pick<Console, 'info' | 'warn' | 'error'> = console,
   ) {}
@@ -151,7 +151,7 @@ export class AdminUsersService {
       .addOrderBy('u.id', 'ASC');
     if (query.trim())
       builder.where(
-        '(u.email ILIKE :search OR u.firstName ILIKE :search OR u.lastName ILIKE :search)',
+        '(u.email ILIKE :search OR u."firstName" ILIKE :search OR u."lastName" ILIKE :search)',
         {
           search: `%${query.trim().replace(/[\\%_]/g, '\\$&')}%`,
         },
@@ -170,7 +170,7 @@ export class AdminUsersService {
       items: users.map((user) => ({
         ...this.profile(user),
         roles: assignments
-          .filter((a) => a.userId === user.id)
+          .filter((a) => a.user.id === user.id)
           .map(({ role }) => ({ id: role.id, key: role.key, name: role.name }))
           .sort((a, b) => a.name.localeCompare(b.name)),
       })),
@@ -319,11 +319,14 @@ export class AdminUsersService {
           !nextGrants.some((p: { key: string }) => p.key === 'admin.access'))
       )
         throw new ForbiddenError('You cannot remove your own admin access.');
-      await manager.delete(UserRole, { userId: targetId });
+      // UserRole has relation primary keys, so use the FK columns directly.
+      await manager.query('DELETE FROM app.user_roles WHERE "userId"=$1', [
+        targetId,
+      ]);
       if (roles.length)
-        await manager.insert(
-          UserRole,
-          roles.map((role) => ({ userId: targetId, roleId: role.id })),
+        await manager.query(
+          'INSERT INTO app.user_roles ("userId","roleId") SELECT $1, unnest($2::uuid[])',
+          [targetId, roles.map((role) => role.id)],
         );
       await manager.update(
         User,

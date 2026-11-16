@@ -21,7 +21,7 @@ A user can hold several roles. Effective permissions are the union of their role
 
 The Driver role enables [personal-phone sign-in and vehicle selection](mobile-device-setup.md). A driver who also needs admin access can hold Driver and Administrator on the same account.
 
-`/admin/roles` displays the role bundles and their permission catalog. Existing bundles are read from the application database; app migrations are currently deferred; custom role editing and per-user permission overrides are not included. Add new capability keys only when their corresponding feature is introduced, and enforce them on its API as well as its UI. Customer, location, product, rate, dispatch, activity, earnings and future report/export permissions are filtered from sessions and the role catalogue while those features are deferred. Role names are presentation; normal authorization checks permission keys.
+`/admin/roles` displays the role bundles and their permission catalog. Existing bundles are read from the application database; schema changes use explicit additive migrations; custom role editing and per-user permission overrides are not included. Add new capability keys only when their corresponding feature is introduced, and enforce them on its API as well as its UI. Customer, location, product, rate, dispatch, activity, earnings and future report/export permissions are filtered from sessions and the role catalogue while those features are deferred. Role names are presentation; normal authorization checks permission keys.
 
 User access changes require `users.access` and session-bound CSRF/origin checks. Changes involving an Owner require `users.owners`; an Administrator cannot grant themselves this permission. Access edits serialize with a PostgreSQL transaction advisory lock and re-check the actor inside the transaction. They cannot remove the last active Owner or disable/remove their own admin access. Revocations and deactivations apply on the next request without waiting for the Kratos session to expire. The login webhook never assigns roles.
 
@@ -39,7 +39,7 @@ User creation requires a same-origin request and an HMAC CSRF token bound to bot
 
 ## Setup and database commands
 
-Run `make setup`, set `BOOTSTRAP_ADMIN_PASSWORD` in the root `.env`, then run `make up` and `make dev`. `make up` waits for Docker readiness. Application migrations are deferred, so use an existing initialized `app` schema and run `pnpm db:seed` separately if needed.
+Run `make setup`, set `BOOTSTRAP_ADMIN_PASSWORD` in the root `.env`, then run `make up`, `pnpm db:migrate`, `pnpm db:seed:run`, `pnpm db:seed` and `make dev`. `make up` waits for Docker readiness. A fresh database is initialized by the baseline migration; see [application database](database.md).
 
 The default development email is `patrickkeletso@gmail.com`, with display name Patrick Keletso. The password is supplied only through local configuration. Bootstrap creates a verified identity tagged with a private bootstrap marker and a linked user with the Owner role. Reruns do not reset credentials or reactivate users, and refuse to adopt unrelated matching identities. Development bootstrap is disabled when `NODE_ENV=production`.
 
@@ -47,7 +47,7 @@ The default development email is `patrickkeletso@gmail.com`, with display name P
 | --- | --- |
 | `pnpm db:seed` / `make seed-admin` | Create or reconcile the default development admin |
 
-The Fastify API and maintenance scripts share the same database options. The runtime pool has a maximum of eight connections; maintenance uses two. Application tables use the existing `app` schema, no app migrations are registered, `synchronize` is disabled, and TypeORM cannot install extensions. Kratos's database role/schema remain separate. Configuration and repository patterns were adapted from `~/Dev/brocabs` without modifying that repository.
+The Fastify API and maintenance scripts share the same MikroORM configuration (see [application database](database.md)). The runtime pool has a maximum of eight connections; maintenance uses two. Application tables use the existing `app` schema, explicit migrations are registered, synchronization is disabled, and extensions are managed separately. Kratos's database role/schema remain separate.
 
 ## Login hook and local URLs
 

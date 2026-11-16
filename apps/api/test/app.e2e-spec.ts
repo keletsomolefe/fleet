@@ -4,8 +4,8 @@ import { createApi } from '../src/app.js';
 describe('Fleet API', () => {
   let app: FastifyInstance;
 
-  beforeAll(() => {
-    ({ app } = createApi());
+  beforeAll(async () => {
+    ({ app } = await createApi());
   });
 
   afterAll(async () => {

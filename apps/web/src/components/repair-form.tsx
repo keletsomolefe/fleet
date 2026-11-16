@@ -9,19 +9,17 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 export function RepairForm({
   endpoint,
   headers,
-  askName = false,
   onSaved,
   onCancel,
 }: {
   endpoint: string;
   headers: Record<string, string>;
-  askName?: boolean;
   onSaved: () => void | Promise<void>;
   onCancel?: () => void;
 }) {
   const [error, setError] = useState("");
   const form = useForm({
-    defaultValues: { name: "", note: "", photos: [] as File[] },
+    defaultValues: { note: "", photos: [] as File[] },
     validators: {
       onSubmit: ({ value: { photos } }) =>
         photos.length > 3 ||
@@ -32,7 +30,6 @@ export function RepairForm({
     onSubmit: async ({ value }) => {
       setError("");
       const data = new FormData();
-      if (askName) data.set("name", value.name);
       data.set("note", value.note);
       for (const photo of value.photos) data.append("photos", photo);
       try {
@@ -70,22 +67,6 @@ export function RepairForm({
         </Alert>
       )}
       <fieldset disabled={busy} className="space-y-5">
-        {askName && (
-          <div className="space-y-2">
-            <Label htmlFor="repair-name">Your name</Label>
-            <form.Field name="name">
-              {(field) => (
-                <Input
-                  {...textFieldProps(field)}
-                  id="repair-name"
-                  required
-                  maxLength={80}
-                  autoComplete="name"
-                />
-              )}
-            </form.Field>
-          </div>
-        )}
         <div className="space-y-2">
           <Label htmlFor="repair-note">What was repaired?</Label>
           <form.Field name="note">

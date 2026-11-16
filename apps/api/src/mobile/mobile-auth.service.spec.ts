@@ -1,5 +1,5 @@
+import { Database } from '../database/database.js';
 import { ForbiddenError } from '../http/errors.js';
-import type { DataSource } from 'typeorm';
 import { AuthService, type AdminContext } from '../auth/auth.service.js';
 import { KratosService } from '../auth/kratos.service.js';
 import { RbacService } from '../rbac/rbac.service.js';
@@ -31,7 +31,7 @@ describe('Unified native sign-in', () => {
     service = new MobileAuthService(
       {
         getRepository: () => ({ findOne, findOneBy }),
-      } as unknown as DataSource,
+      } as unknown as Database,
       { request, revokeToken } as unknown as KratosService,
       {
         authenticateNative,

@@ -1,5 +1,5 @@
+import { Repository } from '../database/database.js';
 import { ForbiddenError } from '../http/errors.js';
-import type { Repository } from 'typeorm';
 import { RbacService } from './rbac.service.js';
 import { Role, UserRole } from './rbac.entity.js';
 import { parseAccessInput } from '../users/admin-users.service.js';

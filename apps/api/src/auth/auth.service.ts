@@ -1,10 +1,10 @@
+import { Repository } from '../database/database.js';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import {
   ForbiddenError,
   ServiceUnavailableError,
   UnauthorizedError,
 } from '../http/errors.js';
-import { Repository } from 'typeorm';
 import type { FastifyRequest } from 'fastify';
 import { header } from '../http/request.js';
 import { User } from '../users/user.entity.js';

@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { KratosService } from '../auth/kratos.service.js';
 import { User } from '../users/user.entity.js';
 import { Role, UserRole } from '../rbac/rbac.entity.js';
-import dataSource from './data-source.js';
+import { withMaintenanceDatabase } from './orm.js';
 
 const marker = 'fleet-development-admin-v1';
 
@@ -17,10 +17,9 @@ async function seed() {
     );
   const first = process.env.BOOTSTRAP_ADMIN_FIRST_NAME || 'Patrick';
   const last = process.env.BOOTSTRAP_ADMIN_LAST_NAME || 'Keletso';
-  await dataSource.initialize();
-  try {
-    await dataSource.transaction(async (manager) => {
-      await manager.query(
+  await withMaintenanceDatabase(async (db) => {
+    await db.transaction(async (em) => {
+      await em.query(
         "SELECT pg_advisory_xact_lock(hashtext('fleet-development-admin-v1'))",
       );
       const kratos = new KratosService();
@@ -38,8 +37,7 @@ async function seed() {
       let identity = identities.find(
         (i) => i.traits.email.toLowerCase() === email,
       );
-      const users = manager.getRepository(User);
-      const existing = await users.findOneBy({ email });
+      const existing = await em.findOne(User, { email });
       if (identity && identity.metadata_admin?.bootstrap !== marker)
         throw new Error(
           'Refusing to adopt an unrelated identity with the bootstrap email.',
@@ -70,8 +68,8 @@ async function seed() {
           ],
         });
       }
-      const user = await users.save(
-        users.create({
+      const user = await em.save(
+        em.create(User, {
           kratosIdentityId: identity.id,
           email,
           firstName: first,
@@ -80,13 +78,11 @@ async function seed() {
           createdById: null,
         }),
       );
-      const owner = await manager.findOneByOrFail(Role, { key: 'owner' });
-      await manager.insert(UserRole, { userId: user.id, roleId: owner.id });
+      const owner = await em.findOneOrFail(Role, { key: 'owner' });
+      await em.insert(UserRole, { user: user.id, role: owner.id });
       console.log('Default administrator is ready.');
     });
-  } finally {
-    await dataSource.destroy();
-  }
+  });
 }
 
 seed().catch((error) => {

@@ -1,10 +1,10 @@
+import { Database, Repository } from '../database/database.js';
 import {
   BadRequestError,
   ForbiddenError,
   ConflictError,
   ServiceUnavailableError,
 } from '../http/errors.js';
-import type { DataSource, Repository } from 'typeorm';
 import { KratosError, KratosService } from '../auth/kratos.service.js';
 import { AdminUsersService, parseUserInput } from './admin-users.service.js';
 import type { RbacService } from '../rbac/rbac.service.js';
@@ -50,7 +50,7 @@ describe('User provisioning', () => {
     service = new AdminUsersService(
       users as unknown as Repository<User>,
       kratos as unknown as KratosService,
-      database as unknown as DataSource,
+      database as unknown as Database,
       {} as RbacService,
     );
   });
@@ -168,7 +168,7 @@ describe('Administrator setup links', () => {
     const service = new AdminUsersService(
       {} as Repository<User>,
       { request } as unknown as KratosService,
-      { transaction: vi.fn((work) => work(manager)) } as unknown as DataSource,
+      { transaction: vi.fn((work) => work(manager)) } as unknown as Database,
       {} as RbacService,
     );
     return { service, request };

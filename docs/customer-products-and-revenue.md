@@ -14,4 +14,4 @@ The next planned step is to send an issue to a WhatsApp group and allow a third-
 
 ## Database setup
 
-All application migrations and reset commands are removed for now. Use the existing initialized `app` schema; fresh database setup is deferred. TypeORM synchronization remains disabled. Existing application data, Kratos identities and credentials, and database role/schema isolation are preserved.
+Application schema changes use explicit additive MikroORM migrations. Fresh databases are initialized from the baseline migration and seeders. Schema synchronization remains disabled. Existing application data, Kratos identities and credentials, and database role/schema isolation are preserved.

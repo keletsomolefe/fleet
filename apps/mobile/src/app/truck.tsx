@@ -140,7 +140,7 @@ export default function Driving() {
         )}
         {driver && (
           <Button secondary onPress={() => router.push("/issues")}>
-            Report an issue
+            Get help
           </Button>
         )}
         {canReviewExceptions && (

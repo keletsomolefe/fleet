@@ -1,3 +1,4 @@
+import { Database, EntityManager, IsNull, save } from '../database/database.js';
 import { createHash } from 'node:crypto';
 import {
   BadRequestError,
@@ -6,7 +7,6 @@ import {
   NotFoundError,
   UnauthorizedError,
 } from '../http/errors.js';
-import { DataSource, EntityManager, IsNull } from 'typeorm';
 import type { AdminContext } from '../auth/auth.service.js';
 import {
   Truck,
@@ -26,7 +26,7 @@ export function hashDeviceToken(token: string) {
   return createHash('sha256').update(token).digest('hex');
 }
 export class MobileDeviceService {
-  constructor(private readonly db: DataSource) {}
+  constructor(private readonly db: Database) {}
   private async lock(m: EntityManager) {
     await m.query("SELECT pg_advisory_xact_lock(hashtext('fleet-assets-v1'))");
   }
@@ -145,7 +145,7 @@ export class MobileDeviceService {
           .getRepository(TruckDevice)
           .createQueryBuilder('d')
           .addSelect('d.credentialHash')
-          .where('d.currentTruckId IN (:...ids)', {
+          .where('d."currentTruckId" IN (:...ids)', {
             ids: trucks.map((t) => t.id),
           })
           .getMany()
@@ -188,7 +188,7 @@ export class MobileDeviceService {
         const old = await repo
           .createQueryBuilder('d')
           .addSelect('d.credentialHash')
-          .where('d.currentTruckId=:id', { id: truck.id })
+          .where('d."currentTruckId"=:id', { id: truck.id })
           .getOne();
         let device = await repo
           .createQueryBuilder('d')

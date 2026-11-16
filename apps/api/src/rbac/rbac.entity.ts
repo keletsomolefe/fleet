@@ -1,53 +1,80 @@
 import {
-  Column,
-  CreateDateColumn,
   Entity,
-  JoinColumn,
+  Index,
   ManyToOne,
   OneToMany,
-  PrimaryColumn,
-  PrimaryGeneratedColumn,
-  type Relation,
-} from 'typeorm';
+  PrimaryKey,
+  Property,
+} from '@mikro-orm/decorators/legacy';
+import type { Collection, Rel } from '@mikro-orm/postgresql';
 import { User } from '../users/user.entity.js';
 
-@Entity({ name: 'permissions' })
+@Entity({ tableName: 'permissions', schema: 'app' })
 export class Permission {
-  @PrimaryGeneratedColumn('uuid') id: string;
-  @Column({ type: 'varchar', length: 100, unique: true }) key: string;
-  @Column({ type: 'varchar', length: 100 }) name: string;
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string;
+
+  @Property({ type: 'string', length: 100, unique: true })
+  key!: string;
+
+  @Property({ type: 'string', length: 100 })
+  name!: string;
 }
 
-@Entity({ name: 'roles' })
+@Entity({ tableName: 'roles', schema: 'app' })
 export class Role {
-  @PrimaryGeneratedColumn('uuid') id: string;
-  @Column({ type: 'varchar', length: 64, unique: true }) key: string;
-  @Column({ type: 'varchar', length: 100 }) name: string;
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string;
+
+  @Property({ type: 'string', length: 64, unique: true })
+  key!: string;
+
+  @Property({ type: 'string', length: 100 })
+  name!: string;
+
   @OneToMany(() => RolePermission, (grant) => grant.role)
-  grants: Relation<RolePermission[]>;
+  grants = [] as unknown as Collection<RolePermission>;
 }
 
-@Entity({ name: 'role_permissions' })
+@Entity({ tableName: 'role_permissions', schema: 'app' })
 export class RolePermission {
-  @PrimaryColumn('uuid') roleId: string;
-  @PrimaryColumn('uuid') permissionId: string;
-  @ManyToOne(() => Role, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'roleId' })
-  role: Relation<Role>;
-  @ManyToOne(() => Permission, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'permissionId' })
-  permission: Relation<Permission>;
+  @ManyToOne(() => Role, {
+    fieldName: 'roleId',
+    primary: true,
+    deleteRule: 'cascade',
+  })
+  role!: Rel<Role>;
+
+  @ManyToOne(() => Permission, {
+    fieldName: 'permissionId',
+    primary: true,
+    deleteRule: 'cascade',
+  })
+  permission!: Rel<Permission>;
 }
 
-@Entity({ name: 'user_roles' })
+@Entity({ tableName: 'user_roles', schema: 'app' })
+@Index({ name: 'idx_user_roles_role', properties: ['role'] })
 export class UserRole {
-  @PrimaryColumn('uuid') userId: string;
-  @PrimaryColumn('uuid') roleId: string;
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'userId' })
-  user: Relation<User>;
-  @ManyToOne(() => Role, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'roleId' })
-  role: Relation<Role>;
-  @CreateDateColumn({ type: 'timestamptz' }) createdAt: Date;
+  @ManyToOne(() => User, {
+    fieldName: 'userId',
+    primary: true,
+    deleteRule: 'cascade',
+  })
+  user!: Rel<User>;
+
+  @ManyToOne(() => Role, {
+    fieldName: 'roleId',
+    primary: true,
+    deleteRule: 'cascade',
+  })
+  role!: Rel<Role>;
+
+  @Property({
+    type: 'datetime',
+    columnType: 'timestamptz',
+    defaultRaw: 'now()',
+    onCreate: () => new Date(),
+  })
+  createdAt!: Date;
 }

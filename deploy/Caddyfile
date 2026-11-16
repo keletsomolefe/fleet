@@ -3,8 +3,8 @@
   auto_https off
 }
 :8080 {
-  @repair path /repairs/* /api/repairs/*
-  header @repair {
+  @serviceJob path /j/* /api/public/*
+  header @serviceJob {
     Referrer-Policy no-referrer
     Cache-Control "private, no-store"
     X-Robots-Tag "noindex, nofollow"

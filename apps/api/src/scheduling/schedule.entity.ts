@@ -1,19 +1,52 @@
 import {
-  Column,
-  CreateDateColumn,
   Entity,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+  PrimaryKey,
+  Property,
+  Unique,
+} from '@mikro-orm/decorators/legacy';
+import { CalendarDateType } from '../database/calendar-date.type.js';
 
-@Entity({ name: 'driver_schedules' })
+@Entity({ tableName: 'driver_schedules', schema: 'app' })
+@Unique({
+  name: 'uq_schedule_driver_day',
+  properties: ['driverId', 'date'],
+  where: '"cancelledAt" IS NULL',
+})
+@Unique({
+  name: 'uq_schedule_truck_day',
+  properties: ['truckId', 'date'],
+  where: '"cancelledAt" IS NULL',
+})
 export class DriverSchedule {
-  @PrimaryGeneratedColumn('uuid') id: string;
-  @Column('uuid') driverId: string;
-  @Column('uuid') truckId: string;
-  @Column('date') date: string;
-  @Column('uuid') createdById: string;
-  @CreateDateColumn({ type: 'timestamptz' }) createdAt: Date;
-  @Column({ type: 'timestamptz', nullable: true }) cancelledAt: Date | null;
-  @Column({ type: 'uuid', nullable: true }) cancelledById: string | null;
-  @Column({ type: 'text', default: '' }) note: string;
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string;
+
+  @Property({ type: 'uuid' })
+  driverId!: string;
+
+  @Property({ type: 'uuid' })
+  truckId!: string;
+
+  @Property({ type: CalendarDateType })
+  date!: string;
+
+  @Property({ type: 'uuid' })
+  createdById!: string;
+
+  @Property({
+    type: 'datetime',
+    columnType: 'timestamptz',
+    defaultRaw: 'now()',
+    onCreate: () => new Date(),
+  })
+  createdAt!: Date;
+
+  @Property({ type: 'datetime', columnType: 'timestamptz', nullable: true })
+  cancelledAt!: Date | null;
+
+  @Property({ type: 'uuid', nullable: true })
+  cancelledById!: string | null;
+
+  @Property({ type: 'text', default: '' })
+  note!: string;
 }
