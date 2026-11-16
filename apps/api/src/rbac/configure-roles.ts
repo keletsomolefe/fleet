@@ -1,4 +1,4 @@
-import type { DataSource } from 'typeorm';
+import { In, type DataSource } from 'typeorm';
 import { Permission, Role, RolePermission } from './rbac.entity.js';
 
 // Update role data in the existing app schema; no schema creation or migrations.
@@ -44,7 +44,10 @@ export async function configureRoles(db: DataSource): Promise<void> {
         ['roleId', 'permissionId'],
       );
     }
-    // Retiring the role revokes its grants; it never turns a dispatcher into a mechanic.
-    await manager.delete(Role, { key: 'dispatcher' });
+    // Retiring roles also revokes their assignments and grants.
+    await manager.delete(Role, {
+      key: In(['dispatcher', 'terminal_operator']),
+    });
+    await manager.delete(Permission, { key: 'terminal.access' });
   });
 }

@@ -5,7 +5,7 @@ try {
   await dataSource.initialize();
   await configureRoles(dataSource);
   console.log(
-    'Roles updated: Dispatcher removed; Truck mechanic can view and resolve issues.',
+    'Roles updated. Dispatcher and Terminal operator retired. Truck mechanic can view and resolve issues.',
   );
 } catch (error) {
   console.error(

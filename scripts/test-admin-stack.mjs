@@ -126,7 +126,7 @@ try {
   assert.equal((await request(app, 'api/admin/users', { ...json(data), headers: { ...authorized, Origin: localhostOrigin.origin } }, cookies)).status, 409);
   const catalog = await request(app, 'api/admin/roles', {}, cookies);
   assert.equal(catalog.status, 200);
-  assert.ok(!catalog.body.some(role => role.key === 'dispatcher'));
+  assert.ok(!catalog.body.some(role => ['dispatcher', 'terminal_operator'].includes(role.key)));
   const mechanicRole = catalog.body.find(role => role.key === 'truck_mechanic');
   assert.equal(mechanicRole?.name, 'Truck mechanic');
   assert.deepEqual(mechanicRole.permissions.map(p => p.key), ['admin.access', 'issues.read', 'issues.resolve']);
@@ -135,7 +135,7 @@ try {
     const page = await request(app, `admin/${section}`, { headers: { Accept: 'text/html' } }, cookies);
     assert.equal(page.status, 404, `Removed page: ${section}`);
   }
-  const retiredPrefixes = /^(customers|locations|products|pricing|dispatch|activities|revenue|exceptions|exports|vehicle_reports|shifts)\./;
+  const retiredPrefixes = /^(customers|locations|products|pricing|dispatch|activities|revenue|exceptions|exports|vehicle_reports|shifts|terminal)\./;
   assert.ok(session.body.permissions.every(key => !retiredPrefixes.test(key)));
   assert.ok(catalog.body.every(role => role.permissions.every(({ key }) => !retiredPrefixes.test(key))));
   for (const [method, path] of [
@@ -171,7 +171,7 @@ try {
   assert.equal((await request(app, 'api/admin/users?page=0', {}, cookies)).status, 400);
   assert.equal((await access(targetId, ['driver'], true, cookies, originHeaders)).status, 403);
   assert.equal((await access(owner.id, ['administrator'], false)).status, 409, 'Last active owner cannot be removed');
-  assert.equal((await access(targetId, ['driver', 'terminal_operator'])).status, 200);
+  assert.equal((await access(targetId, ['driver'])).status, 200);
   pass('User creation grants no roles; list/search, CSRF-protected role assignment and last-owner protection');
 
   const newCookies = new Map();
@@ -194,7 +194,7 @@ try {
   assert.ok(code, 'Verification email arrived');
   assert.equal((await request(publicUrl, verification.body.ui.action, json({ method: 'code', code }))).status, 200);
   assert.equal((await login(email, password, newCookies)).status, 200);
-  assert.equal((await request(app, 'api/auth/session', {}, newCookies)).status, 403, 'Driver/terminal users have no admin access');
+  assert.equal((await request(app, 'api/auth/session', {}, newCookies)).status, 403, 'Driver role alone has no admin access');
   assert.equal((await access(targetId, ['driver', 'truck_mechanic'])).status, 200);
   const mechanicSession = await request(app, 'api/auth/session', {}, newCookies);
   assert.equal(mechanicSession.status, 200);

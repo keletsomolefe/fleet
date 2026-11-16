@@ -34,7 +34,7 @@ make up    # PostgreSQL, Ory Kratos, login UI and Mailpit
 make dev   # Fleet API, web and gateway
 ```
 
-With an existing application schema, run `pnpm db:roles` to configure issue permissions and replace the retired Dispatcher role. This updates role data only, with no schema migration or reset. Then set `BOOTSTRAP_ADMIN_PASSWORD` in the root `.env` and run `pnpm db:seed` if a development owner is needed. `make up` starts infrastructure only.
+With an existing application schema, run `pnpm db:roles` to configure issue permissions and retire Dispatcher and Terminal operator. This updates role data only, with no schema migration or reset. Then set `BOOTSTRAP_ADMIN_PASSWORD` in the root `.env` and run `pnpm db:seed` if a development owner is needed. `make up` starts infrastructure only.
 Open <http://127.0.0.1:3042> (or <http://localhost:3042>) for Fleet admin.
 Change `GATEWAY_PORT` in `.env`
 if that port is already in use.

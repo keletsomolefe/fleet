@@ -13,15 +13,22 @@ export const Route = createFileRoute('/admin/roles')({
 function Roles() {
   const result = Route.useLoaderData()
   if (!result.data) return <PageError message={result.error!} />
+  const roles = [...result.data].sort(
+    (a, b) => b.permissions.length - a.permissions.length,
+  )
+
   return (
     <>
       <PageHeader title="Roles & permissions" group="Company" />
-      <div className="grid items-start gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {result.data.map((role) => (
-          <Card key={role.id} className="shadow-none">
-            <CardContent className="space-y-5">
+      <div className="columns-[18rem_3] gap-4">
+        {roles.map((role) => (
+          <Card
+            key={role.id}
+            className="mb-4 break-inside-avoid-column py-4 shadow-none"
+          >
+            <CardContent className="space-y-3 px-4">
               <h2 className="text-sm font-semibold">{role.name}</h2>
-              <ul className="space-y-3 border-t pt-5 text-xs text-muted-foreground">
+              <ul className="space-y-1.5 border-t pt-3 text-sm text-muted-foreground">
                 {role.permissions.map((permission) => (
                   <li key={permission.key}>{permission.name}</li>
                 ))}
