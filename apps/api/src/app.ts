@@ -62,6 +62,7 @@ import { AdminUsersService } from './users/admin-users.service.js';
 import { User } from './users/user.entity.js';
 import { JobAlertWorker } from './whatsapp/job-alert.worker.js';
 import { WhatsAppCloudService } from './whatsapp/whatsapp-cloud.service.js';
+import { createJobAlertSender } from './whatsapp/job-alert-sender.js';
 import { WhatsAppWebhookService } from './whatsapp/whatsapp-webhook.service.js';
 import { registerWhatsAppWebhookRoutes } from './whatsapp/whatsapp-webhook.routes.js';
 
@@ -120,20 +121,20 @@ export async function createApi({
     rbac,
     driving,
   );
+  const whatsapp = new WhatsAppCloudService(app.log.child({ service: 'whatsapp' }));
+  const alertSender = createJobAlertSender(whatsapp);
   const serviceJobAccess = new ServiceJobAccess();
   const serviceJobs = new ServiceJobsService(
     db,
     events,
     serviceJobAccess,
+    alertSender,
     app.log.child({ service: 'service-jobs' }),
-  );
-  const whatsapp = new WhatsAppCloudService(
-    app.log.child({ service: 'whatsapp' }),
   );
   const alertWorker = new JobAlertWorker(
     db,
     serviceJobs,
-    whatsapp,
+    alertSender,
     app.log.child({ service: 'job-alerts' }),
   );
   const whatsappWebhook = new WhatsAppWebhookService(

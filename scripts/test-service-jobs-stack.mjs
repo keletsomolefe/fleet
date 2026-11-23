@@ -426,7 +426,7 @@ async function createTruck(label) {
 }
 
 async function createProvider(admin, label, input = {}) {
-  const whatsappNumber = await uniqueWhatsAppNumber();
+  const whatsappNumber = input.whatsappNumber ?? await uniqueWhatsAppNumber();
   const provider = await api.jobs.createProvider(admin, {
     companyName: `${tag} ${label}`,
     contactName: `${label} Contact`,
@@ -861,7 +861,9 @@ async function startFakeGraph() {
     });
     wamidCounter += 1;
     response.writeHead(200, { "Content-Type": "application/json" });
-    response.end(JSON.stringify({ messages: [{ id: `wamid.test-${wamidCounter}` }] }));
+    if (request.url?.endsWith("/messages/send-text"))
+      response.end(JSON.stringify({ messageId: `openwa-test-${wamidCounter}` }));
+    else response.end(JSON.stringify({ messages: [{ id: `wamid.test-${wamidCounter}` }] }));
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   return server;
@@ -944,6 +946,7 @@ async function main() {
   // before createApi() boots the alert worker.
   Object.assign(process.env, {
     SERVICE_JOB_ALERTS_ENABLED: "true",
+    SERVICE_JOB_ALERT_TRANSPORT: "meta",
     SERVICE_JOB_LINK_SECRET: randomBytes(48).toString("hex"),
     META_WHATSAPP_ACCESS_TOKEN: accessToken,
     META_WHATSAPP_PHONE_NUMBER_ID: phoneNumberId,
@@ -960,6 +963,52 @@ async function main() {
     FLEET_DATA_DIR: dataDir,
   });
 
+  if (process.argv.includes("--openwa-demo")) {
+    const sender = await uniqueWhatsAppNumber();
+    const left = await uniqueWhatsAppNumber();
+    const right = await uniqueWhatsAppNumber();
+    Object.assign(process.env, {
+      SERVICE_JOB_ALERT_TRANSPORT: "openwa-demo", OPENWA_DEMO_URL: graphUrl,
+      OPENWA_DEMO_SESSION_ID: randomUUID(), OPENWA_DEMO_API_KEY: randomBytes(16).toString("hex"),
+      OPENWA_DEMO_SENDER: sender, OPENWA_DEMO_RECIPIENTS: [sender, left, right].join(","),
+      META_WHATSAPP_ACCESS_TOKEN: "", META_WHATSAPP_PHONE_NUMBER_ID: "",
+    });
+    api = await loadApi();
+    apiBase = await api.app.listen({ port: 0, host: "127.0.0.1" });
+    const admin = await adminContext();
+    for (const [name, whatsappNumber] of [["Sender", sender], ["First", left], ["Second", right]])
+      await createProvider(admin, name, { whatsappNumber, consent: true, alertsEnabled: true });
+    const providers = await api.jobs.listProviders({ status: "receives_alerts" });
+    assert.deepEqual(providers.items.map(p => p.whatsappNumber).sort(), [left, right].sort());
+    const truck = await createTruck("DEMO");
+    const { issueId, driverId } = await createLinkedIssue(truck.id);
+    const { job } = await api.database.transaction(manager => api.jobs.createForIssue(manager, {
+      issueId, driverId, truckId: truck.id, driverName: "Stack Driver", serviceType: "mechanical",
+      description: "Breakdown test", locationText: "Depot", notifyProviders: true,
+    }));
+    created.jobs.push(job.id);
+    await api.alerts.flush();
+    await waitFor("two OpenWA sends", async () => (await offersForJob(job.id)).filter(o => o.status === "sent").length === 2);
+    assert.deepEqual(graphRequests.map(r => r.body.chatId).sort(), [left, right].map(n => digits(n) + "@c.us").sort());
+    const [first, second] = graphRequests;
+    for (const r of graphRequests) {
+      assert.equal(r.url, `/api/sessions/${process.env.OPENWA_DEMO_SESSION_ID}/messages/send-text`);
+      assert.equal(r.headers["x-api-key"], process.env.OPENWA_DEMO_API_KEY);
+      assert.match(r.headers["idempotency-key"], /^fleet-offer-[\da-f-]+-1$/);
+      assert.equal(r.body.linkPreview, false);
+      for (const value of [job.reference, truck.registration, "Breakdown test", "Depot"])
+        assert.ok(r.body.text.includes(value));
+    }
+    const code = request => new URL(request.body.text.split("\n").at(-1)).pathname.slice(3);
+    assert.notEqual(code(first), code(second));
+    const decline = await publicJob("/decline", { method: "POST", code: code(first), body: {} });
+    assert.equal(decline.status, 200, JSON.stringify(decline.body));
+    const accept = await publicJob("/accept", { method: "POST", code: code(second), body: { name: "Demo responder" } });
+    assert.equal(accept.status, 200, JSON.stringify(accept.body));
+    assert.deepEqual((await offersForJob(job.id)).map(o => o.status).sort(), ["accepted", "declined"]);
+    pass("Driver breakdown sent two real-detail messages through fake OpenWA, excluded linked phone, and both provider link actions worked");
+    return;
+  }
   api = await loadApi();
   apiBase = await api.app.listen({ port: 0, host: "127.0.0.1" });
   console.log(

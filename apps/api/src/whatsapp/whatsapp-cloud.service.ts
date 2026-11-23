@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { BadRequestError } from '../http/errors.js';
 import { photoType, type UploadedPhoto } from '../storage/photo.js';
+import type { JobAlertInput } from './job-alert-sender.js';
 
 export type WhatsAppButton = { id: string; title: string };
 
@@ -48,11 +49,15 @@ export function templateText(raw: string | null | undefined, max: number) {
 }
 
 export class WhatsAppCloudService {
+  readonly recipientNumbers = null;
   constructor(
     private readonly logger: Pick<Console, 'info' | 'warn' | 'error'> = console,
   ) {}
   get configured() {
     return !!(accessToken() && phoneNumberId());
+  }
+  get alertTemplate() {
+    return templateName();
   }
   get verifyToken() {
     return process.env.META_WHATSAPP_WEBHOOK_VERIFY_TOKEN ?? '';
@@ -191,16 +196,7 @@ export class WhatsAppCloudService {
     });
   }
 
-  async sendJobAlert(input: {
-    to: string;
-    link: string;
-    reference: string;
-    registration: string;
-    identifier: string;
-    serviceTypeLabel: string;
-    issueSummary: string;
-    locationText: string | null;
-  }): Promise<SendResult> {
+  async sendJobAlert(input: JobAlertInput): Promise<SendResult> {
     const suffix = (() => {
       try {
         const path = new URL(input.link).pathname;

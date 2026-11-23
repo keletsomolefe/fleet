@@ -1,0 +1,28 @@
+services:
+  openwa-demo:
+    image: ghcr.io/rmyndharis/openwa:0.29.1
+    init: true
+    restart: unless-stopped
+    mem_limit: 768m
+    shm_size: 256m
+    stop_grace_period: 75s
+    ports: ["127.0.0.1:12785:2785"]
+    environment:
+      NODE_ENV: production
+      PORT: "2785"
+      ENGINE_TYPE: whatsapp-web.js
+      DATABASE_TYPE: sqlite
+      API_MASTER_KEY: ${OPENWA_DEMO_MASTER_KEY:?}
+      API_KEY_PEPPER: ${OPENWA_DEMO_KEY_PEPPER:?}
+      SEND_PACING_ENABLED: "true"
+      MCP_ENABLED: "false"
+    volumes: [demo_openwa_data:/app/data]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD, curl, -f, http://localhost:2785/api/health/ready]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  demo_openwa_data:

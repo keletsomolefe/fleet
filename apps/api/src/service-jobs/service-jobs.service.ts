@@ -14,6 +14,7 @@ import { DriverIssue } from '../issues/issue.entity.js';
 import { DriverProfile, Truck } from '../fleet/fleet.entity.js';
 import { User } from '../users/user.entity.js';
 import { OperationsEventsService } from '../operations/operations-events.service.js';
+import type { JobAlertSender } from '../whatsapp/job-alert-sender.js';
 import { ServiceJobAccess } from './service-job-access.js';
 import {
   ServiceProvider,
@@ -189,6 +190,7 @@ export class ServiceJobsService {
     private readonly db: Database,
     private readonly events: OperationsEventsService,
     private readonly access: ServiceJobAccess,
+    private readonly alertSender: Pick<JobAlertSender, 'configured' | 'recipientNumbers'>,
     private readonly logger: Pick<Console, 'info' | 'warn' | 'error'> = console,
   ) {}
 
@@ -196,8 +198,7 @@ export class ServiceJobsService {
     return (
       process.env.SERVICE_JOB_ALERTS_ENABLED === 'true' &&
       !!process.env.SERVICE_JOB_LINK_SECRET &&
-      !!process.env.META_WHATSAPP_ACCESS_TOKEN &&
-      !!process.env.META_WHATSAPP_PHONE_NUMBER_ID
+      this.alertSender.configured
     );
   }
   wakeWorker() {
@@ -226,7 +227,8 @@ export class ServiceJobsService {
       status: provider.status,
       alertsEnabled: provider.alertsEnabled,
       receivesAlerts: provider.status === 'active' && provider.alertsEnabled &&
-        !!provider.optedInAt && !provider.optedOutAt && !!provider.whatsappNumber,
+        !!provider.optedInAt && !provider.optedOutAt && !!provider.whatsappNumber &&
+        (this.alertSender.recipientNumbers?.includes(provider.whatsappNumber) ?? true),
       optedInAt: provider.optedInAt,
       optedOutAt: provider.optedOutAt,
       optOutReason: provider.optOutReason,
@@ -309,13 +311,21 @@ export class ServiceJobsService {
       );
     if (status === 'active' || status === 'paused')
       qb.andWhere('provider.status = :status', { status });
-    else if (status === 'receives_alerts')
-      qb.andWhere(`provider.status = 'active' AND provider."alertsEnabled" = true
-        AND provider."optedInAt" IS NOT NULL AND provider."optedOutAt" IS NULL`);
-    else if (status === 'alerts_off')
-      qb.andWhere(
-        `(provider."alertsEnabled" = false OR provider."optedInAt" IS NULL OR provider."optedOutAt" IS NOT NULL)`,
-      );
+    else if (status === 'receives_alerts' || status === 'alerts_off') {
+      const audience = this.alertSender.recipientNumbers;
+      const phones = audience?.length ? audience : [''];
+      if (status === 'receives_alerts') {
+        qb.andWhere(`provider.status = 'active' AND provider."alertsEnabled" = true
+          AND provider."optedInAt" IS NOT NULL AND provider."optedOutAt" IS NULL`);
+        if (audience) qb.andWhere('provider."whatsappNumber" IN (:...phones)', { phones });
+      } else {
+        qb.andWhere(
+          `(provider."alertsEnabled" = false OR provider."optedInAt" IS NULL OR provider."optedOutAt" IS NOT NULL
+            ${audience ? 'OR provider."whatsappNumber" NOT IN (:...phones)' : ''})`,
+          { phones },
+        );
+      }
+    }
     const [providers, total] = await qb
       .orderBy('provider."companyName"', 'ASC')
       .skip((page - 1) * pageSize)
@@ -649,24 +659,23 @@ export class ServiceJobsService {
       activeProviderCount: await this.db
         .getRepository(ServiceProvider)
         .count({
-          where: {
-            status: 'active',
-            alertsEnabled: true,
-            optedOutAt: IsNull(),
-            optedInAt: Not(IsNull()),
-          },
+          where: this.eligibleProviderWhere(),
         }),
       alertsReady: this.alertsReady,
     };
   }
 
-  private async eligibleProviders(manager: EntityManager) {
-    return manager.find(ServiceProvider, {
+  private eligibleProviderWhere() {
+    return {
       status: 'active',
       alertsEnabled: true,
       optedOutAt: IsNull(),
       optedInAt: Not(IsNull()),
-    }, { orderBy: { companyName: 'asc' } });
+      ...(this.alertSender.recipientNumbers && { whatsappNumber: In(this.alertSender.recipientNumbers) }),
+    };
+  }
+  private async eligibleProviders(manager: EntityManager) {
+    return manager.find(ServiceProvider, this.eligibleProviderWhere(), { orderBy: { companyName: 'asc' } });
   }
   private async queueOffers(
     manager: EntityManager,
@@ -1557,6 +1566,8 @@ export class ServiceJobsService {
       if (!offer) throw new NotFoundError('Provider request not found.');
       if (offer.status === 'accepted')
         throw new ConflictError('The provider has already accepted this job.');
+      if (this.alertSender.recipientNumbers && !this.alertSender.recipientNumbers.includes(offer.provider.whatsappNumber))
+        throw new ConflictError('This provider is outside the demo alert audience.');
       if (offer.job.status !== 'open')
         throw new ConflictError('This job is no longer waiting for a provider.');
       const now = new Date();
@@ -1938,6 +1949,7 @@ export class ServiceJobsService {
            AND p."alertsEnabled" = true
            AND p."optedInAt" IS NOT NULL
            AND p."optedOutAt" IS NULL
+           AND ($2::text[] IS NULL OR p."whatsappNumber" = ANY($2::text[]))
          ORDER BY o."nextAttemptAt"
          LIMIT $1
          FOR UPDATE OF o SKIP LOCKED
@@ -1948,7 +1960,7 @@ export class ServiceJobsService {
        FROM due
        WHERE o.id = due.id
        RETURNING o.id`,
-      [limit],
+      [limit, this.alertSender.recipientNumbers],
     )) as Array<{ id: string }>;
     if (!claimed.length) return [];
     const ids = claimed.map((row) => row.id);

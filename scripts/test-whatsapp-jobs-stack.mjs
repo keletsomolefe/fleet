@@ -658,6 +658,7 @@ async function main() {
 
   Object.assign(process.env, {
     SERVICE_JOB_ALERTS_ENABLED: "true",
+    SERVICE_JOB_ALERT_TRANSPORT: "meta",
     SERVICE_JOB_LINK_SECRET: randomBytes(48).toString("hex"),
     META_WHATSAPP_ACCESS_TOKEN: accessToken,
     META_WHATSAPP_PHONE_NUMBER_ID: phoneNumberId,
