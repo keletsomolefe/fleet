@@ -1006,6 +1006,26 @@ async function main() {
     const accept = await publicJob("/accept", { method: "POST", code: code(second), body: { name: "Demo responder" } });
     assert.equal(accept.status, 200, JSON.stringify(accept.body));
     assert.deepEqual((await offersForJob(job.id)).map(o => o.status).sort(), ["accepted", "declined"]);
+    const nextIssue = randomUUID();
+    await db.query(`insert into app.driver_issues (id, "driverId", "truckId", category, description)
+      values ($1, $2, $3, 'vehicle', 'Separate tyre fault')`, [nextIssue, driverId, truck.id]);
+    created.issues.push(nextIssue);
+    const nextInput = { issueId: nextIssue, driverId, truckId: truck.id, driverName: "Stack Driver",
+      serviceType: "tyres", description: "Separate tyre fault", notifyProviders: true };
+    const next = await api.database.transaction(manager => api.jobs.createForIssue(manager, nextInput));
+    created.jobs.push(next.job.id);
+    assert.notEqual(next.job.reference, job.reference);
+    const retry = await api.database.transaction(manager => api.jobs.createForIssue(manager, nextInput));
+    assert.equal(retry.job.id, next.job.id);
+    await api.alerts.flush();
+    await waitFor("second breakdown sends", async () => (await offersForJob(next.job.id)).filter(o => o.status === "sent").length === 2);
+    assert.equal(graphRequests.length, 4);
+    assert.deepEqual(graphRequests.slice(2).map(r => r.body.chatId).sort(), [left, right].map(n => digits(n) + "@c.us").sort());
+    assert.ok(graphRequests.slice(2).every(r => r.body.text.includes(next.job.reference)));
+    assert.equal(new Set(graphRequests.map(r => r.headers["idempotency-key"])).size, 4);
+    const listed = await api.jobs.listJobs({ q: truck.identifier });
+    assert.deepEqual(listed.items.map(j => j.reference).sort(), [job.reference, next.job.reference].sort());
+    pass("Same-truck breakdowns appear separately in admin and each alerts two providers once");
     pass("Driver breakdown sent two real-detail messages through fake OpenWA, excluded linked phone, and both provider link actions worked");
     return;
   }
@@ -1089,15 +1109,12 @@ async function main() {
   created.jobs.push(jobA.id);
   assert.equal(jobA.status, "open");
   assert.match(jobA.reference, /^SJ-\d{6,}$/);
-  await expectError(
-    "duplicate active job for the same vehicle",
-    () =>
-      api.jobs.createJob(admin, {
-        truckId: truckA.id,
-        description: "Second report while the first job is active.",
-      }),
-    { status: 409, message: /already has an active service job/i },
-  );
+  const otherJob = await api.jobs.createJob(admin, {
+    truckId: truckA.id, description: "Separate fault on this truck.", notifyProviders: false,
+  });
+  created.jobs.push(otherJob.id);
+  assert.notEqual(otherJob.reference, jobA.reference);
+  assert.equal(otherJob.status, "open");
   const { rows: offersA, counts: templateCounts } = await waitForJobOffers(
     jobA.id,
     eligibleBefore.length,
@@ -1497,6 +1514,9 @@ async function main() {
   });
   created.jobs.push(jobB.id);
   assert.equal(jobB.status, "open");
+  await expectError("another active job for the same report", () => api.jobs.createJob(admin, {
+    truckId: truckA.id, issueId: linked.issueId, description: "Repeat of the same report.", notifyProviders: false,
+  }), { status: 409, message: /report already has an active service job/i });
   const linkedJobRow = await one(
     'select "issueId", "driverId", source from app.service_jobs where id = $1',
     [jobB.id],

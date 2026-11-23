@@ -3611,14 +3611,14 @@
       "indexes": [
         {
           "columnNames": [
-            "truckId"
+            "issueId"
           ],
           "composite": false,
           "constraint": false,
-          "keyName": "service_jobs_active_truck",
+          "keyName": "service_jobs_active_issue",
           "primary": false,
           "unique": true,
-          "expression": "CREATE UNIQUE INDEX service_jobs_active_truck ON app.service_jobs USING btree (\"truckId\") WHERE ((status)::text = ANY ((ARRAY['open'::character varying, 'assigned'::character varying, 'in_progress'::character varying])::text[]))"
+          "expression": "CREATE UNIQUE INDEX service_jobs_active_issue ON app.service_jobs USING btree (\"issueId\") WHERE ((\"issueId\" IS NOT NULL) AND ((status)::text = ANY ((ARRAY['open'::character varying, 'assigned'::character varying, 'in_progress'::character varying])::text[])))"
         },
         {
           "columnNames": [

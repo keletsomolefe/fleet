@@ -44,7 +44,7 @@ Proof policy is selected before dispatch and downloaded with the job. Active wor
 | ID | Requirement |
 | --- | --- |
 | SVC-01 | Maintain a directory of service providers with company, contact, WhatsApp number, other contact details, services, coverage area, operational status, WhatsApp alert consent and opt-out state. Provider records are retained when paused. |
-| SVC-02 | A vehicle breakdown report creates one service job and one driver issue in one transaction. The job records the vehicle, driver, service type, description, optional location and urgency. One active service job per vehicle is enforced. |
+| SVC-02 | A vehicle breakdown report creates one service job and one driver issue in one transaction. The job records the vehicle, driver, service type, description, optional location and urgency. Distinct reports on the same vehicle can have active jobs at the same time. Retrying the same report does not create another job. |
 | SVC-03 | Alert every active, opted-in service provider at once through an approved Meta WhatsApp utility template with job reference, vehicle, issue, location and a signed View job link with Accept job and Can't take quick replies. |
 | SVC-04 | The first provider to accept is assigned atomically; later responses are informed that the job is already covered. The office can assign or reassign a provider with a recorded reason. |
 | SVC-05 | The office sees a Service jobs list and detail page with status, assigned provider, per-provider alert delivery/read state, progress timeline, completion note/photos/amount and the audit actor/channel. |

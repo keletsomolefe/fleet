@@ -586,6 +586,20 @@ try {
   assert.deepEqual(await readFile(join(repairEvidenceDir, receipt.photos[0].id)), sample);
   pass("Signed-in Exceptions repair evidence requires a session and CSRF token and stores the note, photo and administrator");
 
+  const firstFault = { id: randomUUID(), truckId: trucks[0], category: "vehicle", serviceType: "mechanical", description: "Engine fault" };
+  const secondFault = { ...firstFault, id: randomUUID(), serviceType: "tyres", description: "Separate tyre fault" };
+  const [firstReport, secondReport, firstRetry] = await Promise.all([report(firstFault), report(secondFault), report(firstFault)]);
+  for (const result of [firstReport, secondReport, firstRetry]) assert.equal(result.status, 200, JSON.stringify(result.body));
+  assert.equal(firstReport.body.job.id, firstRetry.body.job.id);
+  assert.notEqual(firstReport.body.job.reference, secondReport.body.job.reference);
+  const adminIssues = await mobile("admin/issues", { token: admin });
+  for (const result of [firstReport, secondReport]) {
+    const visible = adminIssues.body.items.find(i => i.id === result.body.id);
+    assert.equal(visible.job.reference, result.body.job.reference);
+    assert.equal(visible.job.status, "open");
+  }
+  pass("A driver submits concurrent distinct breakdowns on one truck; both appear in admin and retrying reuses the job");
+
   const logout = await browser(
     "self-service/logout/browser",
     {},
