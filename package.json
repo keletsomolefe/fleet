@@ -41,7 +41,7 @@
     "db:migration:pending": "pnpm --filter api migration:pending",
     "db:check-schema": "pnpm --filter api check-schema",
     "test:db-queries": "node scripts/test-service-job-queries.mjs",
-    "test:service-jobs": "pnpm --filter api build && node --env-file=.env scripts/test-service-jobs-stack.mjs",
+    "test:service-jobs": "pnpm --filter api build && node --env-file=.env scripts/test-service-jobs-stack.mjs && node --env-file=.env scripts/test-service-jobs-stack.mjs --openwa-demo",
     "test:whatsapp-jobs": "pnpm --filter api build && node --env-file=.env scripts/test-whatsapp-jobs-stack.mjs"
   },
   "dependencies": {

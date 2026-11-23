@@ -1,10 +1,7 @@
 import { Database } from '../database/database.js';
 import { WhatsAppMessage } from './whatsapp-message.entity.js';
-import {
-  WhatsAppCloudError,
-  WhatsAppCloudService,
-  templateName,
-} from './whatsapp-cloud.service.js';
+import { WhatsAppCloudError } from './whatsapp-cloud.service.js';
+import type { JobAlertSender } from './job-alert-sender.js';
 import type { ServiceJobsService } from '../service-jobs/service-jobs.service.js';
 import { serviceTypeLabels } from '../service-jobs/service-job.input.js';
 
@@ -16,7 +13,7 @@ export class JobAlertWorker {
   constructor(
     private readonly db: Database,
     private readonly jobs: ServiceJobsService,
-    private readonly whatsapp: WhatsAppCloudService,
+    private readonly whatsapp: JobAlertSender,
     private readonly logger: Pick<Console, 'info' | 'warn' | 'error'> = console,
   ) {}
 
@@ -29,7 +26,7 @@ export class JobAlertWorker {
     this.started = true;
     if (!this.whatsapp.configured) {
       this.logger.error(
-        'Service job alerts are enabled but Meta WhatsApp is not configured.',
+        'Service job alerts are enabled but the WhatsApp sender is not configured.',
       );
       return;
     }
@@ -93,14 +90,14 @@ export class JobAlertWorker {
     const messages = this.db.getRepository(WhatsAppMessage);
     const message = messages.create({
       direction: 'outbound',
-      kind: 'template',
+      kind: this.whatsapp.alertTemplate ? 'template' : 'text',
       jobId: offer.jobId,
       offerId: offer.offerId,
       providerId: offer.providerId,
       fromNumber: null,
       profileName: null,
       status: 'queued',
-      templateName: templateName(),
+      templateName: this.whatsapp.alertTemplate,
       errorCode: null,
       errorTitle: null,
       contextWamid: null,
@@ -111,6 +108,7 @@ export class JobAlertWorker {
     try {
       ({ wamid } = await this.whatsapp.sendJobAlert({
         to: offer.providerPhone,
+        idempotencyKey: `fleet-offer-${offer.offerId}-${offer.linkVersion}`,
         link: offer.link,
         reference: offer.reference,
         registration: offer.truckRegistration,

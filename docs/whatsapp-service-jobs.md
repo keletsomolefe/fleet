@@ -34,7 +34,29 @@ Set in the root `.env` (server-only; never in the web or mobile bundle):
 
 Environment changes require an API restart. Alerts can be disabled at any time without affecting job creation.
 
-## Utility template for approval
+## Linked-phone demo
+
+For a demo with a dedicated WhatsApp phone, start the optional
+`deploy/compose.demo-openwa.yaml` overlay alongside the Fleet deployment.
+Set `OPENWA_DEMO_MASTER_KEY` and `OPENWA_DEMO_KEY_PEPPER` to independent random
+secrets in the root environment. The gateway dashboard listens on the server's
+loopback port 12785. Use an SSH tunnel to create a session and scan its QR code
+under **Linked devices** on the demo phone.
+
+Create an operator key restricted to that session and the consenting providers'
+individual chat IDs. Set `OPENWA_DEMO_URL=http://openwa-demo:2785`,
+`OPENWA_DEMO_SESSION_ID` and `OPENWA_DEMO_API_KEY`. Set `OPENWA_DEMO_SENDER` to
+the linked phone number and `OPENWA_DEMO_RECIPIENTS` to the comma-separated
+provider numbers with country codes. Fleet excludes the linked number. When the session reports
+`ready`, set `SERVICE_JOB_ALERT_TRANSPORT=openwa-demo` and
+`SERVICE_JOB_ALERTS_ENABLED=true` and recreate the Fleet app container.
+
+Each eligible provider receives a text with the breakdown details and their
+signed link to accept, decline or complete the job. Fleet records gateway
+acceptance as **Sent**. The demo supports provider actions through the link.
+Set the transport to `meta` to use the approved Cloud API template again.
+
+## Meta template
 
 Submit [the ready-to-use template definition](../deploy/whatsapp/vhh_service_job_alert.en_US.json) through WhatsApp Manager or the [Meta message templates endpoint](https://developers.facebook.com/docs/graph-api/reference/whats-app-business-account/message_templates/). Select **Utility**, English (US), and name it `vhh_service_job_alert`. Enable alerts after Meta approves it. The URL prefix must match the public Fleet host.
 
