@@ -41,8 +41,6 @@ export class IssuesService {
   }
   async report(c: AdminContext, raw: unknown) {
     const v = parseIssue(raw);
-    let duplicate = false;
-    let alerts: 'queued' | 'skipped' | 'none' = 'none';
     const result = await this.db.transaction(async (m) => {
       // Use the same lock as vehicle/schedule changes when validating the report's vehicle.
       await m.execute(
@@ -74,20 +72,6 @@ export class IssuesService {
       )
         throw new ConflictError('Your vehicle changed. Refresh and try again.');
 
-      if (v.category === 'vehicle' && v.truckId) {
-        const active = await this.jobs.activeJobForTruck(m, v.truckId);
-        if (active) {
-          duplicate = true;
-          return {
-            id: active.issueId,
-            created: false,
-            duplicate: true,
-            alerts: 'skipped' as const,
-            job: this.jobs.summaryForJob(active),
-          };
-        }
-      }
-
       const issue = m.create(DriverIssue, {
         id: v.id,
         driverId: context.driver.id,
@@ -99,7 +83,6 @@ export class IssuesService {
         resolutionNote: null,
       });
       await m.save(issue);
-      let job = null;
       if (v.category === 'vehicle' && v.truckId) {
         const created = await this.jobs.createForIssue(m, {
           issueId: issue.id,
@@ -115,17 +98,15 @@ export class IssuesService {
           locationCapturedAt: v.locationCapturedAt,
           notifyProviders: true,
         });
-        duplicate = created.duplicate;
-        alerts = created.alerts;
-        job = this.jobs.summaryForJob(created.job);
+        return { id: issue.id, created: true, duplicate: created.duplicate, alerts: created.alerts, job: this.jobs.summaryForJob(created.job) };
       }
-      return { id: issue.id as string | null, created: true, duplicate, alerts, job };
+      return { id: issue.id, created: true, duplicate: false, alerts: 'none' as const, job: null };
     });
     if (result.created) {
       this.events.changed();
       if (result.job) this.jobs.wakeWorker();
     }
-    return { id: result.id, job: result.job, duplicate, alerts: result.alerts };
+    return { id: result.id, job: result.job, duplicate: result.duplicate, alerts: result.alerts };
   }
   async list(c: AdminContext, own = false) {
     const driverId = own

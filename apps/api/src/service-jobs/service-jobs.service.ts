@@ -782,29 +782,17 @@ export class ServiceJobsService {
     const input = parseJobInput(raw);
     const truck = await this.db.em.findOne(Truck, { id: input.truckId });
     if (!truck) throw new NotFoundError('Vehicle not found.');
-    let issue: DriverIssue | null = null;
-    if (input.issueId) {
-      issue = await this.db.em.findOne(DriverIssue, { id: input.issueId }, { populate: ['driver'] });
-      if (!issue) throw new NotFoundError('Driver report not found.');
-      if (issue.truckId !== truck.id)
-        throw new BadRequestError('The report belongs to another vehicle.');
-    }
-    const driver =
-      issue?.driver ??
-      (await this.db.em.findOne(DriverProfile, { currentTruckId: truck.id }));
     const result = await this.db.transaction(async (manager) => {
-      const active = await manager.findOne(ServiceJob, { truck: truck.id, status: In(activeStatuses) });
-      if (active) {
-        throw new ConflictError(
-          `This vehicle already has an active service job (${active.reference}).`,
-        );
-      }
+      const issue = input.issueId ? await this.reportForNewJob(manager, input.issueId) : null;
+      if (issue && issue.truckId !== truck.id)
+        throw new BadRequestError('The report belongs to another vehicle.');
+      const driverId = issue?.driverId ?? (await manager.findOne(DriverProfile, { currentTruckId: truck.id }))?.id;
       const job = manager.create(ServiceJob, {
         id: input.id ?? randomUUID(),
         reference: await this.reference(manager),
         issueId: issue?.id ?? null,
         truckId: truck.id,
-        driverId: driver?.id ?? null,
+        driverId: driverId ?? null,
         serviceType: input.serviceType,
         title: input.title ?? serviceTypeLabels[input.serviceType],
         description: input.description,
@@ -869,7 +857,7 @@ export class ServiceJobsService {
   ) {
     const active = await manager.findOne(
       ServiceJob,
-      { truck: input.truckId, status: In(activeStatuses) },
+      { issue: input.issueId, status: In(activeStatuses) },
       { populate: ['truck', 'provider'] },
     );
     if (active)
@@ -1353,6 +1341,7 @@ export class ServiceJobsService {
       if (!job) throw new NotFoundError('Service job not found.');
       if (job.status !== 'closed')
         throw new ConflictError('Only a closed job can be reopened.');
+      const issue = job.issueId ? await this.reportForNewJob(manager, job.issueId) : null;
       const now = new Date();
       const wasResolved = job.resolvedIssueOnClose;
       job.status = job.providerId ? 'in_progress' : 'open';
@@ -1360,25 +1349,22 @@ export class ServiceJobsService {
       job.closedById = null;
       job.closeNote = null;
       job.resolvedIssueOnClose = false;
-      if (input.reopenIssue && wasResolved && job.issueId) {
-        const issue = await manager.findOne(DriverIssue, { id: job.issueId }, { lockMode: LockMode.PESSIMISTIC_WRITE });
-        if (issue?.resolvedAt) {
-          issue.resolvedAt = null;
-          issue.resolvedById = null;
-          issue.resolutionNote = null;
-          await manager.save(issue);
-          await manager.save(
-            manager.create(ServiceJobEvent, {
-              jobId: job.id,
-              kind: 'issue_reopened',
-              actorType: 'admin',
-              actorUserId: admin.user.id,
-              actorName: `${admin.user.firstName} ${admin.user.lastName}`,
-              channel: 'dashboard',
-              note: input.reason,
-            }),
-          );
-        }
+      if (input.reopenIssue && wasResolved && issue?.resolvedAt) {
+        issue.resolvedAt = null;
+        issue.resolvedById = null;
+        issue.resolutionNote = null;
+        await manager.save(issue);
+        await manager.save(
+          manager.create(ServiceJobEvent, {
+            jobId: job.id,
+            kind: 'issue_reopened',
+            actorType: 'admin',
+            actorUserId: admin.user.id,
+            actorName: `${admin.user.firstName} ${admin.user.lastName}`,
+            channel: 'dashboard',
+            note: input.reason,
+          }),
+        );
       }
       await manager.save(job);
       await manager.save(
@@ -1650,15 +1636,13 @@ export class ServiceJobsService {
         `This report has an active service job (${job.reference}). Close the job before resolving it.`,
       );
   }
-  async activeJobForTruck(
-    manager: EntityManager,
-    truckId: string,
-  ): Promise<ServiceJob | null> {
-    return manager.findOne(
-      ServiceJob,
-      { truck: truckId, status: In(activeStatuses) },
-      { populate: ['truck', 'provider'], orderBy: { createdAt: 'desc', id: 'desc' } },
-    );
+  private async reportForNewJob(manager: EntityManager, issueId: string) {
+    const issue = await manager.findOne(DriverIssue, { id: issueId }, { lockMode: LockMode.PESSIMISTIC_WRITE });
+    if (!issue) throw new NotFoundError('Driver report not found.');
+    const active = await manager.findOne(ServiceJob, { issue: issueId, status: In(activeStatuses) });
+    if (active)
+      throw new ConflictError(`This report already has an active service job (${active.reference}).`);
+    return issue;
   }
 
   private async offerByCode(code: string) {

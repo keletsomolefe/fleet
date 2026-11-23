@@ -52,7 +52,7 @@ Changing a provider’s WhatsApp number or re-enabling alerts requires a new con
 
 Progress stages are `en_route`, `arrived` and `working`. They do not regress.
 
-One active job per vehicle is enforced by a partial unique index. A second breakdown report for the same vehicle returns the active job with “A service provider is already handling this vehicle” instead of creating a duplicate.
+Each new breakdown report gets its own job reference and provider offers. A truck can have several open jobs at once. Retrying a submission with the same report ID returns the existing job. A provider’s response applies only to the job in their link.
 
 ## Driver flow
 

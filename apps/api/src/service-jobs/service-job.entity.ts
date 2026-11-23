@@ -102,9 +102,9 @@ const offerStatusListSql = offerStatuses
   where: '"providerId" IS NOT NULL',
 })
 @Unique({
-  name: 'service_jobs_active_truck',
-  properties: ['truck'],
-  where: `status IN ('open', 'assigned', 'in_progress')`,
+  name: 'service_jobs_active_issue',
+  properties: ['issue'],
+  where: `"issueId" IS NOT NULL AND status IN ('open', 'assigned', 'in_progress')`,
 })
 @Unique({
   name: 'service_jobs_reference_key',
