@@ -5,13 +5,18 @@ import { useRouter } from "expo-router";
 import * as Crypto from "expo-crypto";
 import {
   Button,
+  Chip,
   Copy,
   Field,
   Heading,
   Notice,
+  PickerSheet,
   Screen,
+  SelectField,
+  colors,
   styles,
   useAction,
+  type PickerOption,
 } from "@/components/ui";
 import { useFleet } from "@/state/fleet";
 import { pickPhoto, type CapturedPhoto } from "@/lib/photos";
@@ -93,53 +98,88 @@ function fresh(kind: ActivityKind): Data {
   };
 }
 
+const siteTypeLabels: Record<string, string> = {
+  collection: "Collection site",
+  delivery: "Delivery site",
+  both: "Collection & delivery",
+  fuel_station: "Fuel station",
+  yard: "Yard",
+};
+
+function formatShortTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const now = new Date();
+  const time = date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  ).getTime();
+  const startOfDate = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  ).getTime();
+  const dayDiff = Math.round((startOfToday - startOfDate) / 86_400_000);
+  if (dayDiff === 0) return `Today, ${time}`;
+  if (dayDiff === 1) return `Yesterday, ${time}`;
+  return `${date.toLocaleDateString([], { day: "numeric", month: "short" })}, ${time}`;
+}
+
 function Choose({
   label,
   placeholder,
   value,
   items,
+  optional = false,
   onChange,
 }: {
   label: string;
   placeholder?: string;
   value: Ref;
   items: Entry[];
+  optional?: boolean;
   onChange: (r: Ref) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const matches = items
-    .filter(
-      (x) =>
-        x.active && x.name.toLowerCase().includes(value.name.toLowerCase()),
-    )
-    .slice(0, 5);
+  const options: PickerOption[] = items
+    .filter((x) => x.active)
+    .map((x) => ({
+      id: x.id,
+      label: x.name,
+      subtitle: x.unit
+        ? `Default unit: ${unitNames[x.unit] ?? x.unit}`
+        : x.siteType
+          ? (siteTypeLabels[x.siteType] ?? x.siteType)
+          : undefined,
+    }));
+
   return (
-    <View style={{ gap: 6 }}>
-      <Field
+    <>
+      <SelectField
         label={label}
-        placeholder={placeholder}
         value={value.name}
-        onChangeText={(name) => {
-          onChange({ id: null, name });
-          setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
+        placeholder={placeholder ?? `Select ${label.toLowerCase()}`}
+        onPress={() => setOpen(true)}
       />
-      {open &&
-        !value.id &&
-        matches.map((x) => (
-          <Button
-            key={x.id}
-            secondary
-            onPress={() => {
-              onChange({ id: x.id, name: x.name });
-              setOpen(false);
-            }}
-          >
-            {x.name}
-          </Button>
-        ))}
-    </View>
+      <PickerSheet
+        visible={open}
+        title={label}
+        options={options}
+        selectedId={value.id}
+        placeholder={`Search ${label.toLowerCase()}…`}
+        emptyMessage="No saved entries match. Type a name to add one."
+        allowCustom
+        onSelect={(opt) => onChange({ id: opt.id, name: opt.label })}
+        onCustom={(text) => onChange({ id: null, name: text })}
+        onClear={optional && value.name ? () => onChange(emptyRef) : undefined}
+        onClose={() => setOpen(false)}
+      />
+    </>
   );
 }
 
@@ -170,6 +210,7 @@ export default function Activities() {
   const [form, setForm] = useState<{ recordId: string; data: Data } | null>(
     null,
   );
+  const [pickupSheetOpen, setPickupSheetOpen] = useState(false);
   const [photo, setPhoto] = useState<CapturedPhoto | null>(null);
   const [localError, setLocalError] = useState("");
   const [savedNotice, setSavedNotice] = useState("");
@@ -356,7 +397,7 @@ export default function Activities() {
     await loadLocal();
   }
 
-  const parsedCollections = records
+  const parsedRecords = records
     .map((r) => {
       try {
         return { id: r.id, data: JSON.parse(r.data) as Data };
@@ -364,10 +405,92 @@ export default function Activities() {
         return null;
       }
     })
-    .filter((x): x is { id: string; data: Data } =>
-      Boolean(x && x.data.kind === "collection"),
-    )
-    .slice(0, 6);
+    .filter((x): x is { id: string; data: Data } => Boolean(x));
+
+  const deliveryCountByPickup = new Map<string, number>();
+  for (const item of parsedRecords) {
+    if (item.data.kind === "delivery" && item.data.runId) {
+      deliveryCountByPickup.set(
+        item.data.runId,
+        (deliveryCountByPickup.get(item.data.runId) ?? 0) + 1,
+      );
+    }
+  }
+
+  const parsedCollections = parsedRecords
+    .filter((x) => x.data.kind === "collection")
+    .map((x) => ({
+      ...x,
+      deliveryCount: deliveryCountByPickup.get(x.id) ?? 0,
+    }))
+    .sort((a, b) => {
+      const aDone = a.deliveryCount > 0 ? 1 : 0;
+      const bDone = b.deliveryCount > 0 ? 1 : 0;
+      if (aDone !== bDone) return aDone - bDone;
+      return b.data.occurredAt.localeCompare(a.data.occurredAt);
+    })
+    .slice(0, 15);
+
+  const linkedPickup = form?.data.runId
+    ? parsedCollections.find((col) => col.id === form.data.runId) ?? null
+    : null;
+
+  const pickupOptions: PickerOption[] = parsedCollections.map((col) => {
+    const qty = col.data.quantity ? `${col.data.quantity} ${col.data.unit}` : col.data.unit;
+    const product = col.data.product.name || "Load";
+    const site = col.data.origin.name || "Pickup site";
+    const customer = col.data.customer.name;
+    const timeLabel = formatShortTime(col.data.occurredAt);
+    const ticket = col.data.waybillNumber?.trim();
+    const metaParts = [
+      timeLabel,
+      ticket ? `Ticket ${ticket}` : "",
+    ].filter(Boolean);
+    return {
+      id: col.id,
+      label: `${qty} ${product}`,
+      subtitle: [site, customer].filter(Boolean).join(" · "),
+      meta: metaParts.join(" · "),
+      badge:
+        col.deliveryCount === 0
+          ? "Open load"
+          : col.deliveryCount === 1
+            ? "Delivered"
+            : `${col.deliveryCount} deliveries`,
+      badgeTone: col.deliveryCount === 0 ? "primary" : "muted",
+      searchText: `${site} ${customer} ${product} ${ticket ?? ""} ${timeLabel}`,
+    };
+  });
+
+  function linkPickupToForm(col: { id: string; data: Data }) {
+    updateForm((d) => ({
+      ...d,
+      runId: col.id,
+      customer: col.data.customer.name ? col.data.customer : d.customer,
+      product: col.data.product.name ? col.data.product : d.product,
+      origin: col.data.origin.name ? col.data.origin : d.origin,
+      collectedQuantity: col.data.quantity ?? d.collectedQuantity,
+      quantity:
+        !d.quantity || (d.collectedQuantity && d.quantity === d.collectedQuantity)
+          ? col.data.quantity
+          : d.quantity,
+      unit: col.data.unit || d.unit,
+    }));
+  }
+
+  function startDeliveryFromPickup(col: { id: string; data: Data }) {
+    startNew("delivery", {
+      runId: col.id,
+      dispatchId: col.data.dispatchId,
+      customer: col.data.customer,
+      supplier: col.data.supplier,
+      product: col.data.product,
+      origin: col.data.origin,
+      quantity: col.data.quantity,
+      collectedQuantity: col.data.quantity,
+      unit: col.data.unit,
+    });
+  }
 
   return (
     <Screen
@@ -447,23 +570,21 @@ export default function Activities() {
                     {job.plan.instructions ? ` · ${job.plan.instructions}` : ""}
                   </Copy>
                   <View style={{ flexDirection: "row", gap: 8, paddingTop: 4 }}>
-                    <View style={{ flex: 1 }}>
-                      <Button
-                        secondary
-                        disabled={!context}
-                        onPress={() => startFromDispatch(job, "collection")}
-                      >
-                        Log pickup
-                      </Button>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Button
-                        disabled={!context}
-                        onPress={() => startFromDispatch(job, "delivery", 0)}
-                      >
-                        Log delivery
-                      </Button>
-                    </View>
+                    <Button
+                      fill
+                      secondary
+                      disabled={!context}
+                      onPress={() => startFromDispatch(job, "collection")}
+                    >
+                      Log pickup
+                    </Button>
+                    <Button
+                      fill
+                      disabled={!context}
+                      onPress={() => startFromDispatch(job, "delivery", 0)}
+                    >
+                      Log delivery
+                    </Button>
                   </View>
                 </View>
               ))}
@@ -474,42 +595,38 @@ export default function Activities() {
           <View style={styles.group}>
             <Copy>Record activity</Copy>
             <View style={{ flexDirection: "row", gap: 8 }}>
-              <View style={{ flex: 1 }}>
-                <Button
-                  disabled={!context}
-                  onPress={() => startNew("collection")}
-                >
-                  Pickup / Load
-                </Button>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Button
-                  disabled={!context}
-                  onPress={() => startNew("delivery")}
-                >
-                  Delivery / Offload
-                </Button>
-              </View>
+              <Button
+                fill
+                disabled={!context}
+                onPress={() => startNew("collection")}
+              >
+                Pickup
+              </Button>
+              <Button
+                fill
+                disabled={!context}
+                onPress={() => startNew("delivery")}
+              >
+                Delivery
+              </Button>
             </View>
             <View style={{ flexDirection: "row", gap: 8 }}>
-              <View style={{ flex: 1 }}>
-                <Button
-                  secondary
-                  disabled={!context}
-                  onPress={() => startNew("fuel")}
-                >
-                  Petrol / Fuel
-                </Button>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Button
-                  secondary
-                  disabled={!context}
-                  onPress={() => startNew("expense")}
-                >
-                  Road expense
-                </Button>
-              </View>
+              <Button
+                fill
+                secondary
+                disabled={!context}
+                onPress={() => startNew("fuel")}
+              >
+                Fuel
+              </Button>
+              <Button
+                fill
+                secondary
+                disabled={!context}
+                onPress={() => startNew("expense")}
+              >
+                Road expense
+              </Button>
             </View>
           </View>
 
@@ -557,16 +674,31 @@ export default function Activities() {
                     <Copy small>
                       {syncBadge} · {new Date(d.occurredAt).toLocaleString()}
                     </Copy>
-                    <Button
-                      secondary
-                      disabled={!context}
-                      onPress={() => {
-                        setPhoto(null);
-                        setForm({ recordId: rec.id, data: d! });
-                      }}
-                    >
-                      Edit entry
-                    </Button>
+                    <View style={{ flexDirection: "row", gap: 8, paddingTop: 4 }}>
+                      <Button
+                        fill
+                        secondary
+                        disabled={!context}
+                        onPress={() => {
+                          setPhoto(null);
+                          setForm({ recordId: rec.id, data: d! });
+                        }}
+                      >
+                        Edit entry
+                      </Button>
+                      {d.kind === "collection" &&
+                        (deliveryCountByPickup.get(rec.id) ?? 0) === 0 && (
+                          <Button
+                            fill
+                            disabled={!context}
+                            onPress={() =>
+                              startDeliveryFromPickup({ id: rec.id, data: d! })
+                            }
+                          >
+                            Log delivery
+                          </Button>
+                        )}
+                    </View>
                   </View>
                 );
               })}
@@ -591,16 +723,103 @@ export default function Activities() {
           {(form.data.kind === "collection" ||
             form.data.kind === "delivery") && (
             <>
+              {form.data.kind === "delivery" && parsedCollections.length > 0 && (
+                <>
+                  {linkedPickup ? (
+                    <View
+                      style={{
+                        backgroundColor: colors.bg,
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        padding: 12,
+                        gap: 6,
+                      }}
+                    >
+                      <Copy small>Linked pickup (auto-filled below)</Copy>
+                      <Copy>
+                        {`${linkedPickup.data.quantity ?? "?"} ${linkedPickup.data.unit} ${linkedPickup.data.product.name || "Load"} · ${linkedPickup.data.origin.name || "Pickup site"}`}
+                      </Copy>
+                      <Copy small>
+                        {[
+                          formatShortTime(linkedPickup.data.occurredAt),
+                          linkedPickup.data.customer.name,
+                          linkedPickup.data.waybillNumber?.trim()
+                            ? `Ticket ${linkedPickup.data.waybillNumber.trim()}`
+                            : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </Copy>
+                      <View style={{ flexDirection: "row", gap: 8, paddingTop: 4 }}>
+                        <Button
+                          fill
+                          secondary
+                          onPress={() => setPickupSheetOpen(true)}
+                        >
+                          Change pickup
+                        </Button>
+                        <Button
+                          fill
+                          secondary
+                          onPress={() =>
+                            updateForm((d) => ({
+                              ...d,
+                              runId: null,
+                              collectedQuantity: null,
+                            }))
+                          }
+                        >
+                          Unlink
+                        </Button>
+                      </View>
+                    </View>
+                  ) : (
+                    <SelectField
+                      label="Link to recent pickup (optional)"
+                      value=""
+                      placeholder="Select a pickup to auto-fill load details"
+                      hint="Open loads appear first with time and ticket number."
+                      onPress={() => setPickupSheetOpen(true)}
+                    />
+                  )}
+                  <PickerSheet
+                    visible={pickupSheetOpen}
+                    title="Link recent pickup"
+                    subtitle="Pick a load to auto-fill customer, product, site and quantity."
+                    options={pickupOptions}
+                    selectedId={form.data.runId}
+                    placeholder="Search by site, customer, product or ticket…"
+                    emptyMessage="No matching recent pickups."
+                    onSelect={(opt) => {
+                      const col = parsedCollections.find((c) => c.id === opt.id);
+                      if (col) linkPickupToForm(col);
+                    }}
+                    onClear={
+                      form.data.runId
+                        ? () =>
+                            updateForm((d) => ({
+                              ...d,
+                              runId: null,
+                              collectedQuantity: null,
+                            }))
+                        : undefined
+                    }
+                    onClose={() => setPickupSheetOpen(false)}
+                  />
+                </>
+              )}
+
               <Choose
                 label="Customer"
-                placeholder="Type or select customer"
+                placeholder="Select or add customer"
                 items={catalogue.customers}
                 value={form.data.customer}
                 onChange={(customer) => updateForm((d) => ({ ...d, customer }))}
               />
               <Choose
                 label="Product"
-                placeholder="e.g. Chrome ore, Coal, Sand"
+                placeholder="Select or add product"
                 items={catalogue.products}
                 value={form.data.product}
                 onChange={(product) => {
@@ -616,7 +835,7 @@ export default function Activities() {
               />
               <Choose
                 label="Collection / pickup site"
-                placeholder="Where did you collect?"
+                placeholder="Select pickup site"
                 items={catalogue.locations}
                 value={form.data.origin}
                 onChange={(origin) => updateForm((d) => ({ ...d, origin }))}
@@ -624,8 +843,9 @@ export default function Activities() {
               {form.data.kind === "collection" && (
                 <Choose
                   label="Supplier (optional)"
-                  placeholder="Who supplied the load?"
+                  placeholder="Select supplier"
                   items={catalogue.customers}
+                  optional
                   value={form.data.supplier}
                   onChange={(supplier) =>
                     updateForm((d) => ({ ...d, supplier }))
@@ -636,7 +856,7 @@ export default function Activities() {
                 <>
                   <Choose
                     label="Delivery / drop-off site"
-                    placeholder="Where did you deliver?"
+                    placeholder="Select drop-off site"
                     items={catalogue.locations}
                     value={form.data.destination}
                     onChange={(destination) =>
@@ -645,42 +865,14 @@ export default function Activities() {
                   />
                   <Choose
                     label="Receiver (optional)"
-                    placeholder="Who received the load?"
+                    placeholder="Select receiver"
                     items={catalogue.customers}
+                    optional
                     value={form.data.receiver}
                     onChange={(receiver) =>
                       updateForm((d) => ({ ...d, receiver }))
                     }
                   />
-                  {parsedCollections.length > 0 && !form.data.runId && (
-                    <View style={{ gap: 6 }}>
-                      <Copy small>Link to a recent pickup (optional)</Copy>
-                      {parsedCollections.map((col) => (
-                        <Button
-                          key={col.id}
-                          secondary
-                          onPress={() =>
-                            updateForm((d) => ({
-                              ...d,
-                              runId: col.id,
-                              customer: d.customer.name
-                                ? d.customer
-                                : col.data.customer,
-                              product: d.product.name
-                                ? d.product
-                                : col.data.product,
-                              origin: d.origin.name ? d.origin : col.data.origin,
-                              collectedQuantity:
-                                d.collectedQuantity ?? col.data.quantity,
-                              unit: col.data.unit,
-                            }))
-                          }
-                        >
-                          {`${col.data.quantity ?? "?"} ${col.data.unit} ${col.data.product.name || "load"} from ${col.data.origin.name || "site"}`}
-                        </Button>
-                      ))}
-                    </View>
-                  )}
                 </>
               )}
 
@@ -699,16 +891,15 @@ export default function Activities() {
               />
 
               <Copy small>Unit</Copy>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {catalogue.units.map((u) => (
-                  <Button
+                  <Chip
                     key={u}
-                    secondary={form.data.unit !== u}
                     selected={form.data.unit === u}
                     onPress={() => updateForm((d) => ({ ...d, unit: u }))}
                   >
                     {unitNames[u] ?? u}
-                  </Button>
+                  </Chip>
                 ))}
               </View>
 
@@ -722,42 +913,40 @@ export default function Activities() {
               />
 
               <View style={{ flexDirection: "row", gap: 8 }}>
-                <View style={{ flex: 1 }}>
-                  <Button
-                    secondary
-                    onPress={() =>
-                      updateForm((d) => ({
-                        ...d,
-                        arrivedAt: new Date().toISOString(),
-                      }))
-                    }
-                  >
-                    {form.data.arrivedAt
-                      ? `Arrived ${new Date(form.data.arrivedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-                      : "Stamp arrival"}
-                  </Button>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Button
-                    secondary
-                    onPress={() =>
-                      updateForm((d) => ({
-                        ...d,
-                        departedAt: new Date().toISOString(),
-                      }))
-                    }
-                  >
-                    {form.data.departedAt
-                      ? `Left ${new Date(form.data.departedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-                      : "Stamp departure"}
-                  </Button>
-                </View>
+                <Button
+                  fill
+                  secondary
+                  onPress={() =>
+                    updateForm((d) => ({
+                      ...d,
+                      arrivedAt: new Date().toISOString(),
+                    }))
+                  }
+                >
+                  {form.data.arrivedAt
+                    ? `Arrived ${new Date(form.data.arrivedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                    : "Mark arrival"}
+                </Button>
+                <Button
+                  fill
+                  secondary
+                  onPress={() =>
+                    updateForm((d) => ({
+                      ...d,
+                      departedAt: new Date().toISOString(),
+                    }))
+                  }
+                >
+                  {form.data.departedAt
+                    ? `Left ${new Date(form.data.departedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                    : "Mark left"}
+                </Button>
               </View>
 
               {form.data.kind === "delivery" && (
                 <>
                   <Copy small>Delivery outcome</Copy>
-                  <View style={{ gap: 6 }}>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                     {(
                       [
                         ["completed", "Delivered"],
@@ -766,16 +955,15 @@ export default function Activities() {
                         ["cancelled", "Cancelled"],
                       ] as const
                     ).map(([val, label]) => (
-                      <Button
+                      <Chip
                         key={val}
-                        secondary={form.data.outcome !== val}
                         selected={form.data.outcome === val}
                         onPress={() =>
                           updateForm((d) => ({ ...d, outcome: val }))
                         }
                       >
                         {label}
-                      </Button>
+                      </Chip>
                     ))}
                   </View>
                 </>
@@ -824,19 +1012,18 @@ export default function Activities() {
           {form.data.kind === "expense" && (
             <>
               <Copy small>Expense category</Copy>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {(Object.keys(expenseCategoryLabels) as RoadExpenseCategory[]).map(
                   (cat) => (
-                    <Button
+                    <Chip
                       key={cat}
-                      secondary={form.data.expenseCategory !== cat}
                       selected={form.data.expenseCategory === cat}
                       onPress={() =>
                         updateForm((d) => ({ ...d, expenseCategory: cat }))
                       }
                     >
                       {expenseCategoryLabels[cat]}
-                    </Button>
+                    </Chip>
                   ),
                 )}
               </View>
@@ -900,22 +1087,20 @@ export default function Activities() {
               </View>
             ) : (
               <View style={{ flexDirection: "row", gap: 8 }}>
-                <View style={{ flex: 1 }}>
-                  <Button
-                    secondary
-                    onPress={() => void handleAttachPhoto("camera")}
-                  >
-                    Take photo
-                  </Button>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Button
-                    secondary
-                    onPress={() => void handleAttachPhoto("library")}
-                  >
-                    Gallery
-                  </Button>
-                </View>
+                <Button
+                  fill
+                  secondary
+                  onPress={() => void handleAttachPhoto("camera")}
+                >
+                  Take photo
+                </Button>
+                <Button
+                  fill
+                  secondary
+                  onPress={() => void handleAttachPhoto("library")}
+                >
+                  Gallery
+                </Button>
               </View>
             )}
           </View>

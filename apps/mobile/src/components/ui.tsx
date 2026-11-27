@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -303,6 +304,7 @@ export function Button({
   disabled = false,
   loading = false,
   selected,
+  fill = false,
 }: {
   children: string;
   onPress: () => void;
@@ -310,6 +312,7 @@ export function Button({
   disabled?: boolean;
   loading?: boolean;
   selected?: boolean;
+  fill?: boolean;
 }) {
   return (
     <Pressable
@@ -322,9 +325,10 @@ export function Button({
       disabled={disabled || loading}
       onPress={onPress}
       style={({ pressed }) => ({
+        ...(fill ? { flex: 1 } : null),
         minHeight: 48,
         paddingVertical: 12,
-        paddingHorizontal: 20,
+        paddingHorizontal: fill ? 12 : 20,
         borderRadius: 99,
         borderWidth: 1,
         borderColor: secondary ? colors.border : colors.ink,
@@ -357,6 +361,461 @@ export function Button({
     </Pressable>
   );
 }
+export function Chip({
+  children,
+  onPress,
+  selected = false,
+  disabled = false,
+}: {
+  children: string;
+  onPress: () => void;
+  selected?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled, selected }}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        minHeight: 40,
+        paddingVertical: 8,
+        paddingHorizontal: 14,
+        borderRadius: 99,
+        borderWidth: 1,
+        borderColor: selected ? colors.ink : colors.border,
+        backgroundColor: selected ? colors.ink : colors.surface,
+        opacity: disabled ? 0.45 : pressed ? 0.7 : 1,
+        alignItems: "center",
+        justifyContent: "center",
+        alignSelf: "flex-start",
+      })}
+    >
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.text,
+          {
+            fontSize: 13,
+            lineHeight: 18,
+            paddingHorizontal: 2,
+            fontFamily: "Montserrat_600SemiBold",
+            color: selected ? colors.surface : colors.ink,
+          },
+        ]}
+      >
+        {children}
+      </Text>
+    </Pressable>
+  );
+}
+export interface PickerOption {
+  id: string;
+  label: string;
+  subtitle?: string;
+  meta?: string;
+  badge?: string;
+  badgeTone?: "primary" | "muted";
+  searchText?: string;
+}
+
+export function PickerSheet({
+  visible,
+  title,
+  subtitle,
+  options,
+  selectedId,
+  placeholder = "Search…",
+  emptyMessage = "No matching items.",
+  allowCustom = false,
+  customLabel = "Use",
+  searchable = true,
+  onSelect,
+  onCustom,
+  onClear,
+  onClose,
+}: {
+  visible: boolean;
+  title: string;
+  subtitle?: string;
+  options: PickerOption[];
+  selectedId?: string | null;
+  placeholder?: string;
+  emptyMessage?: string;
+  allowCustom?: boolean;
+  customLabel?: string;
+  searchable?: boolean;
+  onSelect: (option: PickerOption) => void;
+  onCustom?: (text: string) => void;
+  onClear?: () => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const trimmed = query.trim();
+  const needle = trimmed.toLowerCase();
+  const filtered = needle
+    ? options.filter((opt) =>
+        `${opt.label} ${opt.subtitle ?? ""} ${opt.meta ?? ""} ${opt.searchText ?? ""}`
+          .toLowerCase()
+          .includes(needle),
+      )
+    : options;
+  const exactMatch =
+    !!trimmed &&
+    options.some((opt) => opt.label.trim().toLowerCase() === needle);
+
+  function close() {
+    setQuery("");
+    onClose();
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={close}
+    >
+      <KeyboardAvoidingView
+        style={{ flex: 1, justifyContent: "flex-end" }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <Pressable
+          accessibilityLabel="Close picker"
+          onPress={close}
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: "rgba(11, 11, 11, 0.42)" },
+          ]}
+        />
+        <SafeAreaView
+          edges={["bottom"]}
+          style={{
+            maxHeight: "82%",
+            backgroundColor: colors.surface,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            overflow: "hidden",
+          }}
+        >
+          <View
+            style={{
+              alignItems: "center",
+              paddingTop: 10,
+              paddingBottom: 4,
+            }}
+          >
+            <View
+              style={{
+                width: 36,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: colors.border,
+              }}
+            />
+          </View>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 20,
+              paddingTop: 6,
+              paddingBottom: 12,
+              borderBottomWidth: 1,
+              borderColor: colors.border,
+              gap: 12,
+            }}
+          >
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text
+                style={[
+                  styles.text,
+                  { fontSize: 16, lineHeight: 22, fontFamily: "Montserrat_600SemiBold" },
+                ]}
+              >
+                {title}
+              </Text>
+              {!!subtitle && <Copy small>{subtitle}</Copy>}
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              onPress={close}
+              style={({ pressed }) => ({
+                paddingVertical: 8,
+                paddingHorizontal: 10,
+                borderRadius: 8,
+                opacity: pressed ? 0.6 : 1,
+              })}
+            >
+              <Text
+                style={[
+                  styles.text,
+                  { fontFamily: "Montserrat_600SemiBold", color: colors.muted },
+                ]}
+              >
+                Close
+              </Text>
+            </Pressable>
+          </View>
+
+          {searchable && (
+            <View
+              style={{
+                paddingHorizontal: 20,
+                paddingVertical: 12,
+                borderBottomWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.bg,
+              }}
+            >
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder={placeholder}
+                placeholderTextColor={colors.muted}
+                autoCorrect={false}
+                returnKeyType="done"
+                style={[
+                  styles.text,
+                  {
+                    minHeight: 44,
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    backgroundColor: colors.surface,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    borderRadius: 10,
+                  },
+                ]}
+              />
+            </View>
+          )}
+
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 12 }}
+          >
+            {onClear && !!selectedId && (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  onClear();
+                  close();
+                }}
+                style={({ pressed }) => ({
+                  minHeight: 48,
+                  paddingHorizontal: 20,
+                  paddingVertical: 12,
+                  borderBottomWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: pressed ? colors.bg : colors.surface,
+                  justifyContent: "center",
+                })}
+              >
+                <Text
+                  style={[
+                    styles.text,
+                    { color: colors.danger, fontFamily: "Montserrat_600SemiBold" },
+                  ]}
+                >
+                  Clear selection
+                </Text>
+              </Pressable>
+            )}
+
+            {allowCustom && onCustom && !!trimmed && !exactMatch && (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  onCustom(trimmed);
+                  close();
+                }}
+                style={({ pressed }) => ({
+                  minHeight: 54,
+                  paddingHorizontal: 20,
+                  paddingVertical: 12,
+                  borderBottomWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: pressed ? colors.bg : "#fafafa",
+                  justifyContent: "center",
+                  gap: 2,
+                })}
+              >
+                <Text
+                  style={[
+                    styles.text,
+                    { fontFamily: "Montserrat_600SemiBold" },
+                  ]}
+                >
+                  + {customLabel} &ldquo;{trimmed}&rdquo;
+                </Text>
+                <Copy small>Enter a new value not in the list</Copy>
+              </Pressable>
+            )}
+
+            {filtered.length === 0 ? (
+              <View style={{ padding: 24, alignItems: "center" }}>
+                <Copy small center>
+                  {emptyMessage}
+                </Copy>
+              </View>
+            ) : (
+              filtered.map((opt) => {
+                const isSelected = !!selectedId && opt.id === selectedId;
+                return (
+                  <Pressable
+                    key={opt.id}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
+                    onPress={() => {
+                      onSelect(opt);
+                      close();
+                    }}
+                    style={({ pressed }) => ({
+                      minHeight: 54,
+                      paddingHorizontal: 20,
+                      paddingVertical: 12,
+                      borderBottomWidth: 1,
+                      borderColor: colors.border,
+                      backgroundColor:
+                        pressed || isSelected ? colors.bg : colors.surface,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 12,
+                    })}
+                  >
+                    <View style={{ flex: 1, gap: 3 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          gap: 8,
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.text,
+                            {
+                              fontFamily: "Montserrat_600SemiBold",
+                              flexShrink: 1,
+                            },
+                          ]}
+                        >
+                          {opt.label}
+                        </Text>
+                        {!!opt.badge && (
+                          <View
+                            style={{
+                              paddingHorizontal: 8,
+                              paddingVertical: 2,
+                              borderRadius: 99,
+                              backgroundColor:
+                                opt.badgeTone === "primary"
+                                  ? colors.ink
+                                  : colors.border,
+                            }}
+                          >
+                            <Text
+                              style={[
+                                styles.small,
+                                {
+                                  fontSize: 11,
+                                  lineHeight: 15,
+                                  fontFamily: "Montserrat_600SemiBold",
+                                  color:
+                                    opt.badgeTone === "primary"
+                                      ? colors.surface
+                                      : colors.muted,
+                                },
+                              ]}
+                            >
+                              {opt.badge}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      {!!opt.subtitle && (
+                        <Text style={[styles.small, { color: colors.ink }]}>
+                          {opt.subtitle}
+                        </Text>
+                      )}
+                      {!!opt.meta && <Copy small>{opt.meta}</Copy>}
+                    </View>
+                    {isSelected && <Icon name="check" size={18} />}
+                  </Pressable>
+                );
+              })
+            )}
+          </ScrollView>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+export function SelectField({
+  label,
+  value,
+  placeholder,
+  hint,
+  onPress,
+}: {
+  label: string;
+  value?: string | null;
+  placeholder: string;
+  hint?: string;
+  onPress: () => void;
+}) {
+  const hasValue = Boolean(value && value.trim());
+  return (
+    <View style={{ gap: 6 }}>
+      <Text style={[styles.small, { color: colors.ink }]}>{label}</Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${label}${hasValue ? `: ${value}` : ""}`}
+        onPress={onPress}
+        style={({ pressed }) => ({
+          minHeight: 48,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          backgroundColor: pressed ? colors.bg : colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: 8,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 10,
+        })}
+      >
+        <Text
+          numberOfLines={1}
+          style={[
+            styles.text,
+            {
+              flex: 1,
+              color: hasValue ? colors.ink : colors.muted,
+            },
+          ]}
+        >
+          {hasValue ? value : placeholder}
+        </Text>
+        <Text
+          accessible={false}
+          style={[styles.small, { fontSize: 14, color: colors.muted }]}
+        >
+          ▾
+        </Text>
+      </Pressable>
+      {!!hint && <Copy small>{hint}</Copy>}
+    </View>
+  );
+}
+
 export function Field({
   label,
   hint,

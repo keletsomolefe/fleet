@@ -4,6 +4,7 @@ import { View } from "react-native";
 import { useRouter } from "expo-router";
 import {
   Button,
+  Chip,
   Copy,
   Field,
   Heading,
@@ -317,12 +318,12 @@ export default function Schedules() {
             />
           ))}
           <Copy>Repeat on</Copy>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
               (label, d) => (
-                <Button
+                <Chip
                   key={label}
-                  secondary={!weekdays.includes(d)}
+                  selected={weekdays.includes(d)}
                   disabled={busy}
                   onPress={() => {
                     form.setFieldValue("weekdays", (v) =>
@@ -332,7 +333,7 @@ export default function Schedules() {
                   }}
                 >
                   {label}
-                </Button>
+                </Chip>
               ),
             )}
           </View>
