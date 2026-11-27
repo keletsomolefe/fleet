@@ -25,6 +25,6 @@ export class CalendarDateType extends Type<string | null, string | null> {
       const day = String(value.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     }
-    return String(value).slice(0, 10);
+    return typeof value === 'string' ? value.slice(0, 10) : null;
   }
 }

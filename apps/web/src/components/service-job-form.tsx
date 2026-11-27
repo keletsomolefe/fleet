@@ -207,7 +207,7 @@ export function ServiceJobForm({ session }: { session: AdminSession }) {
                       onChange={(event) =>
                         field.handleChange(event.currentTarget.value as ServiceType)
                       }
-                      className="h-12 w-full rounded-md border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-ring"
+                      className="h-12 w-full rounded-md border bg-background pl-3.5 pr-10 text-sm"
                     >
                       {choices.map((choice) => (
                         <option key={choice} value={choice}>
@@ -233,7 +233,7 @@ export function ServiceJobForm({ session }: { session: AdminSession }) {
                           event.currentTarget.value as "urgent" | "normal",
                         )
                       }
-                      className="h-12 w-full rounded-md border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-ring"
+                      className="h-12 w-full rounded-md border bg-background pl-3.5 pr-10 text-sm"
                     >
                       <option value="urgent">Urgent</option>
                       <option value="normal">Normal</option>

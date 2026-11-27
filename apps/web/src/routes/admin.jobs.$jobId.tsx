@@ -5,6 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle2, Copy, MapPin, RotateCw, UserRound } from "lucide-react";
 import { PageError } from "@/components/page-error";
 import { PageHeader, BackLink } from "@/components/page-header";
+import { DetailPageSkeleton } from "@/components/page-skeletons";
 import { RefreshButton } from "@/components/refresh-button";
 import {
   JobStatusBadge,
@@ -34,7 +35,22 @@ import {
   type ServiceType,
 } from "@/lib/service-jobs";
 
-export const Route = createFileRoute("/admin/jobs/$jobId")({ component: Page });
+export const Route = createFileRoute("/admin/jobs/$jobId")({
+  loader: async ({ context, params }) => {
+    if (!can(context.session, "service_jobs.read")) return;
+    await Promise.allSettled([
+      context.queryClient.ensureQueryData({
+        queryKey: [
+          ...adminOperationsKey(context.session.user.id),
+          "job",
+          params.jobId,
+        ],
+        queryFn: () => getJob(params.jobId),
+      }),
+    ]);
+  },
+  component: Page,
+});
 
 function Page() {
   const { session } = Route.useRouteContext();
@@ -147,11 +163,7 @@ function Page() {
           <AlertDescription>{saved}</AlertDescription>
         </Alert>
       )}
-      {!data && isPending && (
-        <p role="status" className="text-sm text-muted-foreground">
-          Loading service job…
-        </p>
-      )}
+      {!data && isPending && <DetailPageSkeleton columns={2} />}
       {loadError && <PageError message={loadError.message} />}
       {data && job && (
         <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -605,7 +617,7 @@ function AssignForm({
               required
               value={field.state.value}
               onChange={(event) => field.handleChange(event.currentTarget.value)}
-              className="h-12 w-full rounded-md border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-ring"
+              className="h-12 w-full rounded-md border bg-background pl-3.5 pr-10 text-sm"
             >
               <option value="" disabled>
                 Choose a provider

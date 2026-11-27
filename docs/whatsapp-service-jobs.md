@@ -43,13 +43,17 @@ secrets in the root environment. The gateway dashboard listens on the server's
 loopback port 12785. Use an SSH tunnel to create a session and scan its QR code
 under **Linked devices** on the demo phone.
 
-Create an operator key restricted to that session and the consenting providers'
-individual chat IDs. Set `OPENWA_DEMO_URL=http://openwa-demo:2785`,
-`OPENWA_DEMO_SESSION_ID` and `OPENWA_DEMO_API_KEY`. Set `OPENWA_DEMO_SENDER` to
-the linked phone number and `OPENWA_DEMO_RECIPIENTS` to the comma-separated
-provider numbers with country codes. Fleet excludes the linked number. When the session reports
-`ready`, set `SERVICE_JOB_ALERT_TRANSPORT=openwa-demo` and
-`SERVICE_JOB_ALERTS_ENABLED=true` and recreate the Fleet app container.
+Create an operator key restricted to that session and either the consenting
+providers' individual chat IDs or a single service-provider group chat ID. Set
+`OPENWA_DEMO_URL=http://openwa-demo:2785` (or `http://127.0.0.1:12785` locally),
+`OPENWA_DEMO_SESSION_ID` and `OPENWA_DEMO_API_KEY`. For a shared WhatsApp group,
+set `OPENWA_DEMO_GROUP_ID` to the group's `@g.us` chat ID (Fleet sends one
+consolidated alert per job to that group with each eligible provider's signed
+link). For individual provider chats instead, set `OPENWA_DEMO_SENDER` to the
+linked phone number and `OPENWA_DEMO_RECIPIENTS` to the comma-separated
+provider numbers with country codes (Fleet excludes the linked number). When
+the session reports `ready`, set `SERVICE_JOB_ALERT_TRANSPORT=openwa-demo` and
+`SERVICE_JOB_ALERTS_ENABLED=true` and restart/recreate the Fleet app.
 
 Each eligible provider receives a text with the breakdown details and their
 signed link to accept, decline or complete the job. Fleet records gateway

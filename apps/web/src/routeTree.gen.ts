@@ -15,14 +15,26 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminSectionRouteImport } from './routes/admin.$section'
+import { Route as AdminActivitiesRouteImport } from './routes/admin.activities'
+import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
+import { Route as AdminDispatchRouteImport } from './routes/admin.dispatch'
 import { Route as AdminDriversRouteImport } from './routes/admin.drivers'
+import { Route as AdminEarningsRouteImport } from './routes/admin.earnings'
+import { Route as AdminExpensesRouteImport } from './routes/admin.expenses'
+import { Route as AdminLocationsRouteImport } from './routes/admin.locations'
+import { Route as AdminPricingRouteImport } from './routes/admin.pricing'
+import { Route as AdminProductsRouteImport } from './routes/admin.products'
+import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AdminSchedulesRouteImport } from './routes/admin.schedules'
+import { Route as AdminShiftsRouteImport } from './routes/admin.shifts'
 import { Route as AdminSignupRouteImport } from './routes/admin.signup'
 import { Route as AdminTrucksRouteImport } from './routes/admin.trucks'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminVehicleDisputesRouteImport } from './routes/admin.vehicle-disputes'
 import { Route as JCodeRouteImport } from './routes/j.$code'
+import { Route as AdminActivitiesIndexRouteImport } from './routes/admin.activities.index'
+import { Route as AdminActivitiesRecordIdRouteImport } from './routes/admin.activities.$recordId'
 import { Route as AdminDriversIndexRouteImport } from './routes/admin.drivers.index'
 import { Route as AdminDriversDriverIdRouteImport } from './routes/admin.drivers.$driverId'
 import { Route as AdminDriversNewRouteImport } from './routes/admin.drivers.new'
@@ -69,9 +81,54 @@ const AdminSectionRoute = AdminSectionRouteImport.update({
   path: '/$section',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminActivitiesRoute = AdminActivitiesRouteImport.update({
+  id: '/activities',
+  path: '/activities',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCustomersRoute = AdminCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDispatchRoute = AdminDispatchRouteImport.update({
+  id: '/dispatch',
+  path: '/dispatch',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminDriversRoute = AdminDriversRouteImport.update({
   id: '/drivers',
   path: '/drivers',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminEarningsRoute = AdminEarningsRouteImport.update({
+  id: '/earnings',
+  path: '/earnings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminExpensesRoute = AdminExpensesRouteImport.update({
+  id: '/expenses',
+  path: '/expenses',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLocationsRoute = AdminLocationsRouteImport.update({
+  id: '/locations',
+  path: '/locations',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPricingRoute = AdminPricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProductsRoute = AdminProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminRolesRoute = AdminRolesRouteImport.update({
@@ -82,6 +139,11 @@ const AdminRolesRoute = AdminRolesRouteImport.update({
 const AdminSchedulesRoute = AdminSchedulesRouteImport.update({
   id: '/schedules',
   path: '/schedules',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminShiftsRoute = AdminShiftsRouteImport.update({
+  id: '/shifts',
+  path: '/shifts',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminSignupRoute = AdminSignupRouteImport.update({
@@ -108,6 +170,16 @@ const JCodeRoute = JCodeRouteImport.update({
   id: '/j/$code',
   path: '/j/$code',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminActivitiesIndexRoute = AdminActivitiesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminActivitiesRoute,
+} as any)
+const AdminActivitiesRecordIdRoute = AdminActivitiesRecordIdRouteImport.update({
+  id: '/$recordId',
+  path: '/$recordId',
+  getParentRoute: () => AdminActivitiesRoute,
 } as any)
 const AdminDriversIndexRoute = AdminDriversIndexRouteImport.update({
   id: '/',
@@ -192,15 +264,26 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/$section': typeof AdminSectionRoute
+  '/admin/activities': typeof AdminActivitiesRouteWithChildren
+  '/admin/customers': typeof AdminCustomersRoute
+  '/admin/dispatch': typeof AdminDispatchRoute
   '/admin/drivers': typeof AdminDriversRouteWithChildren
+  '/admin/earnings': typeof AdminEarningsRoute
+  '/admin/expenses': typeof AdminExpensesRoute
+  '/admin/locations': typeof AdminLocationsRoute
+  '/admin/pricing': typeof AdminPricingRoute
+  '/admin/products': typeof AdminProductsRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/roles': typeof AdminRolesRoute
   '/admin/schedules': typeof AdminSchedulesRoute
+  '/admin/shifts': typeof AdminShiftsRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin/trucks': typeof AdminTrucksRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/vehicle-disputes': typeof AdminVehicleDisputesRoute
   '/j/$code': typeof JCodeRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/activities/$recordId': typeof AdminActivitiesRecordIdRoute
   '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
   '/admin/drivers/new': typeof AdminDriversNewRoute
   '/admin/jobs/$jobId': typeof AdminJobsJobIdRoute
@@ -211,6 +294,7 @@ export interface FileRoutesByFullPath {
   '/admin/trucks/new': typeof AdminTrucksNewRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/new': typeof AdminUsersNewRoute
+  '/admin/activities/': typeof AdminActivitiesIndexRoute
   '/admin/drivers/': typeof AdminDriversIndexRoute
   '/admin/jobs/': typeof AdminJobsIndexRoute
   '/admin/providers/': typeof AdminProvidersIndexRoute
@@ -222,12 +306,22 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/$section': typeof AdminSectionRoute
+  '/admin/customers': typeof AdminCustomersRoute
+  '/admin/dispatch': typeof AdminDispatchRoute
+  '/admin/earnings': typeof AdminEarningsRoute
+  '/admin/expenses': typeof AdminExpensesRoute
+  '/admin/locations': typeof AdminLocationsRoute
+  '/admin/pricing': typeof AdminPricingRoute
+  '/admin/products': typeof AdminProductsRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/roles': typeof AdminRolesRoute
   '/admin/schedules': typeof AdminSchedulesRoute
+  '/admin/shifts': typeof AdminShiftsRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin/vehicle-disputes': typeof AdminVehicleDisputesRoute
   '/j/$code': typeof JCodeRoute
   '/admin': typeof AdminIndexRoute
+  '/admin/activities/$recordId': typeof AdminActivitiesRecordIdRoute
   '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
   '/admin/drivers/new': typeof AdminDriversNewRoute
   '/admin/jobs/$jobId': typeof AdminJobsJobIdRoute
@@ -238,6 +332,7 @@ export interface FileRoutesByTo {
   '/admin/trucks/new': typeof AdminTrucksNewRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/new': typeof AdminUsersNewRoute
+  '/admin/activities': typeof AdminActivitiesIndexRoute
   '/admin/drivers': typeof AdminDriversIndexRoute
   '/admin/jobs': typeof AdminJobsIndexRoute
   '/admin/providers': typeof AdminProvidersIndexRoute
@@ -251,15 +346,26 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/$section': typeof AdminSectionRoute
+  '/admin/activities': typeof AdminActivitiesRouteWithChildren
+  '/admin/customers': typeof AdminCustomersRoute
+  '/admin/dispatch': typeof AdminDispatchRoute
   '/admin/drivers': typeof AdminDriversRouteWithChildren
+  '/admin/earnings': typeof AdminEarningsRoute
+  '/admin/expenses': typeof AdminExpensesRoute
+  '/admin/locations': typeof AdminLocationsRoute
+  '/admin/pricing': typeof AdminPricingRoute
+  '/admin/products': typeof AdminProductsRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/roles': typeof AdminRolesRoute
   '/admin/schedules': typeof AdminSchedulesRoute
+  '/admin/shifts': typeof AdminShiftsRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin/trucks': typeof AdminTrucksRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/vehicle-disputes': typeof AdminVehicleDisputesRoute
   '/j/$code': typeof JCodeRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/activities/$recordId': typeof AdminActivitiesRecordIdRoute
   '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
   '/admin/drivers/new': typeof AdminDriversNewRoute
   '/admin/jobs/$jobId': typeof AdminJobsJobIdRoute
@@ -270,6 +376,7 @@ export interface FileRoutesById {
   '/admin/trucks/new': typeof AdminTrucksNewRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/new': typeof AdminUsersNewRoute
+  '/admin/activities/': typeof AdminActivitiesIndexRoute
   '/admin/drivers/': typeof AdminDriversIndexRoute
   '/admin/jobs/': typeof AdminJobsIndexRoute
   '/admin/providers/': typeof AdminProvidersIndexRoute
@@ -284,15 +391,26 @@ export interface FileRouteTypes {
     | '/login'
     | '/verify-email'
     | '/admin/$section'
+    | '/admin/activities'
+    | '/admin/customers'
+    | '/admin/dispatch'
     | '/admin/drivers'
+    | '/admin/earnings'
+    | '/admin/expenses'
+    | '/admin/locations'
+    | '/admin/pricing'
+    | '/admin/products'
+    | '/admin/reports'
     | '/admin/roles'
     | '/admin/schedules'
+    | '/admin/shifts'
     | '/admin/signup'
     | '/admin/trucks'
     | '/admin/users'
     | '/admin/vehicle-disputes'
     | '/j/$code'
     | '/admin/'
+    | '/admin/activities/$recordId'
     | '/admin/drivers/$driverId'
     | '/admin/drivers/new'
     | '/admin/jobs/$jobId'
@@ -303,6 +421,7 @@ export interface FileRouteTypes {
     | '/admin/trucks/new'
     | '/admin/users/$userId'
     | '/admin/users/new'
+    | '/admin/activities/'
     | '/admin/drivers/'
     | '/admin/jobs/'
     | '/admin/providers/'
@@ -314,12 +433,22 @@ export interface FileRouteTypes {
     | '/login'
     | '/verify-email'
     | '/admin/$section'
+    | '/admin/customers'
+    | '/admin/dispatch'
+    | '/admin/earnings'
+    | '/admin/expenses'
+    | '/admin/locations'
+    | '/admin/pricing'
+    | '/admin/products'
+    | '/admin/reports'
     | '/admin/roles'
     | '/admin/schedules'
+    | '/admin/shifts'
     | '/admin/signup'
     | '/admin/vehicle-disputes'
     | '/j/$code'
     | '/admin'
+    | '/admin/activities/$recordId'
     | '/admin/drivers/$driverId'
     | '/admin/drivers/new'
     | '/admin/jobs/$jobId'
@@ -330,6 +459,7 @@ export interface FileRouteTypes {
     | '/admin/trucks/new'
     | '/admin/users/$userId'
     | '/admin/users/new'
+    | '/admin/activities'
     | '/admin/drivers'
     | '/admin/jobs'
     | '/admin/providers'
@@ -342,15 +472,26 @@ export interface FileRouteTypes {
     | '/login'
     | '/verify-email'
     | '/admin/$section'
+    | '/admin/activities'
+    | '/admin/customers'
+    | '/admin/dispatch'
     | '/admin/drivers'
+    | '/admin/earnings'
+    | '/admin/expenses'
+    | '/admin/locations'
+    | '/admin/pricing'
+    | '/admin/products'
+    | '/admin/reports'
     | '/admin/roles'
     | '/admin/schedules'
+    | '/admin/shifts'
     | '/admin/signup'
     | '/admin/trucks'
     | '/admin/users'
     | '/admin/vehicle-disputes'
     | '/j/$code'
     | '/admin/'
+    | '/admin/activities/$recordId'
     | '/admin/drivers/$driverId'
     | '/admin/drivers/new'
     | '/admin/jobs/$jobId'
@@ -361,6 +502,7 @@ export interface FileRouteTypes {
     | '/admin/trucks/new'
     | '/admin/users/$userId'
     | '/admin/users/new'
+    | '/admin/activities/'
     | '/admin/drivers/'
     | '/admin/jobs/'
     | '/admin/providers/'
@@ -420,11 +562,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSectionRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/activities': {
+      id: '/admin/activities'
+      path: '/activities'
+      fullPath: '/admin/activities'
+      preLoaderRoute: typeof AdminActivitiesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/customers': {
+      id: '/admin/customers'
+      path: '/customers'
+      fullPath: '/admin/customers'
+      preLoaderRoute: typeof AdminCustomersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/dispatch': {
+      id: '/admin/dispatch'
+      path: '/dispatch'
+      fullPath: '/admin/dispatch'
+      preLoaderRoute: typeof AdminDispatchRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/drivers': {
       id: '/admin/drivers'
       path: '/drivers'
       fullPath: '/admin/drivers'
       preLoaderRoute: typeof AdminDriversRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/earnings': {
+      id: '/admin/earnings'
+      path: '/earnings'
+      fullPath: '/admin/earnings'
+      preLoaderRoute: typeof AdminEarningsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/expenses': {
+      id: '/admin/expenses'
+      path: '/expenses'
+      fullPath: '/admin/expenses'
+      preLoaderRoute: typeof AdminExpensesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/locations': {
+      id: '/admin/locations'
+      path: '/locations'
+      fullPath: '/admin/locations'
+      preLoaderRoute: typeof AdminLocationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/pricing': {
+      id: '/admin/pricing'
+      path: '/pricing'
+      fullPath: '/admin/pricing'
+      preLoaderRoute: typeof AdminPricingRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/products': {
+      id: '/admin/products'
+      path: '/products'
+      fullPath: '/admin/products'
+      preLoaderRoute: typeof AdminProductsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/roles': {
@@ -439,6 +644,13 @@ declare module '@tanstack/react-router' {
       path: '/schedules'
       fullPath: '/admin/schedules'
       preLoaderRoute: typeof AdminSchedulesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/shifts': {
+      id: '/admin/shifts'
+      path: '/shifts'
+      fullPath: '/admin/shifts'
+      preLoaderRoute: typeof AdminShiftsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/signup': {
@@ -475,6 +687,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/j/$code'
       preLoaderRoute: typeof JCodeRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/activities/': {
+      id: '/admin/activities/'
+      path: '/'
+      fullPath: '/admin/activities/'
+      preLoaderRoute: typeof AdminActivitiesIndexRouteImport
+      parentRoute: typeof AdminActivitiesRoute
+    }
+    '/admin/activities/$recordId': {
+      id: '/admin/activities/$recordId'
+      path: '/$recordId'
+      fullPath: '/admin/activities/$recordId'
+      preLoaderRoute: typeof AdminActivitiesRecordIdRouteImport
+      parentRoute: typeof AdminActivitiesRoute
     }
     '/admin/drivers/': {
       id: '/admin/drivers/'
@@ -584,6 +810,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminActivitiesRouteChildren {
+  AdminActivitiesRecordIdRoute: typeof AdminActivitiesRecordIdRoute
+  AdminActivitiesIndexRoute: typeof AdminActivitiesIndexRoute
+}
+
+const AdminActivitiesRouteChildren: AdminActivitiesRouteChildren = {
+  AdminActivitiesRecordIdRoute: AdminActivitiesRecordIdRoute,
+  AdminActivitiesIndexRoute: AdminActivitiesIndexRoute,
+}
+
+const AdminActivitiesRouteWithChildren = AdminActivitiesRoute._addFileChildren(
+  AdminActivitiesRouteChildren,
+)
+
 interface AdminDriversRouteChildren {
   AdminDriversDriverIdRoute: typeof AdminDriversDriverIdRoute
   AdminDriversNewRoute: typeof AdminDriversNewRoute
@@ -634,9 +874,19 @@ const AdminUsersRouteWithChildren = AdminUsersRoute._addFileChildren(
 
 interface AdminRouteChildren {
   AdminSectionRoute: typeof AdminSectionRoute
+  AdminActivitiesRoute: typeof AdminActivitiesRouteWithChildren
+  AdminCustomersRoute: typeof AdminCustomersRoute
+  AdminDispatchRoute: typeof AdminDispatchRoute
   AdminDriversRoute: typeof AdminDriversRouteWithChildren
+  AdminEarningsRoute: typeof AdminEarningsRoute
+  AdminExpensesRoute: typeof AdminExpensesRoute
+  AdminLocationsRoute: typeof AdminLocationsRoute
+  AdminPricingRoute: typeof AdminPricingRoute
+  AdminProductsRoute: typeof AdminProductsRoute
+  AdminReportsRoute: typeof AdminReportsRoute
   AdminRolesRoute: typeof AdminRolesRoute
   AdminSchedulesRoute: typeof AdminSchedulesRoute
+  AdminShiftsRoute: typeof AdminShiftsRoute
   AdminSignupRoute: typeof AdminSignupRoute
   AdminTrucksRoute: typeof AdminTrucksRouteWithChildren
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
@@ -652,9 +902,19 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminSectionRoute: AdminSectionRoute,
+  AdminActivitiesRoute: AdminActivitiesRouteWithChildren,
+  AdminCustomersRoute: AdminCustomersRoute,
+  AdminDispatchRoute: AdminDispatchRoute,
   AdminDriversRoute: AdminDriversRouteWithChildren,
+  AdminEarningsRoute: AdminEarningsRoute,
+  AdminExpensesRoute: AdminExpensesRoute,
+  AdminLocationsRoute: AdminLocationsRoute,
+  AdminPricingRoute: AdminPricingRoute,
+  AdminProductsRoute: AdminProductsRoute,
+  AdminReportsRoute: AdminReportsRoute,
   AdminRolesRoute: AdminRolesRoute,
   AdminSchedulesRoute: AdminSchedulesRoute,
+  AdminShiftsRoute: AdminShiftsRoute,
   AdminSignupRoute: AdminSignupRoute,
   AdminTrucksRoute: AdminTrucksRouteWithChildren,
   AdminUsersRoute: AdminUsersRouteWithChildren,

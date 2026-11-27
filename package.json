@@ -20,6 +20,8 @@
     "test:fleet": "node scripts/test-fleet-stack.mjs",
     "test:mobile": "node scripts/test-mobile-stack.mjs",
     "test:tracking-queue": "pnpm --filter api exec tsx ../../scripts/test-tracking-queue.mjs",
+    "test:activity-queue": "pnpm --filter api exec tsx ../../scripts/test-activity-queue.mjs",
+    "test:transport": "pnpm --filter api build && node --env-file=.env scripts/test-transport-stack.mjs",
     "mobile:start": "pnpm --filter mobile start",
     "mobile:android": "pnpm --filter mobile android",
     "mobile:ios": "pnpm --filter mobile ios",

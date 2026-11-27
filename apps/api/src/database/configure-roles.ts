@@ -1,10 +1,10 @@
-import { withMaintenanceDatabase } from './orm.js';
-import { configureRoles } from '../rbac/role-catalogue.js';
+import { configureRoles } from '../modules/identity/domain/permissions.js';
+import { withMaintenanceOrm } from './orm.js';
 
 // Update role data in the app schema; schema changes belong in migrations.
 try {
-  await withMaintenanceDatabase(async (db) => {
-    await db.transaction((em) => configureRoles(em));
+  await withMaintenanceOrm(async (orm) => {
+    await orm.em.fork().transactional((tx) => configureRoles(tx));
   });
   console.log('Role catalogue is ready.');
 } catch (error) {

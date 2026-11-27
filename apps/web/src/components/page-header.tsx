@@ -8,7 +8,7 @@ export function CreateAction({
   className,
   ...props
 }: ComponentProps<typeof Button>) {
-  return <Button {...props} className={cn("w-full sm:w-auto", className)} />;
+  return <Button {...props} className={cn("w-auto", className)} />;
 }
 
 export function BackLink({
@@ -20,7 +20,8 @@ export function BackLink({
     | "/admin/drivers"
     | "/admin/trucks"
     | "/admin/jobs"
-    | "/admin/providers";
+    | "/admin/providers"
+    | "/admin/activities";
   children: ReactNode;
 }) {
   return (
@@ -30,21 +31,28 @@ export function BackLink({
       size="sm"
       className="-ml-2.5 w-fit font-semibold"
     >
-      <Link
-        to={to}
-        search={
-          to === "/admin/users"
-            ? { q: "", page: 1 }
-            : to === "/admin/jobs"
-              ? { q: "", page: 1, status: "active", providerId: "" }
-              : to === "/admin/providers"
-                ? { q: "", page: 1, status: "" }
-                : { q: "", page: 1, status: "" }
-        }
-      >
-        <ArrowLeft aria-hidden="true" />
-        {children}
-      </Link>
+      {to === "/admin/activities" ? (
+        <Link to="/admin/activities">
+          <ArrowLeft aria-hidden="true" />
+          {children}
+        </Link>
+      ) : (
+        <Link
+          to={to}
+          search={
+            to === "/admin/users"
+              ? { q: "", page: 1 }
+              : to === "/admin/jobs"
+                ? { q: "", page: 1, status: "active", providerId: "" }
+                : to === "/admin/providers"
+                  ? { q: "", page: 1, status: "" }
+                  : { q: "", page: 1, status: "" }
+          }
+        >
+          <ArrowLeft aria-hidden="true" />
+          {children}
+        </Link>
+      )}
     </Button>
   );
 }
@@ -65,8 +73,8 @@ export function PageHeader({
   return (
     <header className="space-y-2">
       {back}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0 space-y-1">
+      <div className="flex flex-col gap-3 @3xl:flex-row @3xl:items-start @3xl:justify-between @3xl:gap-6">
+        <div className="min-w-0 max-w-2xl space-y-1">
           {group && (
             <p className="text-[11px] leading-4 text-muted-foreground uppercase">
               {group}
@@ -80,7 +88,7 @@ export function PageHeader({
           )}
         </div>
         {actions && (
-          <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+          <div className="flex flex-wrap items-center gap-2 @3xl:shrink-0 @3xl:pt-1">
             {actions}
           </div>
         )}

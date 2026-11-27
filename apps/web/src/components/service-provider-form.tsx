@@ -298,7 +298,7 @@ export function ServiceProviderForm({
                         event.currentTarget.value as "active" | "paused",
                       )
                     }
-                    className="h-12 w-full rounded-md border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-ring"
+                    className="h-12 w-full rounded-md border bg-background pl-3.5 pr-10 text-sm"
                   >
                     <option value="active">Active</option>
                     <option value="paused">Paused</option>

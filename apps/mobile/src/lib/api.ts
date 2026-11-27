@@ -22,6 +22,7 @@ export interface Truck {
   make: string;
   model: string;
   status?: string;
+  odometerKm?: number;
   activeSession?: {
     id: string;
     driverId: string;
@@ -41,6 +42,8 @@ export interface DriverContext {
     id: string;
     startedAt: string;
     onThisPhone: boolean;
+    startOdometerKm?: string | null;
+    mileageFlags?: string[];
   } | null;
   canDrive: boolean;
   reason: string | null;
@@ -127,5 +130,71 @@ export async function request<T>(
         : "Could not complete the request. Please try again.",
       body && typeof body === "object" ? body : undefined,
     );
+  return body as T;
+}
+
+export async function uploadPhotoMultipart<T>(
+  path: string,
+  options: {
+    uri: string;
+    mimeType: string;
+    kind: string;
+    session?: string;
+    recording?: string;
+    recordingContextId?: string;
+  },
+): Promise<T> {
+  if (Platform.OS === "web") {
+    throw new ApiError(400, "Open the installed VHH Fleet app to upload photos.");
+  }
+  const form = new FormData();
+  form.append("kind", options.kind);
+  if (options.recordingContextId) {
+    form.append("contextId", options.recordingContextId);
+  }
+  const ext =
+    options.mimeType === "image/png"
+      ? "png"
+      : options.mimeType === "image/webp"
+        ? "webp"
+        : "jpg";
+  form.append("photos", {
+    uri: options.uri,
+    type: options.mimeType,
+    name: `photo.${ext}`,
+  } as unknown as Blob);
+
+  let response: Response;
+  try {
+    response = await fetch(`${apiUrl}/mobile/${path}`, {
+      method: "POST",
+      credentials: "omit",
+      headers: {
+        Accept: "application/json",
+        ...(options.session
+          ? { Authorization: `Bearer ${options.session}` }
+          : {}),
+        ...(options.recording
+          ? { "X-Fleet-Recording-Token": options.recording }
+          : {}),
+        ...(options.recordingContextId
+          ? { "X-Fleet-Recording-Context": options.recordingContextId }
+          : {}),
+      },
+      body: form,
+      signal: AbortSignal.timeout(30000),
+    });
+  } catch {
+    throw new ApiError(0, "Could not upload photo. It will retry when online.");
+  }
+  const body = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      typeof body?.message === "string"
+        ? body.message
+        : "Could not upload photo.",
+    );
+  }
   return body as T;
 }

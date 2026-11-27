@@ -5,7 +5,12 @@ import { routeTree } from './routeTree.gen'
 
 export function getRouter() {
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
+    defaultOptions: {
+      queries: {
+        retry: false,
+        staleTime: 10_000,
+      },
+    },
   })
   const router = createTanStackRouter({
     routeTree,

@@ -10,9 +10,11 @@ export function RefreshButton({
 }) {
   return (
     <Button
+      type="button"
       variant="outline"
-      size="sm"
+      aria-busy={busy}
       aria-disabled={busy}
+      aria-label={busy ? "Refreshing" : "Refresh"}
       onClick={() => {
         if (!busy) onRefresh();
       }}
@@ -21,7 +23,7 @@ export function RefreshButton({
         aria-hidden="true"
         className={busy ? "motion-safe:animate-spin" : undefined}
       />
-      {busy ? "Refreshing…" : "Refresh"}
+      <span>Refresh</span>
     </Button>
   );
 }

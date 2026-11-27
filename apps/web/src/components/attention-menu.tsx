@@ -10,6 +10,7 @@ import { Bell } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { MenuItemsSkeleton } from "@/components/page-skeletons";
 import type { AdminSession } from "@/lib/auth";
 import { issueLabels } from "@/lib/vehicle-disputes";
 
@@ -167,7 +168,7 @@ export function AttentionMenu({ session }: { session: AdminSession }) {
             Could not refresh items. Try again.
           </p>
         )}
-        {!data && !isError && <p className="text-xs">Loading…</p>}
+        {!data && !isError && <MenuItemsSkeleton rows={3} />}
         {data?.count === 0 && (
           <p className="text-xs text-muted-foreground">Nothing to resolve.</p>
         )}

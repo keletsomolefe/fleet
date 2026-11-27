@@ -270,7 +270,7 @@ export function FleetField({
       {f.options ? (
         <select
           {...common}
-          className="flex h-12 w-full rounded-md border bg-muted px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+          className="h-12 w-full rounded-md border bg-muted pl-3.5 pr-10 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
         >
           {!f.required && <option value="">Not specified</option>}
           {f.options.map((o) => (

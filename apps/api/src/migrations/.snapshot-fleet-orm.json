@@ -5,6 +5,626 @@
   ],
   "tables": [
     {
+      "name": "activity_revisions",
+      "schema": "app",
+      "columns": {
+        "baseVersion": {
+          "name": "baseVersion",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "conflict": {
+          "name": "conflict",
+          "type": "boolean",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "false",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "contextId": {
+          "name": "contextId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "digest": {
+          "name": "digest",
+          "type": "varchar(64)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 64,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "receivedAt": {
+          "name": "receivedAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "recordId": {
+          "name": "recordId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "submission": {
+          "name": "submission",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "json"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "activity_revisions_pkey",
+          "primary": true,
+          "unique": true
+        },
+        {
+          "columnNames": [
+            "recordId",
+            "receivedAt"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "ix_activity_revisions_record",
+          "primary": false,
+          "unique": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "activity_revisions_base_version_check",
+          "expression": "\"baseVersion\" >= 0",
+          "definition": "check (\"baseVersion\" >= 0)"
+        }
+      ],
+      "triggers": [],
+      "foreignKeys": {
+        "activity_revisions_contextId_foreign": {
+          "columnNames": [
+            "contextId"
+          ],
+          "constraintName": "activity_revisions_contextId_foreign",
+          "localTableName": "app.activity_revisions",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.recording_contexts",
+          "deleteRule": "restrict"
+        },
+        "activity_revisions_recordId_foreign": {
+          "columnNames": [
+            "recordId"
+          ],
+          "constraintName": "activity_revisions_recordId_foreign",
+          "localTableName": "app.activity_revisions",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.transport_records",
+          "deleteRule": "restrict"
+        }
+      },
+      "comment": null
+    },
+    {
+      "name": "customer_products",
+      "schema": "app",
+      "columns": {
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "true",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "customerId": {
+          "name": "customerId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": true,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "gen_random_uuid()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "productId": {
+          "name": "productId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "receives": {
+          "name": "receives",
+          "type": "boolean",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "false",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "supplies": {
+          "name": "supplies",
+          "type": "boolean",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "false",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "version": {
+          "name": "version",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "1",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "customer_products_pkey",
+          "primary": true,
+          "unique": true
+        },
+        {
+          "columnNames": [
+            "customerId",
+            "productId"
+          ],
+          "composite": true,
+          "constraint": true,
+          "keyName": "uq_customer_products_pair",
+          "primary": false,
+          "unique": true
+        }
+      ],
+      "checks": [],
+      "triggers": [],
+      "foreignKeys": {
+        "customer_products_customerId_foreign": {
+          "columnNames": [
+            "customerId"
+          ],
+          "constraintName": "customer_products_customerId_foreign",
+          "localTableName": "app.customer_products",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.customers",
+          "deleteRule": "restrict"
+        },
+        "customer_products_productId_foreign": {
+          "columnNames": [
+            "productId"
+          ],
+          "constraintName": "customer_products_productId_foreign",
+          "localTableName": "app.customer_products",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.products",
+          "deleteRule": "restrict"
+        }
+      },
+      "comment": null
+    },
+    {
+      "name": "customers",
+      "schema": "app",
+      "columns": {
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "true",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "contact": {
+          "name": "contact",
+          "type": "varchar(200)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 200,
+          "precision": null,
+          "scale": null,
+          "default": "''",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(200)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 200,
+          "precision": null,
+          "scale": null,
+          "default": "''",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "gen_random_uuid()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "industry": {
+          "name": "industry",
+          "type": "varchar(120)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 120,
+          "precision": null,
+          "scale": null,
+          "default": "''",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(200)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 200,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "''",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "phone": {
+          "name": "phone",
+          "type": "varchar(40)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 40,
+          "precision": null,
+          "scale": null,
+          "default": "''",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "version": {
+          "name": "version",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "1",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "customers_pkey",
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [],
+      "triggers": [],
+      "foreignKeys": {},
+      "comment": null
+    },
+    {
       "name": "device_truck_associations",
       "schema": "app",
       "columns": {
@@ -131,8 +751,7 @@
           "constraint": false,
           "keyName": "idx_device_association_history",
           "primary": false,
-          "unique": false,
-          "expression": "CREATE INDEX idx_device_association_history ON app.device_truck_associations USING btree (\"truckId\", \"startedAt\")"
+          "unique": false
         },
         {
           "columnNames": [
@@ -143,7 +762,7 @@
           "keyName": "uq_device_current_association",
           "primary": false,
           "unique": true,
-          "expression": "CREATE UNIQUE INDEX uq_device_current_association ON app.device_truck_associations USING btree (\"deviceId\") WHERE (\"endedAt\" IS NULL)"
+          "where": "\"endedAt\" IS NULL"
         },
         {
           "columnNames": [
@@ -154,12 +773,24 @@
           "keyName": "uq_truck_current_device",
           "primary": false,
           "unique": true,
-          "expression": "CREATE UNIQUE INDEX uq_truck_current_device ON app.device_truck_associations USING btree (\"truckId\") WHERE (\"endedAt\" IS NULL)"
+          "where": "\"endedAt\" IS NULL"
         }
       ],
       "checks": [],
       "triggers": [],
       "foreignKeys": {
+        "device_truck_associations_changedById_foreign": {
+          "columnNames": [
+            "changedById"
+          ],
+          "constraintName": "device_truck_associations_changedById_foreign",
+          "localTableName": "app.device_truck_associations",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.users",
+          "deleteRule": "set null"
+        },
         "device_truck_associations_deviceId_foreign": {
           "columnNames": [
             "deviceId"
@@ -178,6 +809,290 @@
           ],
           "constraintName": "device_truck_associations_truckId_foreign",
           "localTableName": "app.device_truck_associations",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.trucks",
+          "deleteRule": "restrict"
+        }
+      },
+      "comment": null
+    },
+    {
+      "name": "dispatches",
+      "schema": "app",
+      "columns": {
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "createdById": {
+          "name": "createdById",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "date": {
+          "name": "date",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "date"
+        },
+        "driverId": {
+          "name": "driverId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "gen_random_uuid()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "plan": {
+          "name": "plan",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "json"
+        },
+        "reference": {
+          "name": "reference",
+          "type": "varchar(80)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": true,
+          "length": 80,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(20)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 20,
+          "precision": null,
+          "scale": null,
+          "default": "'dispatched'",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "truckId": {
+          "name": "truckId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "version": {
+          "name": "version",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "1",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "dispatches_pkey",
+          "primary": true,
+          "unique": true
+        },
+        {
+          "columnNames": [
+            "reference"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "dispatches_reference_unique",
+          "primary": false,
+          "unique": true
+        },
+        {
+          "columnNames": [
+            "driverId",
+            "date"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "ix_dispatch_driver",
+          "primary": false,
+          "unique": false
+        },
+        {
+          "columnNames": [
+            "truckId",
+            "date"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "ix_dispatch_truck",
+          "primary": false,
+          "unique": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "dispatches_status_check",
+          "expression": "status IN ('draft', 'dispatched', 'completed', 'cancelled')",
+          "definition": "check (status IN ('draft', 'dispatched', 'completed', 'cancelled'))"
+        }
+      ],
+      "triggers": [],
+      "foreignKeys": {
+        "dispatches_createdById_foreign": {
+          "columnNames": [
+            "createdById"
+          ],
+          "constraintName": "dispatches_createdById_foreign",
+          "localTableName": "app.dispatches",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.users",
+          "deleteRule": "restrict"
+        },
+        "dispatches_driverId_foreign": {
+          "columnNames": [
+            "driverId"
+          ],
+          "constraintName": "dispatches_driverId_foreign",
+          "localTableName": "app.dispatches",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.driver_profiles",
+          "deleteRule": "restrict"
+        },
+        "dispatches_truckId_foreign": {
+          "columnNames": [
+            "truckId"
+          ],
+          "constraintName": "dispatches_truckId_foreign",
+          "localTableName": "app.dispatches",
           "referencedColumnNames": [
             "id"
           ],
@@ -365,8 +1280,7 @@
           "constraint": false,
           "keyName": "ix_driver_issues_driver",
           "primary": false,
-          "unique": false,
-          "expression": "CREATE INDEX ix_driver_issues_driver ON app.driver_issues USING btree (\"driverId\", \"createdAt\")"
+          "unique": false
         },
         {
           "columnNames": [
@@ -378,10 +1292,16 @@
           "keyName": "ix_driver_issues_open",
           "primary": false,
           "unique": false,
-          "expression": "CREATE INDEX ix_driver_issues_open ON app.driver_issues USING btree (\"createdAt\", id) WHERE (\"resolvedAt\" IS NULL)"
+          "where": "\"resolvedAt\" IS NULL"
         }
       ],
-      "checks": [],
+      "checks": [
+        {
+          "name": "driver_issues_category_check",
+          "expression": "category IN ('vehicle', 'safety', 'other')",
+          "definition": "check (category IN ('vehicle', 'safety', 'other'))"
+        }
+      ],
       "triggers": [],
       "foreignKeys": {
         "driver_issues_driverId_foreign": {
@@ -743,8 +1663,7 @@
           "constraint": true,
           "keyName": "driver_profiles_currentTruckId_unique",
           "primary": false,
-          "unique": true,
-          "expression": "CREATE UNIQUE INDEX \"driver_profiles_currentTruckId_unique\" ON app.driver_profiles USING btree (\"currentTruckId\")"
+          "unique": true
         },
         {
           "columnNames": [
@@ -765,8 +1684,7 @@
           "constraint": true,
           "keyName": "driver_profiles_licenceCountry_licenceNumber_key",
           "primary": false,
-          "unique": true,
-          "expression": "CREATE UNIQUE INDEX \"driver_profiles_licenceCountry_licenceNumber_key\" ON app.driver_profiles USING btree (\"licenceCountry\", \"licenceNumber\")"
+          "unique": true
         },
         {
           "columnNames": [
@@ -786,13 +1704,40 @@
           "constraint": true,
           "keyName": "driver_profiles_userId_unique",
           "primary": false,
-          "unique": true,
-          "expression": "CREATE UNIQUE INDEX \"driver_profiles_userId_unique\" ON app.driver_profiles USING btree (\"userId\")"
+          "unique": true
+        },
+        {
+          "columnNames": [
+            "status"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "idx_driver_profiles_status",
+          "primary": false,
+          "unique": false
         }
       ],
-      "checks": [],
+      "checks": [
+        {
+          "name": "driver_profiles_status_check",
+          "expression": "status IN ('active', 'inactive')",
+          "definition": "check (status IN ('active', 'inactive'))"
+        }
+      ],
       "triggers": [],
       "foreignKeys": {
+        "driver_profiles_createdById_foreign": {
+          "columnNames": [
+            "createdById"
+          ],
+          "constraintName": "driver_profiles_createdById_foreign",
+          "localTableName": "app.driver_profiles",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.users",
+          "deleteRule": "set null"
+        },
         "driver_profiles_currentTruckId_foreign": {
           "columnNames": [
             "currentTruckId"
@@ -991,6 +1936,17 @@
         },
         {
           "columnNames": [
+            "date"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "idx_driver_schedules_active_date",
+          "primary": false,
+          "unique": false,
+          "where": "\"cancelledAt\" IS NULL"
+        },
+        {
+          "columnNames": [
             "driverId",
             "date"
           ],
@@ -999,7 +1955,7 @@
           "keyName": "uq_schedule_driver_day",
           "primary": false,
           "unique": true,
-          "expression": "CREATE UNIQUE INDEX uq_schedule_driver_day ON app.driver_schedules USING btree (\"driverId\", date) WHERE (\"cancelledAt\" IS NULL)"
+          "where": "\"cancelledAt\" IS NULL"
         },
         {
           "columnNames": [
@@ -1011,12 +1967,61 @@
           "keyName": "uq_schedule_truck_day",
           "primary": false,
           "unique": true,
-          "expression": "CREATE UNIQUE INDEX uq_schedule_truck_day ON app.driver_schedules USING btree (\"truckId\", date) WHERE (\"cancelledAt\" IS NULL)"
+          "where": "\"cancelledAt\" IS NULL"
         }
       ],
       "checks": [],
       "triggers": [],
-      "foreignKeys": {},
+      "foreignKeys": {
+        "driver_schedules_cancelledById_foreign": {
+          "columnNames": [
+            "cancelledById"
+          ],
+          "constraintName": "driver_schedules_cancelledById_foreign",
+          "localTableName": "app.driver_schedules",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.users",
+          "deleteRule": "set null"
+        },
+        "driver_schedules_createdById_foreign": {
+          "columnNames": [
+            "createdById"
+          ],
+          "constraintName": "driver_schedules_createdById_foreign",
+          "localTableName": "app.driver_schedules",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.users",
+          "deleteRule": "restrict"
+        },
+        "driver_schedules_driverId_foreign": {
+          "columnNames": [
+            "driverId"
+          ],
+          "constraintName": "driver_schedules_driverId_foreign",
+          "localTableName": "app.driver_schedules",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.driver_profiles",
+          "deleteRule": "restrict"
+        },
+        "driver_schedules_truckId_foreign": {
+          "columnNames": [
+            "truckId"
+          ],
+          "constraintName": "driver_schedules_truckId_foreign",
+          "localTableName": "app.driver_schedules",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.trucks",
+          "deleteRule": "restrict"
+        }
+      },
       "comment": null
     },
     {
@@ -1146,8 +2151,7 @@
           "constraint": false,
           "keyName": "idx_driver_assignment_history",
           "primary": false,
-          "unique": false,
-          "expression": "CREATE INDEX idx_driver_assignment_history ON app.driver_truck_assignments USING btree (\"driverId\", \"startedAt\")"
+          "unique": false
         },
         {
           "columnNames": [
@@ -1158,7 +2162,7 @@
           "keyName": "uq_driver_current_assignment",
           "primary": false,
           "unique": true,
-          "expression": "CREATE UNIQUE INDEX uq_driver_current_assignment ON app.driver_truck_assignments USING btree (\"driverId\") WHERE (\"endedAt\" IS NULL)"
+          "where": "\"endedAt\" IS NULL"
         },
         {
           "columnNames": [
@@ -1169,12 +2173,24 @@
           "keyName": "uq_truck_current_assignment",
           "primary": false,
           "unique": true,
-          "expression": "CREATE UNIQUE INDEX uq_truck_current_assignment ON app.driver_truck_assignments USING btree (\"truckId\") WHERE (\"endedAt\" IS NULL)"
+          "where": "\"endedAt\" IS NULL"
         }
       ],
       "checks": [],
       "triggers": [],
       "foreignKeys": {
+        "driver_truck_assignments_changedById_foreign": {
+          "columnNames": [
+            "changedById"
+          ],
+          "constraintName": "driver_truck_assignments_changedById_foreign",
+          "localTableName": "app.driver_truck_assignments",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.users",
+          "deleteRule": "set null"
+        },
         "driver_truck_assignments_driverId_foreign": {
           "columnNames": [
             "driverId"
@@ -1312,8 +2328,7 @@
           "constraint": true,
           "keyName": "uq_driver_session_truck_confirmation",
           "primary": false,
-          "unique": true,
-          "expression": "CREATE UNIQUE INDEX uq_driver_session_truck_confirmation ON app.driver_truck_confirmations USING btree (\"kratosSessionId\", \"associationId\")"
+          "unique": true
         }
       ],
       "checks": [],
@@ -1383,6 +2398,74 @@
           "collation": null,
           "enumItems": [],
           "mappedType": "uuid"
+        },
+        "endOdometerAt": {
+          "name": "endOdometerAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "endOdometerKm": {
+          "name": "endOdometerKm",
+          "type": "numeric(12,1)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": 12,
+          "scale": 1,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "decimal"
+        },
+        "endOdometerLowerReason": {
+          "name": "endOdometerLowerReason",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "endOdometerMissingPhotoReason": {
+          "name": "endOdometerMissingPhotoReason",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "text"
         },
         "endReason": {
           "name": "endReason",
@@ -1469,6 +2552,74 @@
           "enumItems": [],
           "mappedType": "uuid"
         },
+        "mileageFlags": {
+          "name": "mileageFlags",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "'{}'",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "array"
+        },
+        "mileageReviewNote": {
+          "name": "mileageReviewNote",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "mileageReviewedAt": {
+          "name": "mileageReviewedAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "mileageReviewedById": {
+          "name": "mileageReviewedById",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
         "scheduleId": {
           "name": "scheduleId",
           "type": "uuid",
@@ -1485,6 +2636,57 @@
           "collation": null,
           "enumItems": [],
           "mappedType": "uuid"
+        },
+        "startOdometerAt": {
+          "name": "startOdometerAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "startOdometerKm": {
+          "name": "startOdometerKm",
+          "type": "numeric(12,1)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": 12,
+          "scale": 1,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "decimal"
+        },
+        "startOdometerMissingPhotoReason": {
+          "name": "startOdometerMissingPhotoReason",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "text"
         },
         "startedAt": {
           "name": "startedAt",
@@ -1534,6 +2736,39 @@
         },
         {
           "columnNames": [
+            "driverId",
+            "startedAt"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "idx_driving_sessions_driver_started",
+          "primary": false,
+          "unique": false
+        },
+        {
+          "columnNames": [
+            "kratosSessionId"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "idx_driving_sessions_kratos_active",
+          "primary": false,
+          "unique": false,
+          "where": "\"endedAt\" IS NULL"
+        },
+        {
+          "columnNames": [
+            "truckId",
+            "startedAt"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "idx_driving_sessions_truck_started",
+          "primary": false,
+          "unique": false
+        },
+        {
+          "columnNames": [
             "driverId"
           ],
           "composite": false,
@@ -1541,7 +2776,7 @@
           "keyName": "uq_driving_active_driver",
           "primary": false,
           "unique": true,
-          "expression": "CREATE UNIQUE INDEX uq_driving_active_driver ON app.driving_sessions USING btree (\"driverId\") WHERE (\"endedAt\" IS NULL)"
+          "where": "\"endedAt\" IS NULL"
         },
         {
           "columnNames": [
@@ -1552,10 +2787,21 @@
           "keyName": "uq_driving_active_truck",
           "primary": false,
           "unique": true,
-          "expression": "CREATE UNIQUE INDEX uq_driving_active_truck ON app.driving_sessions USING btree (\"truckId\") WHERE (\"endedAt\" IS NULL)"
+          "where": "\"endedAt\" IS NULL"
         }
       ],
-      "checks": [],
+      "checks": [
+        {
+          "name": "driving_sessions_end_odometer_check",
+          "expression": "\"endOdometerKm\" IS NULL OR \"endOdometerKm\" >= 0",
+          "definition": "check (\"endOdometerKm\" IS NULL OR \"endOdometerKm\" >= 0)"
+        },
+        {
+          "name": "driving_sessions_start_odometer_check",
+          "expression": "\"startOdometerKm\" IS NULL OR \"startOdometerKm\" >= 0",
+          "definition": "check (\"startOdometerKm\" IS NULL OR \"startOdometerKm\" >= 0)"
+        }
+      ],
       "triggers": [],
       "foreignKeys": {
         "driving_sessions_driverId_foreign": {
@@ -1570,6 +2816,42 @@
           "referencedTableName": "app.driver_profiles",
           "deleteRule": "restrict"
         },
+        "driving_sessions_endedById_foreign": {
+          "columnNames": [
+            "endedById"
+          ],
+          "constraintName": "driving_sessions_endedById_foreign",
+          "localTableName": "app.driving_sessions",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.users",
+          "deleteRule": "set null"
+        },
+        "driving_sessions_mileageReviewedById_foreign": {
+          "columnNames": [
+            "mileageReviewedById"
+          ],
+          "constraintName": "driving_sessions_mileageReviewedById_foreign",
+          "localTableName": "app.driving_sessions",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.users",
+          "deleteRule": "set null"
+        },
+        "driving_sessions_scheduleId_foreign": {
+          "columnNames": [
+            "scheduleId"
+          ],
+          "constraintName": "driving_sessions_scheduleId_foreign",
+          "localTableName": "app.driving_sessions",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.driver_schedules",
+          "deleteRule": "set null"
+        },
         "driving_sessions_truckId_foreign": {
           "columnNames": [
             "truckId"
@@ -1583,6 +2865,270 @@
           "deleteRule": "restrict"
         }
       },
+      "comment": null
+    },
+    {
+      "name": "locations",
+      "schema": "app",
+      "columns": {
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "true",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "contact": {
+          "name": "contact",
+          "type": "varchar(200)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 200,
+          "precision": null,
+          "scale": null,
+          "default": "''",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "customerIds": {
+          "name": "customerIds",
+          "type": "uuid[]",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "'{}'",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "array"
+        },
+        "directions": {
+          "name": "directions",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "''",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "gen_random_uuid()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "latitude": {
+          "name": "latitude",
+          "type": "double precision",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "double"
+        },
+        "longitude": {
+          "name": "longitude",
+          "type": "double precision",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "double"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(200)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 200,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "phone": {
+          "name": "phone",
+          "type": "varchar(40)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 40,
+          "precision": null,
+          "scale": null,
+          "default": "''",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "siteType": {
+          "name": "siteType",
+          "type": "varchar(20)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 20,
+          "precision": null,
+          "scale": null,
+          "default": "'both'",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "version": {
+          "name": "version",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "1",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "locations_pkey",
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [
+        {
+          "name": "locations_coordinates_pair_check",
+          "expression": "(latitude IS NULL) = (longitude IS NULL)",
+          "definition": "check ((latitude IS NULL) = (longitude IS NULL))"
+        },
+        {
+          "name": "locations_latitude_check",
+          "expression": "latitude IS NULL OR (latitude >= -90 AND latitude <= 90)",
+          "definition": "check (latitude IS NULL OR (latitude >= -90 AND latitude <= 90))"
+        },
+        {
+          "name": "locations_longitude_check",
+          "expression": "longitude IS NULL OR (longitude >= -180 AND longitude <= 180)",
+          "definition": "check (longitude IS NULL OR (longitude >= -180 AND longitude <= 180))"
+        },
+        {
+          "name": "locations_site_type_check",
+          "expression": "\"siteType\" IN ('collection', 'delivery', 'both', 'fuel_station', 'yard')",
+          "definition": "check (\"siteType\" IN ('collection', 'delivery', 'both', 'fuel_station', 'yard'))"
+        }
+      ],
+      "triggers": [],
+      "foreignKeys": {},
       "comment": null
     },
     {
@@ -1669,6 +3215,324 @@
       "comment": null
     },
     {
+      "name": "products",
+      "schema": "app",
+      "columns": {
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "true",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "gen_random_uuid()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(200)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 200,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "unit": {
+          "name": "unit",
+          "type": "varchar(20)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 20,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "version": {
+          "name": "version",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "1",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "products_pkey",
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [
+        {
+          "name": "products_unit_check",
+          "expression": "unit IN ('tonne', 'kg', 'litre', 'm3', 'pallet', 'item')",
+          "definition": "check (unit IN ('tonne', 'kg', 'litre', 'm3', 'pallet', 'item'))"
+        }
+      ],
+      "triggers": [],
+      "foreignKeys": {},
+      "comment": null
+    },
+    {
+      "name": "recording_contexts",
+      "schema": "app",
+      "columns": {
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "driverId": {
+          "name": "driverId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "drivingSessionId": {
+          "name": "drivingSessionId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "tokenHash": {
+          "name": "tokenHash",
+          "type": "varchar(64)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": true,
+          "length": 64,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "truckId": {
+          "name": "truckId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "recording_contexts_pkey",
+          "primary": true,
+          "unique": true
+        },
+        {
+          "columnNames": [
+            "tokenHash"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "recording_contexts_tokenHash_unique",
+          "primary": false,
+          "unique": true
+        }
+      ],
+      "checks": [],
+      "triggers": [],
+      "foreignKeys": {
+        "recording_contexts_driverId_foreign": {
+          "columnNames": [
+            "driverId"
+          ],
+          "constraintName": "recording_contexts_driverId_foreign",
+          "localTableName": "app.recording_contexts",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.driver_profiles",
+          "deleteRule": "restrict"
+        },
+        "recording_contexts_drivingSessionId_foreign": {
+          "columnNames": [
+            "drivingSessionId"
+          ],
+          "constraintName": "recording_contexts_drivingSessionId_foreign",
+          "localTableName": "app.recording_contexts",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.driving_sessions",
+          "deleteRule": "restrict"
+        },
+        "recording_contexts_truckId_foreign": {
+          "columnNames": [
+            "truckId"
+          ],
+          "constraintName": "recording_contexts_truckId_foreign",
+          "localTableName": "app.recording_contexts",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.trucks",
+          "deleteRule": "restrict"
+        }
+      },
+      "comment": null
+    },
+    {
       "name": "role_permissions",
       "schema": "app",
       "columns": {
@@ -1717,8 +3581,7 @@
           "constraint": true,
           "keyName": "role_permissions_pkey",
           "primary": true,
-          "unique": true,
-          "expression": "CREATE UNIQUE INDEX role_permissions_pkey ON app.role_permissions USING btree (\"roleId\", \"permissionId\")"
+          "unique": true
         }
       ],
       "checks": [],
@@ -1933,16 +3796,14 @@
           "primary": false,
           "nullable": false,
           "unique": false,
-          "length": null,
+          "length": 24,
           "precision": null,
           "scale": null,
           "default": "'completion_photo'",
           "comment": null,
           "collation": null,
-          "enumItems": [
-            "completion_photo"
-          ],
-          "mappedType": "enum"
+          "enumItems": [],
+          "mappedType": "string"
         },
         "mimeType": {
           "name": "mimeType",
@@ -2022,8 +3883,7 @@
           "constraint": false,
           "keyName": "service_job_attachments_job",
           "primary": false,
-          "unique": false,
-          "expression": "CREATE INDEX service_job_attachments_job ON app.service_job_attachments USING btree (\"jobId\")"
+          "unique": false
         },
         {
           "columnNames": [
@@ -2034,8 +3894,7 @@
           "constraint": true,
           "keyName": "service_job_attachments_jobId_storageName_key",
           "primary": false,
-          "unique": true,
-          "expression": "CREATE UNIQUE INDEX \"service_job_attachments_jobId_storageName_key\" ON app.service_job_attachments USING btree (\"jobId\", \"storageName\")"
+          "unique": true
         },
         {
           "columnNames": [
@@ -2052,14 +3911,12 @@
         {
           "name": "service_job_attachments_kind_check",
           "expression": "\"kind\" in ('completion_photo')",
-          "definition": "check (\"kind\" in ('completion_photo'))",
-          "columnName": "kind"
+          "definition": "check (\"kind\" in ('completion_photo'))"
         },
         {
           "name": "service_job_attachments_size_check",
           "expression": "\"byteSize\" > 0",
-          "definition": "CHECK ((\"byteSize\" > 0))",
-          "columnName": "byteSize"
+          "definition": "check (\"byteSize\" > 0)"
         }
       ],
       "triggers": [],
@@ -2087,6 +3944,30 @@
           ],
           "referencedTableName": "app.service_jobs",
           "deleteRule": "cascade"
+        },
+        "service_job_attachments_uploadedByProviderId_foreign": {
+          "columnNames": [
+            "uploadedByProviderId"
+          ],
+          "constraintName": "service_job_attachments_uploadedByProviderId_foreign",
+          "localTableName": "app.service_job_attachments",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.service_providers",
+          "deleteRule": "set null"
+        },
+        "service_job_attachments_uploadedByUserId_foreign": {
+          "columnNames": [
+            "uploadedByUserId"
+          ],
+          "constraintName": "service_job_attachments_uploadedByUserId_foreign",
+          "localTableName": "app.service_job_attachments",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.users",
+          "deleteRule": "set null"
         }
       },
       "comment": null
@@ -2120,19 +4001,14 @@
           "primary": false,
           "nullable": false,
           "unique": false,
-          "length": null,
+          "length": 16,
           "precision": null,
           "scale": null,
           "default": null,
           "comment": null,
           "collation": null,
-          "enumItems": [
-            "driver",
-            "admin",
-            "provider",
-            "system"
-          ],
-          "mappedType": "enum"
+          "enumItems": [],
+          "mappedType": "string"
         },
         "actorUserId": {
           "name": "actorUserId",
@@ -2332,8 +4208,7 @@
           "constraint": false,
           "keyName": "service_job_events_job_created",
           "primary": false,
-          "unique": false,
-          "expression": "CREATE INDEX service_job_events_job_created ON app.service_job_events USING btree (\"jobId\", \"createdAt\")"
+          "unique": false
         },
         {
           "columnNames": [
@@ -2349,15 +4224,13 @@
       "checks": [
         {
           "name": "service_job_events_actor_check",
-          "expression": "\"actorType\" in ('driver', 'admin', 'provider', 'system')",
-          "definition": "check (\"actorType\" in ('driver', 'admin', 'provider', 'system'))",
-          "columnName": "actorType"
+          "expression": "\"actorType\" IN ('driver', 'admin', 'provider', 'system')",
+          "definition": "check (\"actorType\" IN ('driver', 'admin', 'provider', 'system'))"
         },
         {
           "name": "service_job_events_channel_check",
-          "expression": "(channel IS NULL) OR (channel = ANY (ARRAY['app'::character varying, 'dashboard'::character varying, 'web'::character varying, 'whatsapp'::character varying, 'system'::character varying]))",
-          "definition": "CHECK (((channel IS NULL) OR ((channel)::text = ANY ((ARRAY['app'::character varying, 'dashboard'::character varying, 'web'::character varying, 'whatsapp'::character varying, 'system'::character varying])::text[]))))",
-          "columnName": "channel"
+          "expression": "channel IS NULL OR channel IN ('app', 'dashboard', 'web', 'whatsapp', 'system')",
+          "definition": "check (channel IS NULL OR channel IN ('app', 'dashboard', 'web', 'whatsapp', 'system'))"
         }
       ],
       "triggers": [],
@@ -2804,24 +4677,14 @@
           "primary": false,
           "nullable": false,
           "unique": false,
-          "length": null,
+          "length": 20,
           "precision": null,
           "scale": null,
           "default": "'queued'",
           "comment": null,
           "collation": null,
-          "enumItems": [
-            "queued",
-            "sending",
-            "sent",
-            "delivered",
-            "read",
-            "accepted",
-            "declined",
-            "failed",
-            "expired"
-          ],
-          "mappedType": "enum"
+          "enumItems": [],
+          "mappedType": "string"
         },
         "updatedAt": {
           "name": "updatedAt",
@@ -2868,7 +4731,7 @@
           "keyName": "service_job_offers_accepted",
           "primary": false,
           "unique": true,
-          "expression": "CREATE UNIQUE INDEX service_job_offers_accepted ON app.service_job_offers USING btree (\"jobId\") WHERE ((status)::text = 'accepted'::text)"
+          "where": "status = 'accepted'"
         },
         {
           "columnNames": [
@@ -2879,7 +4742,7 @@
           "keyName": "service_job_offers_chat_completion_due",
           "primary": false,
           "unique": false,
-          "expression": "CREATE INDEX service_job_offers_chat_completion_due ON app.service_job_offers USING btree (\"chatCompletionExpiresAt\") WHERE ((\"chatCompletionExpiresAt\" IS NOT NULL) AND (\"chatCompletionRemindedAt\" IS NULL))"
+          "where": "\"chatCompletionExpiresAt\" IS NOT NULL AND \"chatCompletionRemindedAt\" IS NULL"
         },
         {
           "columnNames": [
@@ -2890,7 +4753,7 @@
           "keyName": "service_job_offers_due",
           "primary": false,
           "unique": false,
-          "expression": "CREATE INDEX service_job_offers_due ON app.service_job_offers USING btree (\"nextAttemptAt\") WHERE ((status)::text = 'queued'::text)"
+          "where": "status = 'queued'"
         },
         {
           "columnNames": [
@@ -2900,8 +4763,7 @@
           "constraint": false,
           "keyName": "service_job_offers_job",
           "primary": false,
-          "unique": false,
-          "expression": "CREATE INDEX service_job_offers_job ON app.service_job_offers USING btree (\"jobId\")"
+          "unique": false
         },
         {
           "columnNames": [
@@ -2912,8 +4774,7 @@
           "constraint": true,
           "keyName": "service_job_offers_jobId_providerId_key",
           "primary": false,
-          "unique": true,
-          "expression": "CREATE UNIQUE INDEX \"service_job_offers_jobId_providerId_key\" ON app.service_job_offers USING btree (\"jobId\", \"providerId\")"
+          "unique": true
         },
         {
           "columnNames": [
@@ -2924,7 +4785,7 @@
           "keyName": "service_job_offers_message_key",
           "primary": false,
           "unique": true,
-          "expression": "CREATE UNIQUE INDEX service_job_offers_message_key ON app.service_job_offers USING btree (\"whatsappMessageId\") WHERE (\"whatsappMessageId\" IS NOT NULL)"
+          "where": "\"whatsappMessageId\" IS NOT NULL"
         },
         {
           "columnNames": [
@@ -2944,34 +4805,29 @@
           "constraint": false,
           "keyName": "service_job_offers_provider",
           "primary": false,
-          "unique": false,
-          "expression": "CREATE INDEX service_job_offers_provider ON app.service_job_offers USING btree (\"providerId\")"
+          "unique": false
         }
       ],
       "checks": [
         {
           "name": "service_job_offers_attempts_check",
           "expression": "attempts >= 0",
-          "definition": "CHECK ((attempts >= 0))",
-          "columnName": "attempts"
+          "definition": "check (attempts >= 0)"
         },
         {
           "name": "service_job_offers_channel_check",
-          "expression": "(\"responseChannel\" IS NULL) OR (\"responseChannel\" = ANY (ARRAY['web'::character varying, 'whatsapp'::character varying, 'admin'::character varying]))",
-          "definition": "CHECK (((\"responseChannel\" IS NULL) OR ((\"responseChannel\")::text = ANY ((ARRAY['web'::character varying, 'whatsapp'::character varying, 'admin'::character varying])::text[]))))",
-          "columnName": "responseChannel"
+          "expression": "\"responseChannel\" IS NULL OR \"responseChannel\" IN ('web', 'whatsapp', 'admin')",
+          "definition": "check (\"responseChannel\" IS NULL OR \"responseChannel\" IN ('web', 'whatsapp', 'admin'))"
         },
         {
           "name": "service_job_offers_link_version_check",
           "expression": "\"linkVersion\" >= 1",
-          "definition": "CHECK ((\"linkVersion\" >= 1))",
-          "columnName": "linkVersion"
+          "definition": "check (\"linkVersion\" >= 1)"
         },
         {
           "name": "service_job_offers_status_check",
-          "expression": "\"status\" in ('queued', 'sending', 'sent', 'delivered', 'read', 'accepted', 'declined', 'failed', 'expired')",
-          "definition": "check (\"status\" in ('queued', 'sending', 'sent', 'delivered', 'read', 'accepted', 'declined', 'failed', 'expired'))",
-          "columnName": "status"
+          "expression": "status IN ('queued', 'sending', 'sent', 'delivered', 'read', 'accepted', 'declined', 'failed', 'expired')",
+          "definition": "check (status IN ('queued', 'sending', 'sent', 'delivered', 'read', 'accepted', 'declined', 'failed', 'expired'))"
         }
       ],
       "triggers": [],
@@ -3303,7 +5159,7 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "unique": false,
+          "unique": true,
           "length": null,
           "precision": null,
           "scale": null,
@@ -3457,23 +5313,14 @@
           "primary": false,
           "nullable": false,
           "unique": false,
-          "length": null,
+          "length": 24,
           "precision": null,
           "scale": null,
           "default": null,
           "comment": null,
           "collation": null,
-          "enumItems": [
-            "mechanical",
-            "tyres",
-            "towing",
-            "electrical",
-            "bodywork",
-            "fuel",
-            "accident",
-            "other"
-          ],
-          "mappedType": "enum"
+          "enumItems": [],
+          "mappedType": "string"
         },
         "source": {
           "name": "source",
@@ -3483,17 +5330,14 @@
           "primary": false,
           "nullable": false,
           "unique": false,
-          "length": null,
+          "length": 16,
           "precision": null,
           "scale": null,
           "default": null,
           "comment": null,
           "collation": null,
-          "enumItems": [
-            "driver",
-            "admin"
-          ],
-          "mappedType": "enum"
+          "enumItems": [],
+          "mappedType": "string"
         },
         "startedAt": {
           "name": "startedAt",
@@ -3520,21 +5364,14 @@
           "primary": false,
           "nullable": false,
           "unique": false,
-          "length": null,
+          "length": 24,
           "precision": null,
           "scale": null,
           "default": "'open'",
           "comment": null,
           "collation": null,
-          "enumItems": [
-            "open",
-            "assigned",
-            "in_progress",
-            "completed",
-            "closed",
-            "cancelled"
-          ],
-          "mappedType": "enum"
+          "enumItems": [],
+          "mappedType": "string"
         },
         "title": {
           "name": "title",
@@ -3560,7 +5397,7 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "unique": true,
+          "unique": false,
           "length": null,
           "precision": null,
           "scale": null,
@@ -3595,17 +5432,14 @@
           "primary": false,
           "nullable": false,
           "unique": false,
-          "length": null,
+          "length": 16,
           "precision": null,
           "scale": null,
           "default": "'urgent'",
           "comment": null,
           "collation": null,
-          "enumItems": [
-            "urgent",
-            "normal"
-          ],
-          "mappedType": "enum"
+          "enumItems": [],
+          "mappedType": "string"
         }
       },
       "indexes": [
@@ -3618,7 +5452,7 @@
           "keyName": "service_jobs_active_issue",
           "primary": false,
           "unique": true,
-          "expression": "CREATE UNIQUE INDEX service_jobs_active_issue ON app.service_jobs USING btree (\"issueId\") WHERE ((\"issueId\" IS NOT NULL) AND ((status)::text = ANY ((ARRAY['open'::character varying, 'assigned'::character varying, 'in_progress'::character varying])::text[])))"
+          "where": "\"issueId\" IS NOT NULL AND status IN ('open', 'assigned', 'in_progress')"
         },
         {
           "columnNames": [
@@ -3629,7 +5463,7 @@
           "keyName": "service_jobs_issue",
           "primary": false,
           "unique": false,
-          "expression": "CREATE INDEX service_jobs_issue ON app.service_jobs USING btree (\"issueId\") WHERE (\"issueId\" IS NOT NULL)"
+          "where": "\"issueId\" IS NOT NULL"
         },
         {
           "columnNames": [
@@ -3650,7 +5484,7 @@
           "keyName": "service_jobs_provider",
           "primary": false,
           "unique": false,
-          "expression": "CREATE INDEX service_jobs_provider ON app.service_jobs USING btree (\"providerId\") WHERE (\"providerId\" IS NOT NULL)"
+          "where": "\"providerId\" IS NOT NULL"
         },
         {
           "columnNames": [
@@ -3671,8 +5505,7 @@
           "constraint": false,
           "keyName": "service_jobs_status_created",
           "primary": false,
-          "unique": false,
-          "expression": "CREATE INDEX service_jobs_status_created ON app.service_jobs USING btree (status, \"createdAt\")"
+          "unique": false
         },
         {
           "columnNames": [
@@ -3683,82 +5516,69 @@
           "constraint": false,
           "keyName": "service_jobs_truck_created",
           "primary": false,
-          "unique": false,
-          "expression": "CREATE INDEX service_jobs_truck_created ON app.service_jobs USING btree (\"truckId\", \"createdAt\")"
+          "unique": false
         }
       ],
       "checks": [
         {
           "name": "service_jobs_accuracy_check",
-          "expression": "(\"locationAccuracyM\" IS NULL) OR (\"locationAccuracyM\" >= 0)",
-          "definition": "CHECK (((\"locationAccuracyM\" IS NULL) OR (\"locationAccuracyM\" >= (0)::double precision)))",
-          "columnName": "locationAccuracyM"
+          "expression": "\"locationAccuracyM\" IS NULL OR \"locationAccuracyM\" >= 0",
+          "definition": "check (\"locationAccuracyM\" IS NULL OR \"locationAccuracyM\" >= 0)"
         },
         {
           "name": "service_jobs_cost_check",
-          "expression": "(\"completionCostCents\" IS NULL) OR (\"completionCostCents\" >= 0)",
-          "definition": "CHECK (((\"completionCostCents\" IS NULL) OR (\"completionCostCents\" >= 0)))",
-          "columnName": "completionCostCents"
+          "expression": "\"completionCostCents\" IS NULL OR \"completionCostCents\" >= 0",
+          "definition": "check (\"completionCostCents\" IS NULL OR \"completionCostCents\" >= 0)"
         },
         {
           "name": "service_jobs_currency_check",
-          "expression": "currency ~ '^[A-Z]{3}$'::text",
-          "definition": "CHECK (((currency)::text ~ '^[A-Z]{3}$'::text))",
-          "columnName": "currency"
+          "expression": "currency ~ '^[A-Z]{3}$'",
+          "definition": "check (currency ~ '^[A-Z]{3}$')"
         },
         {
           "name": "service_jobs_description_check",
-          "expression": "(length(btrim(description)) >= 1) AND (length(btrim(description)) <= 2000)",
-          "definition": "CHECK (((length(btrim(description)) >= 1) AND (length(btrim(description)) <= 2000)))",
-          "columnName": "description"
+          "expression": "((length(btrim(description)) >= 1) AND (length(btrim(description)) <= 2000))",
+          "definition": "check (((length(btrim(description)) >= 1) AND (length(btrim(description)) <= 2000)))"
         },
         {
           "name": "service_jobs_latitude_check",
-          "expression": "(latitude IS NULL) OR ((latitude >= '-90'::integer) AND (latitude <= 90))",
-          "definition": "CHECK (((latitude IS NULL) OR ((latitude >= ('-90'::integer)::double precision) AND (latitude <= (90)::double precision))))",
-          "columnName": "latitude"
+          "expression": "latitude IS NULL OR (latitude >= -90 AND latitude <= 90)",
+          "definition": "check (latitude IS NULL OR (latitude >= -90 AND latitude <= 90))"
         },
         {
           "name": "service_jobs_longitude_check",
-          "expression": "(longitude IS NULL) OR ((longitude >= '-180'::integer) AND (longitude <= 180))",
-          "definition": "CHECK (((longitude IS NULL) OR ((longitude >= ('-180'::integer)::double precision) AND (longitude <= (180)::double precision))))",
-          "columnName": "longitude"
+          "expression": "longitude IS NULL OR (longitude >= -180 AND longitude <= 180)",
+          "definition": "check (longitude IS NULL OR (longitude >= -180 AND longitude <= 180))"
         },
         {
           "name": "service_jobs_reference_check",
-          "expression": "reference ~ '^SJ-[0-9]{6,}$'::text",
-          "definition": "CHECK (((reference)::text ~ '^SJ-[0-9]{6,}$'::text))",
-          "columnName": "reference"
+          "expression": "reference ~ '^SJ-[0-9]{6,}$'",
+          "definition": "check (reference ~ '^SJ-[0-9]{6,}$')"
         },
         {
           "name": "service_jobs_service_type_check",
-          "expression": "\"serviceType\" in ('mechanical', 'tyres', 'towing', 'electrical', 'bodywork', 'fuel', 'accident', 'other')",
-          "definition": "check (\"serviceType\" in ('mechanical', 'tyres', 'towing', 'electrical', 'bodywork', 'fuel', 'accident', 'other'))",
-          "columnName": "serviceType"
+          "expression": "\"serviceType\" IN ('mechanical', 'tyres', 'towing', 'electrical', 'bodywork', 'fuel', 'accident', 'other')",
+          "definition": "check (\"serviceType\" IN ('mechanical', 'tyres', 'towing', 'electrical', 'bodywork', 'fuel', 'accident', 'other'))"
         },
         {
           "name": "service_jobs_source_check",
-          "expression": "\"source\" in ('driver', 'admin')",
-          "definition": "check (\"source\" in ('driver', 'admin'))",
-          "columnName": "source"
+          "expression": "source IN ('driver', 'admin')",
+          "definition": "check (source IN ('driver', 'admin'))"
         },
         {
           "name": "service_jobs_status_check",
-          "expression": "\"status\" in ('open', 'assigned', 'in_progress', 'completed', 'closed', 'cancelled')",
-          "definition": "check (\"status\" in ('open', 'assigned', 'in_progress', 'completed', 'closed', 'cancelled'))",
-          "columnName": "status"
+          "expression": "status IN ('open', 'assigned', 'in_progress', 'completed', 'closed', 'cancelled')",
+          "definition": "check (status IN ('open', 'assigned', 'in_progress', 'completed', 'closed', 'cancelled'))"
         },
         {
           "name": "service_jobs_title_check",
-          "expression": "(length(btrim(title)) >= 1) AND (length(btrim(title)) <= 120)",
-          "definition": "CHECK (((length(btrim((title)::text)) >= 1) AND (length(btrim((title)::text)) <= 120)))",
-          "columnName": "title"
+          "expression": "((length(btrim((title)::text)) >= 1) AND (length(btrim((title)::text)) <= 120))",
+          "definition": "check (((length(btrim((title)::text)) >= 1) AND (length(btrim((title)::text)) <= 120)))"
         },
         {
           "name": "service_jobs_urgency_check",
-          "expression": "\"urgency\" in ('urgent', 'normal')",
-          "definition": "check (\"urgency\" in ('urgent', 'normal'))",
-          "columnName": "urgency"
+          "expression": "urgency IN ('urgent', 'normal')",
+          "definition": "check (urgency IN ('urgent', 'normal'))"
         }
       ],
       "triggers": [],
@@ -4117,17 +5937,14 @@
           "primary": false,
           "nullable": false,
           "unique": false,
-          "length": null,
+          "length": 16,
           "precision": null,
           "scale": null,
           "default": "'active'",
           "comment": null,
           "collation": null,
-          "enumItems": [
-            "active",
-            "paused"
-          ],
-          "mappedType": "enum"
+          "enumItems": [],
+          "mappedType": "string"
         },
         "updatedAt": {
           "name": "updatedAt",
@@ -4184,8 +6001,7 @@
           "constraint": false,
           "keyName": "service_providers_status_name",
           "primary": false,
-          "unique": false,
-          "expression": "CREATE INDEX service_providers_status_name ON app.service_providers USING btree (status, \"companyName\")"
+          "unique": false
         },
         {
           "columnNames": [
@@ -4195,40 +6011,34 @@
           "constraint": true,
           "keyName": "service_providers_whatsapp_key",
           "primary": false,
-          "unique": true,
-          "expression": "CREATE UNIQUE INDEX service_providers_whatsapp_key ON app.service_providers USING btree (\"whatsappNumber\")"
+          "unique": true
         }
       ],
       "checks": [
         {
           "name": "service_providers_company_check",
-          "expression": "(length(btrim(\"companyName\")) >= 1) AND (length(btrim(\"companyName\")) <= 120)",
-          "definition": "CHECK (((length(btrim((\"companyName\")::text)) >= 1) AND (length(btrim((\"companyName\")::text)) <= 120)))",
-          "columnName": "companyName"
+          "expression": "((length(btrim((\"companyName\")::text)) >= 1) AND (length(btrim((\"companyName\")::text)) <= 120))",
+          "definition": "check (((length(btrim((\"companyName\")::text)) >= 1) AND (length(btrim((\"companyName\")::text)) <= 120)))"
         },
         {
           "name": "service_providers_contact_check",
-          "expression": "(length(btrim(\"contactName\")) >= 1) AND (length(btrim(\"contactName\")) <= 80)",
-          "definition": "CHECK (((length(btrim((\"contactName\")::text)) >= 1) AND (length(btrim((\"contactName\")::text)) <= 80)))",
-          "columnName": "contactName"
+          "expression": "((length(btrim((\"contactName\")::text)) >= 1) AND (length(btrim((\"contactName\")::text)) <= 80))",
+          "definition": "check (((length(btrim((\"contactName\")::text)) >= 1) AND (length(btrim((\"contactName\")::text)) <= 80)))"
         },
         {
           "name": "service_providers_services_check",
-          "expression": "services <@ ARRAY['mechanical'::text, 'tyres'::text, 'towing'::text, 'electrical'::text, 'bodywork'::text, 'fuel'::text, 'accident'::text, 'other'::text]",
-          "definition": "CHECK ((services <@ ARRAY['mechanical'::text, 'tyres'::text, 'towing'::text, 'electrical'::text, 'bodywork'::text, 'fuel'::text, 'accident'::text, 'other'::text]))",
-          "columnName": "services"
+          "expression": "services <@ ARRAY['mechanical', 'tyres', 'towing', 'electrical', 'bodywork', 'fuel', 'accident', 'other']::text[]",
+          "definition": "check (services <@ ARRAY['mechanical', 'tyres', 'towing', 'electrical', 'bodywork', 'fuel', 'accident', 'other']::text[])"
         },
         {
           "name": "service_providers_status_check",
-          "expression": "\"status\" in ('active', 'paused')",
-          "definition": "check (\"status\" in ('active', 'paused'))",
-          "columnName": "status"
+          "expression": "status IN ('active', 'paused')",
+          "definition": "check (status IN ('active', 'paused'))"
         },
         {
           "name": "service_providers_whatsapp_check",
-          "expression": "\"whatsappNumber\" ~ '^[1-9][0-9]{7,14}$'::text",
-          "definition": "CHECK (((\"whatsappNumber\")::text ~ '^[1-9][0-9]{7,14}$'::text))",
-          "columnName": "whatsappNumber"
+          "expression": "\"whatsappNumber\" ~ '^[1-9][0-9]{7,14}$'",
+          "definition": "check (\"whatsappNumber\" ~ '^[1-9][0-9]{7,14}$')"
         }
       ],
       "triggers": [],
@@ -4530,8 +6340,7 @@
           "constraint": false,
           "keyName": "idx_tracking_event_time",
           "primary": false,
-          "unique": false,
-          "expression": "CREATE INDEX idx_tracking_event_time ON app.tracking_events USING btree (\"recordedAt\", id)"
+          "unique": false
         },
         {
           "columnNames": [
@@ -4552,11 +6361,21 @@
           "constraint": true,
           "keyName": "uq_tracking_stream_sequence",
           "primary": false,
-          "unique": true,
-          "expression": "CREATE UNIQUE INDEX uq_tracking_stream_sequence ON app.tracking_events USING btree (\"streamId\", sequence)"
+          "unique": true
         }
       ],
-      "checks": [],
+      "checks": [
+        {
+          "name": "tracking_events_kind_check",
+          "expression": "kind IN ('location', 'status')",
+          "definition": "check (kind IN ('location', 'status'))"
+        },
+        {
+          "name": "tracking_events_sequence_check",
+          "expression": "sequence >= 1",
+          "definition": "check (sequence >= 1)"
+        }
+      ],
       "triggers": [],
       "foreignKeys": {
         "tracking_events_streamId_foreign": {
@@ -4758,8 +6577,7 @@
           "constraint": false,
           "keyName": "idx_tracking_driving_session",
           "primary": false,
-          "unique": false,
-          "expression": "CREATE INDEX idx_tracking_driving_session ON app.tracking_streams USING btree (\"drivingSessionId\")"
+          "unique": false
         },
         {
           "columnNames": [
@@ -4770,8 +6588,7 @@
           "constraint": false,
           "keyName": "idx_tracking_stream_device",
           "primary": false,
-          "unique": false,
-          "expression": "CREATE INDEX idx_tracking_stream_device ON app.tracking_streams USING btree (\"deviceId\", \"startedAt\")"
+          "unique": false
         },
         {
           "columnNames": [
@@ -4792,7 +6609,7 @@
           "keyName": "uq_tracking_upload_token",
           "primary": false,
           "unique": true,
-          "expression": "CREATE UNIQUE INDEX uq_tracking_upload_token ON app.tracking_streams USING btree (\"uploadTokenHash\") WHERE (\"uploadTokenHash\" IS NOT NULL)"
+          "where": "\"uploadTokenHash\" IS NOT NULL"
         }
       ],
       "checks": [],
@@ -4844,6 +6661,1351 @@
             "id"
           ],
           "referencedTableName": "app.driving_sessions",
+          "deleteRule": "restrict"
+        }
+      },
+      "comment": null
+    },
+    {
+      "name": "transport_attachments",
+      "schema": "app",
+      "columns": {
+        "byteSize": {
+          "name": "byteSize",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "drivingSessionId": {
+          "name": "drivingSessionId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "gen_random_uuid()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "kind": {
+          "name": "kind",
+          "type": "varchar(24)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 24,
+          "precision": null,
+          "scale": null,
+          "default": "'other'",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "mimeType": {
+          "name": "mimeType",
+          "type": "varchar(64)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 64,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "recordId": {
+          "name": "recordId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "storageName": {
+          "name": "storageName",
+          "type": "varchar(80)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 80,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "truckExpenseId": {
+          "name": "truckExpenseId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "uploadedByUserId": {
+          "name": "uploadedByUserId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": [
+            "truckExpenseId"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "ix_transport_attachments_expense",
+          "primary": false,
+          "unique": false,
+          "where": "\"truckExpenseId\" IS NOT NULL"
+        },
+        {
+          "columnNames": [
+            "recordId"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "ix_transport_attachments_record",
+          "primary": false,
+          "unique": false,
+          "where": "\"recordId\" IS NOT NULL"
+        },
+        {
+          "columnNames": [
+            "drivingSessionId"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "ix_transport_attachments_session",
+          "primary": false,
+          "unique": false,
+          "where": "\"drivingSessionId\" IS NOT NULL"
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "transport_attachments_pkey",
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [
+        {
+          "name": "transport_attachments_kind_check",
+          "expression": "kind IN ('pod', 'weighbridge_ticket', 'fuel_receipt', 'expense_receipt', 'start_odometer_photo', 'end_odometer_photo', 'other')",
+          "definition": "check (kind IN ('pod', 'weighbridge_ticket', 'fuel_receipt', 'expense_receipt', 'start_odometer_photo', 'end_odometer_photo', 'other'))"
+        },
+        {
+          "name": "transport_attachments_single_owner_check",
+          "expression": "((\"recordId\" IS NOT NULL)::int + (\"truckExpenseId\" IS NOT NULL)::int + (\"drivingSessionId\" IS NOT NULL)::int) = 1",
+          "definition": "check (((\"recordId\" IS NOT NULL)::int + (\"truckExpenseId\" IS NOT NULL)::int + (\"drivingSessionId\" IS NOT NULL)::int) = 1)"
+        },
+        {
+          "name": "transport_attachments_size_check",
+          "expression": "\"byteSize\" > 0",
+          "definition": "check (\"byteSize\" > 0)"
+        }
+      ],
+      "triggers": [],
+      "foreignKeys": {
+        "transport_attachments_drivingSessionId_foreign": {
+          "columnNames": [
+            "drivingSessionId"
+          ],
+          "constraintName": "transport_attachments_drivingSessionId_foreign",
+          "localTableName": "app.transport_attachments",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.driving_sessions",
+          "deleteRule": "cascade"
+        },
+        "transport_attachments_recordId_foreign": {
+          "columnNames": [
+            "recordId"
+          ],
+          "constraintName": "transport_attachments_recordId_foreign",
+          "localTableName": "app.transport_attachments",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.transport_records",
+          "deleteRule": "cascade"
+        },
+        "transport_attachments_truckExpenseId_foreign": {
+          "columnNames": [
+            "truckExpenseId"
+          ],
+          "constraintName": "transport_attachments_truckExpenseId_foreign",
+          "localTableName": "app.transport_attachments",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.truck_expenses",
+          "deleteRule": "cascade"
+        },
+        "transport_attachments_uploadedByUserId_foreign": {
+          "columnNames": [
+            "uploadedByUserId"
+          ],
+          "constraintName": "transport_attachments_uploadedByUserId_foreign",
+          "localTableName": "app.transport_attachments",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.users",
+          "deleteRule": "set null"
+        }
+      },
+      "comment": null
+    },
+    {
+      "name": "transport_audits",
+      "schema": "app",
+      "columns": {
+        "action": {
+          "name": "action",
+          "type": "varchar(80)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 80,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "actorId": {
+          "name": "actorId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "after": {
+          "name": "after",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "json"
+        },
+        "before": {
+          "name": "before",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "json"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "entityType": {
+          "name": "entityType",
+          "type": "varchar(24)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 24,
+          "precision": null,
+          "scale": null,
+          "default": "'transport_record'",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "gen_random_uuid()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "recordId": {
+          "name": "recordId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": [
+            "recordId",
+            "createdAt"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "ix_transport_audit_record",
+          "primary": false,
+          "unique": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "transport_audits_pkey",
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [
+        {
+          "name": "transport_audits_entity_type_check",
+          "expression": "\"entityType\" IN ('transport_record', 'truck_expense', 'driving_session')",
+          "definition": "check (\"entityType\" IN ('transport_record', 'truck_expense', 'driving_session'))"
+        }
+      ],
+      "triggers": [],
+      "foreignKeys": {
+        "transport_audits_actorId_foreign": {
+          "columnNames": [
+            "actorId"
+          ],
+          "constraintName": "transport_audits_actorId_foreign",
+          "localTableName": "app.transport_audits",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.users",
+          "deleteRule": "restrict"
+        }
+      },
+      "comment": null
+    },
+    {
+      "name": "transport_charges",
+      "schema": "app",
+      "columns": {
+        "amount": {
+          "name": "amount",
+          "type": "numeric(20,2)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": 20,
+          "scale": 2,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "decimal"
+        },
+        "rateId": {
+          "name": "rateId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "recordId": {
+          "name": "recordId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "snapshot": {
+          "name": "snapshot",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "json"
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(20)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 20,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": [
+            "recordId"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "transport_charges_pkey",
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [
+        {
+          "name": "transport_charges_amount_check",
+          "expression": "amount IS NULL OR amount >= 0",
+          "definition": "check (amount IS NULL OR amount >= 0)"
+        },
+        {
+          "name": "transport_charges_priced_amount_check",
+          "expression": "(status = 'priced') = (amount IS NOT NULL)",
+          "definition": "check ((status = 'priced') = (amount IS NOT NULL))"
+        },
+        {
+          "name": "transport_charges_status_check",
+          "expression": "status IN ('priced', 'needs_pricing', 'uncharged')",
+          "definition": "check (status IN ('priced', 'needs_pricing', 'uncharged'))"
+        }
+      ],
+      "triggers": [],
+      "foreignKeys": {
+        "transport_charges_rateId_foreign": {
+          "columnNames": [
+            "rateId"
+          ],
+          "constraintName": "transport_charges_rateId_foreign",
+          "localTableName": "app.transport_charges",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.transport_rates",
+          "deleteRule": "set null"
+        },
+        "transport_charges_recordId_foreign": {
+          "columnNames": [
+            "recordId"
+          ],
+          "constraintName": "transport_charges_recordId_foreign",
+          "localTableName": "app.transport_charges",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.transport_records",
+          "updateRule": "cascade",
+          "deleteRule": "restrict"
+        }
+      },
+      "comment": null
+    },
+    {
+      "name": "transport_rates",
+      "schema": "app",
+      "columns": {
+        "basis": {
+          "name": "basis",
+          "type": "varchar(20)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 20,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "createdById": {
+          "name": "createdById",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "customerProductId": {
+          "name": "customerProductId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "destinationId": {
+          "name": "destinationId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "endsOn": {
+          "name": "endsOn",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "date"
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "gen_random_uuid()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "method": {
+          "name": "method",
+          "type": "varchar(20)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 20,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "originId": {
+          "name": "originId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "price": {
+          "name": "price",
+          "type": "numeric(20,6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 20,
+          "scale": 6,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "decimal"
+        },
+        "startsOn": {
+          "name": "startsOn",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "date"
+        },
+        "unit": {
+          "name": "unit",
+          "type": "varchar(20)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 20,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": [
+            "customerProductId",
+            "originId",
+            "destinationId",
+            "startsOn"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "ix_transport_rate_scope",
+          "primary": false,
+          "unique": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "transport_rates_pkey",
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [
+        {
+          "name": "transport_rates_basis_check",
+          "expression": "basis IN ('collected', 'delivered')",
+          "definition": "check (basis IN ('collected', 'delivered'))"
+        },
+        {
+          "name": "transport_rates_method_check",
+          "expression": "method IN ('quantity', 'delivery')",
+          "definition": "check (method IN ('quantity', 'delivery'))"
+        },
+        {
+          "name": "transport_rates_price_check",
+          "expression": "price >= 0",
+          "definition": "check (price >= 0)"
+        },
+        {
+          "name": "transport_rates_route_pair_check",
+          "expression": "(\"originId\" IS NULL) = (\"destinationId\" IS NULL)",
+          "definition": "check ((\"originId\" IS NULL) = (\"destinationId\" IS NULL))"
+        },
+        {
+          "name": "transport_rates_unit_check",
+          "expression": "unit IN ('tonne', 'kg', 'litre', 'm3', 'pallet', 'item')",
+          "definition": "check (unit IN ('tonne', 'kg', 'litre', 'm3', 'pallet', 'item'))"
+        },
+        {
+          "name": "transport_rates_window_check",
+          "expression": "\"endsOn\" IS NULL OR \"endsOn\" >= \"startsOn\"",
+          "definition": "check (\"endsOn\" IS NULL OR \"endsOn\" >= \"startsOn\")"
+        }
+      ],
+      "triggers": [],
+      "foreignKeys": {
+        "transport_rates_createdById_foreign": {
+          "columnNames": [
+            "createdById"
+          ],
+          "constraintName": "transport_rates_createdById_foreign",
+          "localTableName": "app.transport_rates",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.users",
+          "deleteRule": "restrict"
+        },
+        "transport_rates_customerProductId_foreign": {
+          "columnNames": [
+            "customerProductId"
+          ],
+          "constraintName": "transport_rates_customerProductId_foreign",
+          "localTableName": "app.transport_rates",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.customer_products",
+          "deleteRule": "restrict"
+        },
+        "transport_rates_destinationId_foreign": {
+          "columnNames": [
+            "destinationId"
+          ],
+          "constraintName": "transport_rates_destinationId_foreign",
+          "localTableName": "app.transport_rates",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.locations",
+          "deleteRule": "restrict"
+        },
+        "transport_rates_originId_foreign": {
+          "columnNames": [
+            "originId"
+          ],
+          "constraintName": "transport_rates_originId_foreign",
+          "localTableName": "app.transport_rates",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.locations",
+          "deleteRule": "restrict"
+        }
+      },
+      "comment": null
+    },
+    {
+      "name": "transport_records",
+      "schema": "app",
+      "columns": {
+        "contextId": {
+          "name": "contextId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "currentActivityId": {
+          "name": "currentActivityId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "data": {
+          "name": "data",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "json"
+        },
+        "dispatchId": {
+          "name": "dispatchId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "driverId": {
+          "name": "driverId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "flags": {
+          "name": "flags",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "'{}'",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "array"
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "kind": {
+          "name": "kind",
+          "type": "varchar(20)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 20,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "occurredAt": {
+          "name": "occurredAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "review": {
+          "name": "review",
+          "type": "varchar(20)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 20,
+          "precision": null,
+          "scale": null,
+          "default": "'pending'",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "reviewedAt": {
+          "name": "reviewedAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "reviewedById": {
+          "name": "reviewedById",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "truckId": {
+          "name": "truckId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "version": {
+          "name": "version",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "1",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": [
+            "driverId",
+            "occurredAt"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "ix_transport_records_driver_time",
+          "primary": false,
+          "unique": false
+        },
+        {
+          "columnNames": [
+            "review",
+            "occurredAt"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "ix_transport_records_review",
+          "primary": false,
+          "unique": false
+        },
+        {
+          "columnNames": [
+            "truckId",
+            "occurredAt"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "ix_transport_records_truck_time",
+          "primary": false,
+          "unique": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "transport_records_pkey",
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [
+        {
+          "name": "transport_records_kind_check",
+          "expression": "kind IN ('collection', 'delivery', 'fuel', 'expense')",
+          "definition": "check (kind IN ('collection', 'delivery', 'fuel', 'expense'))"
+        },
+        {
+          "name": "transport_records_review_check",
+          "expression": "review IN ('pending', 'validated', 'clarification', 'void')",
+          "definition": "check (review IN ('pending', 'validated', 'clarification', 'void'))"
+        }
+      ],
+      "triggers": [],
+      "foreignKeys": {
+        "transport_records_contextId_foreign": {
+          "columnNames": [
+            "contextId"
+          ],
+          "constraintName": "transport_records_contextId_foreign",
+          "localTableName": "app.transport_records",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.recording_contexts",
+          "deleteRule": "restrict"
+        },
+        "transport_records_dispatchId_foreign": {
+          "columnNames": [
+            "dispatchId"
+          ],
+          "constraintName": "transport_records_dispatchId_foreign",
+          "localTableName": "app.transport_records",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.dispatches",
+          "deleteRule": "set null"
+        },
+        "transport_records_driverId_foreign": {
+          "columnNames": [
+            "driverId"
+          ],
+          "constraintName": "transport_records_driverId_foreign",
+          "localTableName": "app.transport_records",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.driver_profiles",
+          "deleteRule": "restrict"
+        },
+        "transport_records_reviewedById_foreign": {
+          "columnNames": [
+            "reviewedById"
+          ],
+          "constraintName": "transport_records_reviewedById_foreign",
+          "localTableName": "app.transport_records",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.users",
+          "deleteRule": "set null"
+        },
+        "transport_records_truckId_foreign": {
+          "columnNames": [
+            "truckId"
+          ],
+          "constraintName": "transport_records_truckId_foreign",
+          "localTableName": "app.transport_records",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.trucks",
           "deleteRule": "restrict"
         }
       },
@@ -5033,8 +8195,7 @@
           "constraint": true,
           "keyName": "truck_devices_credentialHash_unique",
           "primary": false,
-          "unique": true,
-          "expression": "CREATE UNIQUE INDEX \"truck_devices_credentialHash_unique\" ON app.truck_devices USING btree (\"credentialHash\")"
+          "unique": true
         },
         {
           "columnNames": [
@@ -5044,8 +8205,7 @@
           "constraint": true,
           "keyName": "truck_devices_currentTruckId_unique",
           "primary": false,
-          "unique": true,
-          "expression": "CREATE UNIQUE INDEX \"truck_devices_currentTruckId_unique\" ON app.truck_devices USING btree (\"currentTruckId\")"
+          "unique": true
         },
         {
           "columnNames": [
@@ -5075,8 +8235,7 @@
           "constraint": true,
           "keyName": "truck_devices_serialNumber_unique",
           "primary": false,
-          "unique": true,
-          "expression": "CREATE UNIQUE INDEX \"truck_devices_serialNumber_unique\" ON app.truck_devices USING btree (\"serialNumber\")"
+          "unique": true
         }
       ],
       "checks": [],
@@ -5100,6 +8259,440 @@
           ],
           "constraintName": "truck_devices_enrolledById_foreign",
           "localTableName": "app.truck_devices",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.users",
+          "deleteRule": "set null"
+        }
+      },
+      "comment": null
+    },
+    {
+      "name": "truck_expenses",
+      "schema": "app",
+      "columns": {
+        "amount": {
+          "name": "amount",
+          "type": "numeric(20,2)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 20,
+          "scale": 2,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "decimal"
+        },
+        "category": {
+          "name": "category",
+          "type": "varchar(24)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 24,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "createdById": {
+          "name": "createdById",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "driverId": {
+          "name": "driverId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "gen_random_uuid()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "invoiceNumber": {
+          "name": "invoiceNumber",
+          "type": "varchar(80)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 80,
+          "precision": null,
+          "scale": null,
+          "default": "''",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "litres": {
+          "name": "litres",
+          "type": "numeric(12,3)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": 12,
+          "scale": 3,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "decimal"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "''",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "occurredOn": {
+          "name": "occurredOn",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "date"
+        },
+        "odometerKm": {
+          "name": "odometerKm",
+          "type": "numeric(12,1)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": 12,
+          "scale": 1,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "decimal"
+        },
+        "serviceJobId": {
+          "name": "serviceJobId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "truckId": {
+          "name": "truckId",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "vendor": {
+          "name": "vendor",
+          "type": "varchar(160)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 160,
+          "precision": null,
+          "scale": null,
+          "default": "''",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "voidReason": {
+          "name": "voidReason",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "voidedAt": {
+          "name": "voidedAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "voidedById": {
+          "name": "voidedById",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": [
+            "occurredOn",
+            "category"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "ix_truck_expenses_date_category",
+          "primary": false,
+          "unique": false,
+          "where": "\"voidedAt\" IS NULL"
+        },
+        {
+          "columnNames": [
+            "truckId",
+            "occurredOn"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "ix_truck_expenses_truck_date",
+          "primary": false,
+          "unique": false,
+          "where": "\"voidedAt\" IS NULL"
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "truck_expenses_pkey",
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [
+        {
+          "name": "truck_expenses_amount_check",
+          "expression": "amount >= 0",
+          "definition": "check (amount >= 0)"
+        },
+        {
+          "name": "truck_expenses_category_check",
+          "expression": "category IN ('fuel', 'repair', 'tyres', 'toll', 'weighbridge', 'maintenance', 'insurance', 'licence', 'permits', 'parking', 'other')",
+          "definition": "check (category IN ('fuel', 'repair', 'tyres', 'toll', 'weighbridge', 'maintenance', 'insurance', 'licence', 'permits', 'parking', 'other'))"
+        },
+        {
+          "name": "truck_expenses_litres_check",
+          "expression": "litres IS NULL OR litres >= 0",
+          "definition": "check (litres IS NULL OR litres >= 0)"
+        },
+        {
+          "name": "truck_expenses_odometer_check",
+          "expression": "\"odometerKm\" IS NULL OR \"odometerKm\" >= 0",
+          "definition": "check (\"odometerKm\" IS NULL OR \"odometerKm\" >= 0)"
+        }
+      ],
+      "triggers": [],
+      "foreignKeys": {
+        "truck_expenses_createdById_foreign": {
+          "columnNames": [
+            "createdById"
+          ],
+          "constraintName": "truck_expenses_createdById_foreign",
+          "localTableName": "app.truck_expenses",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.users",
+          "deleteRule": "restrict"
+        },
+        "truck_expenses_driverId_foreign": {
+          "columnNames": [
+            "driverId"
+          ],
+          "constraintName": "truck_expenses_driverId_foreign",
+          "localTableName": "app.truck_expenses",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.driver_profiles",
+          "deleteRule": "set null"
+        },
+        "truck_expenses_serviceJobId_foreign": {
+          "columnNames": [
+            "serviceJobId"
+          ],
+          "constraintName": "truck_expenses_serviceJobId_foreign",
+          "localTableName": "app.truck_expenses",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.service_jobs",
+          "deleteRule": "set null"
+        },
+        "truck_expenses_truckId_foreign": {
+          "columnNames": [
+            "truckId"
+          ],
+          "constraintName": "truck_expenses_truckId_foreign",
+          "localTableName": "app.truck_expenses",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.trucks",
+          "deleteRule": "restrict"
+        },
+        "truck_expenses_voidedById_foreign": {
+          "columnNames": [
+            "voidedById"
+          ],
+          "constraintName": "truck_expenses_voidedById_foreign",
+          "localTableName": "app.truck_expenses",
           "referencedColumnNames": [
             "id"
           ],
@@ -5627,6 +9220,16 @@
       "indexes": [
         {
           "columnNames": [
+            "status"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "idx_trucks_status",
+          "primary": false,
+          "unique": false
+        },
+        {
+          "columnNames": [
             "identifier"
           ],
           "composite": false,
@@ -5666,9 +9269,48 @@
           "unique": true
         }
       ],
-      "checks": [],
+      "checks": [
+        {
+          "name": "trucks_category_check",
+          "expression": "category IN ('rigid', 'tractor', 'tipper', 'tanker', 'flatbed', 'other')",
+          "definition": "check (category IN ('rigid', 'tractor', 'tipper', 'tanker', 'flatbed', 'other'))"
+        },
+        {
+          "name": "trucks_fuel_type_check",
+          "expression": "\"fuelType\" IN ('diesel', 'petrol', 'electric', 'hybrid', 'other')",
+          "definition": "check (\"fuelType\" IN ('diesel', 'petrol', 'electric', 'hybrid', 'other'))"
+        },
+        {
+          "name": "trucks_odometer_check",
+          "expression": "\"odometerKm\" >= 0",
+          "definition": "check (\"odometerKm\" >= 0)"
+        },
+        {
+          "name": "trucks_status_check",
+          "expression": "status IN ('active', 'maintenance', 'inactive')",
+          "definition": "check (status IN ('active', 'maintenance', 'inactive'))"
+        },
+        {
+          "name": "trucks_transmission_check",
+          "expression": "transmission IS NULL OR transmission IN ('manual', 'automatic', 'automated')",
+          "definition": "check (transmission IS NULL OR transmission IN ('manual', 'automatic', 'automated'))"
+        }
+      ],
       "triggers": [],
-      "foreignKeys": {},
+      "foreignKeys": {
+        "trucks_createdById_foreign": {
+          "columnNames": [
+            "createdById"
+          ],
+          "constraintName": "trucks_createdById_foreign",
+          "localTableName": "app.trucks",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.users",
+          "deleteRule": "set null"
+        }
+      },
       "comment": null
     },
     {
@@ -5736,8 +9378,7 @@
           "constraint": false,
           "keyName": "idx_user_roles_role",
           "primary": false,
-          "unique": false,
-          "expression": "CREATE INDEX idx_user_roles_role ON app.user_roles USING btree (\"roleId\")"
+          "unique": false
         },
         {
           "columnNames": [
@@ -5748,8 +9389,7 @@
           "constraint": true,
           "keyName": "user_roles_pkey",
           "primary": true,
-          "unique": true,
-          "expression": "CREATE UNIQUE INDEX user_roles_pkey ON app.user_roles USING btree (\"userId\", \"roleId\")"
+          "unique": true
         }
       ],
       "checks": [],
@@ -5978,8 +9618,7 @@
           "constraint": true,
           "keyName": "users_kratosIdentityId_unique",
           "primary": false,
-          "unique": true,
-          "expression": "CREATE UNIQUE INDEX \"users_kratosIdentityId_unique\" ON app.users USING btree (\"kratosIdentityId\")"
+          "unique": true
         },
         {
           "columnNames": [
@@ -6263,7 +9902,7 @@
           "keyName": "idx_vehicle_dispute_open",
           "primary": false,
           "unique": false,
-          "expression": "CREATE INDEX idx_vehicle_dispute_open ON app.vehicle_disputes USING btree (\"createdAt\") WHERE (\"resolvedAt\" IS NULL)"
+          "where": "\"resolvedAt\" IS NULL"
         },
         {
           "columnNames": [
@@ -6275,7 +9914,7 @@
           "keyName": "uq_schedule_open_dispute",
           "primary": false,
           "unique": true,
-          "expression": "CREATE UNIQUE INDEX uq_schedule_open_dispute ON app.vehicle_disputes USING btree (\"driverId\", \"scheduleDate\") WHERE ((\"resolvedAt\" IS NULL) AND ((kind)::text = 'schedule'::text))"
+          "where": "\"resolvedAt\" IS NULL AND kind = 'schedule'"
         },
         {
           "columnNames": [
@@ -6287,7 +9926,7 @@
           "keyName": "uq_vehicle_open_dispute",
           "primary": false,
           "unique": true,
-          "expression": "CREATE UNIQUE INDEX uq_vehicle_open_dispute ON app.vehicle_disputes USING btree (\"truckId\", \"driverId\") WHERE ((\"resolvedAt\" IS NULL) AND ((kind)::text = 'occupancy'::text))"
+          "where": "\"resolvedAt\" IS NULL AND kind = 'occupancy'"
         },
         {
           "columnNames": [
@@ -6300,7 +9939,13 @@
           "unique": true
         }
       ],
-      "checks": [],
+      "checks": [
+        {
+          "name": "vehicle_disputes_kind_check",
+          "expression": "kind IN ('occupancy', 'schedule')",
+          "definition": "check (kind IN ('occupancy', 'schedule'))"
+        }
+      ],
       "triggers": [],
       "foreignKeys": {
         "vehicle_disputes_activeSessionId_foreign": {
@@ -6327,6 +9972,18 @@
           "referencedTableName": "app.driver_profiles",
           "deleteRule": "restrict"
         },
+        "vehicle_disputes_requestedTruckId_foreign": {
+          "columnNames": [
+            "requestedTruckId"
+          ],
+          "constraintName": "vehicle_disputes_requestedTruckId_foreign",
+          "localTableName": "app.vehicle_disputes",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.trucks",
+          "deleteRule": "restrict"
+        },
         "vehicle_disputes_resolvedById_foreign": {
           "columnNames": [
             "resolvedById"
@@ -6338,6 +9995,18 @@
           ],
           "referencedTableName": "app.users",
           "deleteRule": "restrict"
+        },
+        "vehicle_disputes_scheduleId_foreign": {
+          "columnNames": [
+            "scheduleId"
+          ],
+          "constraintName": "vehicle_disputes_scheduleId_foreign",
+          "localTableName": "app.vehicle_disputes",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.driver_schedules",
+          "deleteRule": "set null"
         },
         "vehicle_disputes_truckId_foreign": {
           "columnNames": [
@@ -6400,17 +10069,14 @@
           "primary": false,
           "nullable": false,
           "unique": false,
-          "length": null,
+          "length": 8,
           "precision": null,
           "scale": null,
           "default": null,
           "comment": null,
           "collation": null,
-          "enumItems": [
-            "inbound",
-            "outbound"
-          ],
-          "mappedType": "enum"
+          "enumItems": [],
+          "mappedType": "string"
         },
         "errorCode": {
           "name": "errorCode",
@@ -6505,20 +10171,14 @@
           "primary": false,
           "nullable": false,
           "unique": false,
-          "length": null,
+          "length": 20,
           "precision": null,
           "scale": null,
           "default": null,
           "comment": null,
           "collation": null,
-          "enumItems": [
-            "template",
-            "interactive",
-            "text",
-            "status",
-            "unknown"
-          ],
-          "mappedType": "enum"
+          "enumItems": [],
+          "mappedType": "string"
         },
         "offerId": {
           "name": "offerId",
@@ -6650,8 +10310,7 @@
           "constraint": false,
           "keyName": "whatsapp_messages_job_created",
           "primary": false,
-          "unique": false,
-          "expression": "CREATE INDEX whatsapp_messages_job_created ON app.whatsapp_messages USING btree (\"jobId\", \"createdAt\")"
+          "unique": false
         },
         {
           "columnNames": [
@@ -6672,8 +10331,7 @@
           "constraint": false,
           "keyName": "whatsapp_messages_provider_created",
           "primary": false,
-          "unique": false,
-          "expression": "CREATE INDEX whatsapp_messages_provider_created ON app.whatsapp_messages USING btree (\"providerId\", \"createdAt\")"
+          "unique": false
         },
         {
           "columnNames": [
@@ -6690,25 +10348,59 @@
       "checks": [
         {
           "name": "whatsapp_messages_direction_check",
-          "expression": "\"direction\" in ('inbound', 'outbound')",
-          "definition": "check (\"direction\" in ('inbound', 'outbound'))",
-          "columnName": "direction"
+          "expression": "direction IN ('inbound', 'outbound')",
+          "definition": "check (direction IN ('inbound', 'outbound'))"
         },
         {
           "name": "whatsapp_messages_kind_check",
-          "expression": "\"kind\" in ('template', 'interactive', 'text', 'status', 'unknown')",
-          "definition": "check (\"kind\" in ('template', 'interactive', 'text', 'status', 'unknown'))",
-          "columnName": "kind"
+          "expression": "kind IN ('template', 'interactive', 'text', 'status', 'unknown')",
+          "definition": "check (kind IN ('template', 'interactive', 'text', 'status', 'unknown'))"
         },
         {
           "name": "whatsapp_messages_status_check",
-          "expression": "(status IS NULL) OR (status = ANY (ARRAY['queued'::character varying, 'sent'::character varying, 'delivered'::character varying, 'read'::character varying, 'failed'::character varying, 'received'::character varying]))",
-          "definition": "CHECK (((status IS NULL) OR ((status)::text = ANY ((ARRAY['queued'::character varying, 'sent'::character varying, 'delivered'::character varying, 'read'::character varying, 'failed'::character varying, 'received'::character varying])::text[]))))",
-          "columnName": "status"
+          "expression": "status IS NULL OR status IN ('queued', 'sent', 'delivered', 'read', 'failed', 'received')",
+          "definition": "check (status IS NULL OR status IN ('queued', 'sent', 'delivered', 'read', 'failed', 'received'))"
         }
       ],
       "triggers": [],
-      "foreignKeys": {},
+      "foreignKeys": {
+        "whatsapp_messages_jobId_foreign": {
+          "columnNames": [
+            "jobId"
+          ],
+          "constraintName": "whatsapp_messages_jobId_foreign",
+          "localTableName": "app.whatsapp_messages",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.service_jobs",
+          "deleteRule": "set null"
+        },
+        "whatsapp_messages_offerId_foreign": {
+          "columnNames": [
+            "offerId"
+          ],
+          "constraintName": "whatsapp_messages_offerId_foreign",
+          "localTableName": "app.whatsapp_messages",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.service_job_offers",
+          "deleteRule": "set null"
+        },
+        "whatsapp_messages_providerId_foreign": {
+          "columnNames": [
+            "providerId"
+          ],
+          "constraintName": "whatsapp_messages_providerId_foreign",
+          "localTableName": "app.whatsapp_messages",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "app.service_providers",
+          "deleteRule": "set null"
+        }
+      },
       "comment": null
     }
   ],

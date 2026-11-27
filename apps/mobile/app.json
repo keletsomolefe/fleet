@@ -34,6 +34,13 @@
       "expo-sqlite",
       "expo-background-task",
       [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow VHH Fleet to take photos of odometer readings, delivery notes and fuel receipts.",
+          "photosPermission": "Allow VHH Fleet to attach saved photos of delivery notes and receipts."
+        }
+      ],
+      [
         "expo-location",
         {
           "locationWhenInUsePermission": "Allow VHH Fleet to record this truck’s route while you share location.",

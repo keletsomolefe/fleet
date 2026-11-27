@@ -1,3 +1,5 @@
+import { adminGet } from './admin-fetch';
+
 export type ServiceType =
   | 'mechanical'
   | 'tyres'
@@ -291,6 +293,9 @@ async function request<T>(
   options: RequestInit = {},
   csrf?: string,
 ): Promise<T> {
+  if (!options.method || options.method.toUpperCase() === 'GET') {
+    return adminGet<T>(path);
+  }
   const response = await fetch(`/api/admin/${path}`, {
     ...options,
     headers: {

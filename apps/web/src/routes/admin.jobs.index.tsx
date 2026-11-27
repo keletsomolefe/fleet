@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Plus, Search as SearchIcon } from "lucide-react";
 import { PageHeader, CreateAction } from "@/components/page-header";
 import { PageError } from "@/components/page-error";
+import { ListRowsSkeleton } from "@/components/page-skeletons";
 import { EmptyState } from "@/components/empty-state";
 import { RefreshButton } from "@/components/refresh-button";
 import {
@@ -36,6 +37,20 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/admin/jobs/")({
   validateSearch: validateJobSearch,
   search: { middlewares: [stripSearchParams(jobSearchDefaults)] },
+  loaderDeps: ({ search }) => search,
+  loader: async ({ context, deps }) => {
+    if (!can(context.session, "service_jobs.read")) return;
+    await Promise.allSettled([
+      context.queryClient.ensureQueryData({
+        queryKey: [
+          ...adminOperationsKey(context.session.user.id),
+          "jobs",
+          deps,
+        ],
+        queryFn: () => getJobs(deps),
+      }),
+    ]);
+  },
   component: Page,
 });
 
@@ -145,9 +160,7 @@ function Page() {
           </form>
         </div>
         {isPending ? (
-          <p role="status" className="p-5 text-sm text-muted-foreground">
-            Loading service jobs…
-          </p>
+          <ListRowsSkeleton rows={5} />
         ) : !error && (!data || !data.items.length) ? (
           <EmptyState
             icon="wrench"

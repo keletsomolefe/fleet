@@ -1,31 +1,26 @@
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import { EntityCaseNamingStrategy, defineConfig } from '@mikro-orm/postgresql';
+import {
+  EntityCaseNamingStrategy,
+  defineConfig,
+  type Options,
+} from '@mikro-orm/postgresql';
 import { Migrator } from '@mikro-orm/migrations';
 import { SeedManager } from '@mikro-orm/seeder';
-import { ReflectMetadataProvider } from '@mikro-orm/decorators/legacy';
 import { appEntities } from './entities.js';
 
 // Both `src/database` (tsx) and `dist/database` (compiled) resolve to the api
-// package root, so CLI and runtime discovery agree on where entities, migrations
-// and seeders live regardless of the process working directory.
+// package root, so CLI and runtime discovery agree on where migrations and
+// seeders live regardless of the process working directory.
 export const apiRoot = fileURLToPath(new URL('../..', import.meta.url));
 
-export function databaseConfig(maintenance = false) {
-  if (!process.env.DATABASE_URL)
+export function databaseConfig(maintenance = false): Options {
+  if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL is required. Run pnpm dev:setup.');
+  }
   if (process.env.DATABASE_SCHEMA && process.env.DATABASE_SCHEMA !== 'app') {
     throw new Error('Fleet application data must use the app schema.');
   }
-
-  // Vitest runs entities through its own transform; folder discovery would ask
-  // Node to import TypeScript sources directly. Use explicit classes there.
-  const discovery: { entities: any; entitiesTs: any } = process.env.VITEST
-    ? { entities: appEntities, entitiesTs: appEntities }
-    : {
-        entities: [resolve(apiRoot, 'dist/**/*.entity.js')],
-        entitiesTs: [resolve(apiRoot, 'src/**/*.entity.ts')],
-      };
 
   return defineConfig({
     clientUrl: process.env.DATABASE_URL,
@@ -34,9 +29,11 @@ export function databaseConfig(maintenance = false) {
     // The app tables use camelCase columns; keep property names verbatim.
     // v7 takes the naming strategy constructor, not an instance.
     namingStrategy: EntityCaseNamingStrategy,
-    ...discovery,
+    // Entities are defined with MikroORM 7 `defineEntity()` (no legacy decorators
+    // or reflect-metadata required) and registered explicitly for deterministic
+    // discovery across runtime, CLI, and Vitest.
+    entities: appEntities,
     extensions: [Migrator, SeedManager],
-    metadataProvider: ReflectMetadataProvider,
     debug: false,
     // A shared mutable EntityManager is only safe inside a RequestContext; HTTP
     // requests get one from the Fastify `onRequest` hook and background work

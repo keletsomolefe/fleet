@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Plus, Search as SearchIcon } from "lucide-react";
 import { PageHeader, CreateAction } from "@/components/page-header";
 import { PageError } from "@/components/page-error";
+import { ListRowsSkeleton } from "@/components/page-skeletons";
 import { EmptyState } from "@/components/empty-state";
 import { RefreshButton } from "@/components/refresh-button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -31,6 +32,20 @@ import {
 export const Route = createFileRoute("/admin/providers/")({
   validateSearch: validateProviderSearch,
   search: { middlewares: [stripSearchParams(providerSearchDefaults)] },
+  loaderDeps: ({ search }) => search,
+  loader: async ({ context, deps }) => {
+    if (!can(context.session, "service_providers.read")) return;
+    await Promise.allSettled([
+      context.queryClient.ensureQueryData({
+        queryKey: [
+          ...adminOperationsKey(context.session.user.id),
+          "providers",
+          deps,
+        ],
+        queryFn: () => getProviders(deps),
+      }),
+    ]);
+  },
   component: Page,
 });
 function Page() {
@@ -112,7 +127,7 @@ function Page() {
                 },
               })
             }
-            className="h-12 rounded-md border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-ring"
+            className="h-12 rounded-md border bg-background pl-3.5 pr-10 text-sm"
           >
             <option value="">All providers</option>
             <option value="receives_alerts">Receives alerts</option>
@@ -122,9 +137,7 @@ function Page() {
           </select>
         </div>
         {isPending ? (
-          <p role="status" className="p-5 text-sm text-muted-foreground">
-            Loading service providers…
-          </p>
+          <ListRowsSkeleton rows={4} />
         ) : !error && (!data || !data.items.length) ? (
           <EmptyState
             icon="users"

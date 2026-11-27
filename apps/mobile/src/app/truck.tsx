@@ -1,4 +1,5 @@
-import { ActivityIndicator, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Platform, View } from "react-native";
 import { useRouter } from "expo-router";
 import {
   Button,
@@ -13,6 +14,8 @@ import {
 } from "@/components/ui";
 import { useFleet } from "@/state/fleet";
 import { TrackingCard } from "@/components/tracking-card";
+import { activityOutbox } from "@/activities/db";
+import { getActivitySyncStatus, type Job } from "@/activities/service";
 
 export default function Driving() {
   const router = useRouter();
@@ -28,6 +31,34 @@ export default function Driving() {
     (fleet.session.permissions.includes("issues.read") ||
       fleet.session.permissions.includes("trucks.write"));
 
+  const [dispatchCount, setDispatchCount] = useState(0);
+  const [pendingSync, setPendingSync] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS === "web" || !driver?.driver.id) return;
+    let mounted = true;
+    const loadSummary = async () => {
+      try {
+        const q = await activityOutbox();
+        const [jobs, status] = await Promise.all([
+          q.cached<Job[]>(`jobs:${driver.driver.id}`),
+          getActivitySyncStatus(),
+        ]);
+        if (!mounted) return;
+        setDispatchCount(jobs?.length ?? 0);
+        setPendingSync(status.pending);
+      } catch {
+        // Ignore on first load before SQLite opens
+      }
+    };
+    void loadSummary();
+    const timer = setInterval(() => void loadSummary(), 10_000);
+    return () => {
+      mounted = false;
+      clearInterval(timer);
+    };
+  }, [driver?.driver.id]);
+
   function chooseVehicle() {
     const truck =
       !active && (scheduled?.truck ?? (driver?.drivingSession && currentTruck));
@@ -39,14 +70,22 @@ export default function Driving() {
     }
   }
 
+  const startKm = driver?.drivingSession?.startOdometerKm;
+
   return (
     <Screen
-      registration={scheduled && !currentTruck ? "Vehicle not confirmed" : undefined}
+      registration={
+        scheduled && !currentTruck ? "Vehicle not confirmed" : undefined
+      }
     >
       <View style={styles.group}>
         <Heading
           title={
-            active ? "You’re driving" : scheduled ? "Today’s vehicle" : "Your vehicle"
+            active
+              ? "You’re driving"
+              : scheduled
+                ? "Today’s vehicle"
+                : "Your vehicle"
           }
         />
         {!active && scheduled ? (
@@ -57,7 +96,13 @@ export default function Driving() {
         ) : currentTruck ? (
           <TruckCard
             truck={currentTruck}
-            meta={active ? "Driving now" : "Confirm to continue"}
+            meta={
+              active
+                ? startKm != null
+                  ? `Driving now · Started at ${Number(startKm).toLocaleString()} km`
+                  : "Driving now"
+                : "Confirm to continue"
+            }
           />
         ) : driver ? (
           <View style={styles.card}>
@@ -85,6 +130,31 @@ export default function Driving() {
         )}
         <Notice message={driver?.reason ?? undefined} />
         <Notice message={action.error || fleet.error} />
+
+        {active && driver && (
+          <View style={styles.card}>
+            <Copy>Jobs & activity</Copy>
+            <Copy small>
+              Record pickups, drop-offs, tonnage, petrol and road expenses —
+              works offline.
+            </Copy>
+            {(dispatchCount > 0 || pendingSync > 0) && (
+              <Copy small>
+                {[
+                  dispatchCount > 0
+                    ? `${dispatchCount} assigned load${dispatchCount === 1 ? "" : "s"}`
+                    : "",
+                  pendingSync > 0 ? `${pendingSync} waiting to sync` : "",
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </Copy>
+            )}
+            <Button onPress={() => router.push("/activities")}>
+              Open jobs & activity
+            </Button>
+          </View>
+        )}
 
         {pending || fleet.error ? (
           <Button

@@ -4,6 +4,7 @@ import { RepairForm } from "@/components/repair-form";
 import { EmptyState } from "@/components/empty-state";
 import { RefreshButton } from "@/components/refresh-button";
 import { PageHeader } from "@/components/page-header";
+import { ListRowsSkeleton } from "@/components/page-skeletons";
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -246,7 +247,7 @@ function Page() {
                           id="resolution"
                           name="resolution"
                           required
-                          className="h-12 w-full rounded-md border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-ring"
+                          className="h-12 w-full rounded-md border bg-background pl-3.5 pr-10 text-sm"
                           value={field.state.value}
                           onBlur={field.handleBlur}
                           onChange={(event) =>
@@ -313,9 +314,9 @@ function Page() {
       ) : (
         <div className="grid gap-4">
           {isPending && !pageError && (
-            <p role="status" className="text-sm text-muted-foreground">
-              Loading items…
-            </p>
+            <Card className="gap-0 overflow-hidden py-0 shadow-none">
+              <ListRowsSkeleton rows={4} />
+            </Card>
           )}
           {!isPending && !pageError && !items.length && (
             <Card className="py-0 shadow-none">
@@ -325,7 +326,7 @@ function Page() {
           {items.map((d) => (
             <Card
               key={d.id}
-              className="gap-4 p-4 shadow-none sm:flex-row sm:items-start sm:justify-between sm:p-5"
+              className="gap-4 p-4 shadow-none @2xl:flex-row @2xl:items-start @2xl:justify-between sm:p-5"
             >
               <div className="min-w-0 space-y-2 [overflow-wrap:anywhere]">
                 <h2 className="text-sm font-semibold">

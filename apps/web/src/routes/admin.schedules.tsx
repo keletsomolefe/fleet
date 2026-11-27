@@ -1,10 +1,12 @@
 import { Plus } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
 import { PageHeader } from "@/components/page-header";
+import { ListRowsSkeleton } from "@/components/page-skeletons";
 import { useEffect, useRef, useState } from "react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { submitForm } from "@/lib/form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { adminGet } from "@/lib/admin-fetch";
 import {
   adminOperationsKey,
   refreshAdminOperations,
@@ -18,6 +20,33 @@ import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { Driver, Truck } from "@/lib/fleet";
 export const Route = createFileRoute("/admin/schedules")({
+  loader: async ({ context }) => {
+    const allowed = [
+      "admin.access",
+      "drivers.read",
+      "drivers.write",
+      "trucks.read",
+      "trucks.write",
+    ].every((p) => context.session.permissions.includes(p));
+    if (!allowed) return;
+    const [from, to] = range(localDate(), "week");
+    await Promise.allSettled([
+      context.queryClient.ensureQueryData({
+        queryKey: [
+          ...adminOperationsKey(context.session.user.id),
+          "schedules",
+          from,
+          to,
+        ],
+        queryFn: async () => {
+          const data = await adminGet<{ items: Entry[] }>(
+            `schedules?from=${from}&to=${to}`,
+          );
+          return data.items;
+        },
+      }),
+    ]);
+  },
   component: Schedules,
 });
 type Entry = {
@@ -130,16 +159,10 @@ function Schedules() {
   } = useQuery({
     queryKey: [...adminOperationsKey(session.user.id), "schedules", from, to],
     enabled: allowed,
-    queryFn: async ({ signal }) => {
-      const response = await fetch(
-        `/api/admin/schedules?from=${from}&to=${to}`,
-        {
-          cache: "no-store",
-          signal,
-        },
+    queryFn: async () => {
+      const data = await adminGet<{ items: Entry[] }>(
+        `schedules?from=${from}&to=${to}`,
       );
-      if (!response.ok) throw new Error("Could not load the schedule.");
-      const data = (await response.json()) as { items: Entry[] };
       return data.items;
     },
   });
@@ -308,11 +331,7 @@ function Schedules() {
               <AlertDescription>{loadError.message}</AlertDescription>
             </Alert>
           )}
-          {isPending && (
-            <p role="status" className="p-4 text-sm text-muted-foreground">
-              Loading schedule…
-            </p>
-          )}
+          {isPending && <ListRowsSkeleton rows={5} withBadges={false} />}
           {items && (
             <div className="divide-y">
               {days.map((day) => (

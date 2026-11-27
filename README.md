@@ -2,9 +2,9 @@
 
 ## Current scope
 
-The current app focuses on sign-in, drivers, vehicles, driver schedules, issue reporting and **Service jobs**. A breakdown report can alert service providers through Meta WhatsApp, track who accepted and how the job is progressing, and close the completed work. Administrators review unresolved reports in **Exceptions**. Existing vehicle confirmation, location logging and account access controls remain in place.
+The current app covers sign-in, drivers, vehicles, driver schedules, **Shifts & mileage** (start/end odometer readings and dashboard photos), **Dispatch**, offline **Driver activity** (pickups/collections, deliveries/offloads, tonnage, petrol, road expenses, and POD/receipt photos), **Customers, locations, products & transport rates**, **Expenses**, month-end **Truck earnings & P&L** (including CSV export), issue reporting, and **Service jobs**. A breakdown report can alert service providers through Meta WhatsApp, track who accepted and how the job is progressing, close the completed work, and roll repair costs directly into month-end vehicle spend. Administrators review unresolved reports in **Exceptions**. Existing vehicle confirmation, location logging and account access controls remain in place.
 
-Customers, saved locations, products, transport rates, dispatch, collections/deliveries/fuel activity and truck earnings are deferred. Their screens, APIs and permissions are removed, along with empty future-feature links in the sidebar. Existing transport and issue records are retained.
+See [Logistics tracking, shift mileage, expenses and month-end earnings](docs/logistics-and-earnings.md) for the domain model, offline queue rules, and month-end P&L formulas.
 
 The **Truck mechanic** role can view and resolve reported issues. It replaces Dispatcher and has no driver, schedule, vehicle-management or user-management access.
 

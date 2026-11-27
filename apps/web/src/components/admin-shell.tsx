@@ -40,6 +40,24 @@ export const navigation = [
     label: "Operations",
     items: [
       {
+        title: "Dispatch",
+        section: "dispatch",
+        icon: "dispatch",
+        permission: "dispatch.read",
+      },
+      {
+        title: "Driver activity",
+        section: "activities",
+        icon: "activity",
+        permission: "activities.read",
+      },
+      {
+        title: "Shifts & mileage",
+        section: "shifts",
+        icon: "clock",
+        permission: "shifts.read",
+      },
+      {
         title: "Service jobs",
         section: "jobs",
         icon: "wrench",
@@ -54,19 +72,66 @@ export const navigation = [
     ],
   },
   {
-    label: "Company",
+    label: "Customers & rates",
     items: [
       {
-        title: "Users",
-        section: "users",
+        title: "Customers",
+        section: "customers",
         icon: "users",
-        permission: "users.read",
+        permission: "customers.read",
       },
       {
-        title: "Roles & permissions",
-        section: "roles",
+        title: "Locations",
+        section: "locations",
+        icon: "map",
+        permission: "locations.read",
+      },
+      {
+        title: "Products",
+        section: "products",
         icon: "document",
-        permission: "users.read",
+        permission: "products.read",
+      },
+      {
+        title: "Transport rates",
+        section: "pricing",
+        icon: "document",
+        permission: "pricing.read",
+      },
+    ],
+  },
+  {
+    label: "Finance & review",
+    items: [
+      {
+        title: "Truck earnings",
+        section: "earnings",
+        icon: "download",
+        permission: "revenue.read",
+      },
+      {
+        title: "Expenses",
+        section: "expenses",
+        icon: "document",
+        permission: "expenses.read",
+      },
+      {
+        title: "Reports & exports",
+        section: "reports",
+        icon: "download",
+        permission: [
+          "revenue.read",
+          "activities.read",
+          "expenses.read",
+          "shifts.read",
+          "dispatch.read",
+        ],
+      },
+      {
+        title: "Exceptions",
+        section: "vehicle-disputes",
+        icon: "alert",
+        permission: "issues.read",
       },
     ],
   },
@@ -94,13 +159,19 @@ export const navigation = [
     ],
   },
   {
-    label: "Review & records",
+    label: "Company",
     items: [
       {
-        title: "Exceptions",
-        section: "vehicle-disputes",
-        icon: "alert",
-        permission: "issues.read",
+        title: "Users",
+        section: "users",
+        icon: "users",
+        permission: "users.read",
+      },
+      {
+        title: "Roles & permissions",
+        section: "roles",
+        icon: "document",
+        permission: "users.read",
       },
     ],
   },
@@ -118,8 +189,8 @@ function Navigation({ session }: { session: AdminSession }) {
 
   return (
     <Sidebar className="border-r" aria-label="Administration navigation">
-      <SidebarHeader className="px-4 pt-4 pb-2">
-        <div className="flex h-[88px] items-center gap-3 px-2">
+      <SidebarHeader className="px-3 pt-4 pb-2">
+        <div className="flex h-[76px] items-center gap-3 px-3">
           <img
             src="/design/monogram.svg"
             alt=""
@@ -144,20 +215,24 @@ function Navigation({ session }: { session: AdminSession }) {
           <X />
         </Button>
       </SidebarHeader>
-      <SidebarContent className="gap-1 px-4">
+      <SidebarContent className="gap-4 px-3 pb-4">
         {navigation
           .map((group) => ({
             ...group,
-            items: group.items.filter((item) => can(session, item.permission)),
+            items: group.items.filter((item) =>
+              Array.isArray(item.permission)
+                ? item.permission.some((p) => can(session, p))
+                : can(session, item.permission),
+            ),
           }))
           .filter((group) => group.items.length)
           .map((group) => (
-            <SidebarGroup key={group.label} className="p-0">
-              <SidebarGroupLabel className="h-8 px-0 text-[11px] font-medium text-muted-foreground uppercase">
+            <SidebarGroup key={group.label} className="space-y-1 p-0">
+              <SidebarGroupLabel className="h-6 px-3 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
                 {group.label}
               </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu className="gap-2">
+                <SidebarMenu className="gap-1">
                   {group.items.map((item) => {
                     const active = item.section
                       ? path === `/admin/${item.section}` ||
@@ -183,7 +258,7 @@ function Navigation({ session }: { session: AdminSession }) {
                         <SidebarMenuButton
                           asChild
                           isActive={active}
-                          className="h-11 gap-3 rounded-xl p-3 text-xs data-[active=true]:bg-black data-[active=true]:font-semibold data-[active=true]:text-white data-[active=true]:hover:bg-black data-[active=true]:hover:text-white"
+                          className="h-10 gap-3 rounded-xl px-3 py-2 text-xs data-[active=true]:bg-black data-[active=true]:font-semibold data-[active=true]:text-white data-[active=true]:hover:bg-black data-[active=true]:hover:text-white"
                         >
                           {item.section === "users" ? (
                             <Link
@@ -243,16 +318,16 @@ function Navigation({ session }: { session: AdminSession }) {
             </SidebarGroup>
           ))}
       </SidebarContent>
-      <SidebarFooter className="gap-3 p-4">
+      <SidebarFooter className="gap-2.5 p-3">
         <Separator />
-        <div className="flex items-center gap-3 px-2 py-1">
+        <div className="flex items-center gap-3 px-3 py-1.5">
           <Avatar className="size-8">
             <AvatarFallback className="bg-muted text-xs">
               {initials}
             </AvatarFallback>
           </Avatar>
-          <div className="min-w-0 space-y-1">
-            <p className="truncate text-xs">{name}</p>
+          <div className="min-w-0 space-y-0.5">
+            <p className="truncate text-xs font-medium">{name}</p>
             <p className="text-[11px] leading-4 text-muted-foreground">
               {session.roles.map((role) => role.name).join(", ")}
             </p>
@@ -300,8 +375,10 @@ export function AdminShell({
         `/admin${i.section ? `/${i.section}` : ""}`,
     );
   const title =
-    pathname.startsWith("/admin/jobs/new") ||
-    pathname.startsWith("/admin/providers/new")
+    pathname.startsWith("/admin/activities/")
+      ? "Activity review"
+      : pathname.startsWith("/admin/jobs/new") ||
+          pathname.startsWith("/admin/providers/new")
       ? pathname.startsWith("/admin/jobs")
         ? "New service job"
         : "Add service provider"
@@ -328,11 +405,11 @@ export function AdminShell({
     <SidebarProvider style={{ "--sidebar-width": "240px" } as CSSProperties}>
       <Navigation session={session} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-background px-4 sm:px-6">
+        <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-background px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <SidebarTrigger
-              className="size-10 md:hidden"
-              aria-label="Open navigation"
+              className="size-9 shrink-0"
+              aria-label="Toggle navigation"
             />
             <p className="truncate text-xs text-muted-foreground">
               <span className="sm:hidden">VHH Fleet</span>
@@ -349,7 +426,7 @@ export function AdminShell({
             </Avatar>
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-5 bg-muted p-4 sm:gap-6 sm:p-6">
+        <main className="@container flex flex-1 flex-col gap-5 bg-muted p-4 sm:gap-6 sm:p-6">
           {children}
         </main>
       </div>

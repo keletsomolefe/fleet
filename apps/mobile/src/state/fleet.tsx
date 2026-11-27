@@ -17,14 +17,40 @@ import {
   type Session,
   type Truck,
 } from "@/lib/api";
+import type { CapturedPhoto } from "@/lib/photos";
 import { keys, read, remove, write } from "@/lib/storage";
 import { stopTracking, reconcileDriverContext } from "@/tracking/service";
+import {
+  prepareRecording,
+  queueShiftPhoto,
+  refreshActivities,
+  stopRecording,
+  syncActivities,
+} from "@/activities/service";
+
+export type StartDrivingOptions = {
+  startOdometerKm?: string | null;
+  startOdometerMissingPhotoReason?: string | null;
+  startPhoto?: CapturedPhoto | null;
+  previousEndOdometerKm?: string | null;
+  previousEndOdometerMissingPhotoReason?: string | null;
+  previousEndOdometerLowerReason?: string | null;
+  previousEndPhoto?: CapturedPhoto | null;
+};
+
+export type FinishDrivingOptions = {
+  endOdometerKm?: string | null;
+  endOdometerMissingPhotoReason?: string | null;
+  endOdometerLowerReason?: string | null;
+  endPhoto?: CapturedPhoto | null;
+};
 
 type Selection = {
   truck: Truck;
   id: string;
   expectedOwnSessionId: string | null;
 };
+
 type FleetState = {
   attention: Attention;
   refreshAttention: () => Promise<void>;
@@ -41,11 +67,13 @@ type FleetState = {
   refresh: () => Promise<void>;
   login: (identifier: string, password: string) => Promise<"/truck" | "/admin">;
   logout: () => Promise<void>;
-  startDriving: () => Promise<void>;
-  finishDriving: () => Promise<void>;
+  startDriving: (options?: StartDrivingOptions) => Promise<void>;
+  finishDriving: (options?: FinishDrivingOptions) => Promise<void>;
   flagVehicle: () => Promise<void>;
 };
+
 const Context = createContext<FleetState | null>(null);
+
 export function FleetProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false),
     [session, setSession] = useState<Session | null>(null),
@@ -55,6 +83,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   const { attention, refreshAttention } = useAttention(session);
   const sessionRef = useRef<Session | null>(null),
     generation = useRef(0);
+
   const refresh = useCallback(async () => {
     const current = sessionRef.current,
       ticket = generation.current;
@@ -82,8 +111,21 @@ export function FleetProvider({ children }: { children: ReactNode }) {
           `fleet.driver-context.${current.user.id}`,
           JSON.stringify(next),
         );
+        if (next.confirmedAt && next.drivingSession?.onThisPhone) {
+          void prepareRecording(
+            updated,
+            next,
+            () => ticket === generation.current,
+          )
+            .then(() => refreshActivities(updated, next.driver.id))
+            .then(() => syncActivities())
+            .catch(() => undefined);
+        } else {
+          void stopRecording().catch(() => undefined);
+        }
       } else {
         await stopTracking("access_changed");
+        await stopRecording();
         setDriver(null);
       }
       setError("");
@@ -93,6 +135,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         setDriver(null);
         await remove(`fleet.driver-context.${current.user.id}`);
         await stopTracking("access_ended");
+        await stopRecording();
         await remove(keys.session);
         sessionRef.current = null;
         setSession(null);
@@ -106,6 +149,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       );
     }
   }, []);
+
   useEffect(() => {
     let mounted = true;
     const invalidate = () => {
@@ -124,7 +168,6 @@ export function FleetProvider({ children }: { children: ReactNode }) {
             permissions: Array.isArray(raw.permissions) ? raw.permissions : [],
           };
           if (!value.sessionToken) throw new Error("Please sign in again.");
-          // Server refresh replaces any legacy setup mode; no phone-to-truck binding is restored.
           sessionRef.current = value;
           setSession(value);
           const cached = await read(`fleet.driver-context.${value.user.id}`);
@@ -134,6 +177,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
           await refresh();
         } else {
           await stopTracking("signed_out");
+          await stopRecording();
         }
       } catch (cause) {
         if (mounted)
@@ -147,7 +191,10 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       }
     })();
     const sub = AppState.addEventListener("change", (state) => {
-      if (state === "active") void refresh();
+      if (state === "active") {
+        void refresh();
+        void syncActivities().catch(() => undefined);
+      }
     });
     const timer = setInterval(() => {
       if (AppState.currentState === "active") void refresh();
@@ -159,6 +206,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       clearInterval(timer);
     };
   }, [refresh]);
+
   async function login(identifier: string, password: string) {
     const next = await request<Session>("auth/login", {
       method: "POST",
@@ -166,6 +214,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     });
     try {
       await stopTracking("account_changed");
+      await stopRecording();
       await write(keys.session, JSON.stringify(next));
     } catch (cause) {
       await request("auth/session", {
@@ -186,9 +235,11 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       ? ("/admin" as const)
       : ("/truck" as const);
   }
+
   async function logout() {
     generation.current++;
     await stopTracking("signed_out");
+    await stopRecording();
     const current = sessionRef.current;
     if (current)
       await request("auth/session", {
@@ -203,10 +254,13 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     setSelection(null);
     setError("");
   }
-  async function startDriving() {
+
+  async function startDriving(options?: StartDrivingOptions) {
     if (!sessionRef.current || !selection)
       throw new Error("Choose a vehicle first.");
+    const previousSessionId = driver?.drivingSession?.id ?? null;
     await stopTracking("vehicle_changed");
+    await stopRecording();
     generation.current++;
     try {
       const next = await request<DriverContext>("driver/driving-sessions", {
@@ -217,6 +271,32 @@ export function FleetProvider({ children }: { children: ReactNode }) {
           truckId: selection.truck.id,
           expectedOwnSessionId: selection.expectedOwnSessionId,
           expectedScheduleId: driver?.schedule?.id ?? null,
+          ...(options?.startOdometerKm != null
+            ? { startOdometerKm: options.startOdometerKm }
+            : {}),
+          ...(options?.startOdometerMissingPhotoReason
+            ? {
+                startOdometerMissingPhotoReason:
+                  options.startOdometerMissingPhotoReason,
+              }
+            : {}),
+          ...(options?.startPhoto ? { hasStartPhoto: true } : {}),
+          ...(options?.previousEndOdometerKm != null
+            ? { previousEndOdometerKm: options.previousEndOdometerKm }
+            : {}),
+          ...(options?.previousEndOdometerMissingPhotoReason
+            ? {
+                previousEndOdometerMissingPhotoReason:
+                  options.previousEndOdometerMissingPhotoReason,
+              }
+            : {}),
+          ...(options?.previousEndOdometerLowerReason
+            ? {
+                previousEndOdometerLowerReason:
+                  options.previousEndOdometerLowerReason,
+              }
+            : {}),
+          ...(options?.previousEndPhoto ? { hasPreviousEndPhoto: true } : {}),
         },
       });
       generation.current++;
@@ -225,6 +305,25 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         `fleet.driver-context.${sessionRef.current!.user.id}`,
         JSON.stringify(next),
       );
+      if (options?.previousEndPhoto && previousSessionId) {
+        void queueShiftPhoto(
+          previousSessionId,
+          options.previousEndPhoto,
+          "end_odometer_photo",
+        ).catch(() => undefined);
+      }
+      if (options?.startPhoto && next.drivingSession) {
+        void queueShiftPhoto(
+          next.drivingSession.id,
+          options.startPhoto,
+          "start_odometer_photo",
+        ).catch(() => undefined);
+      }
+      if (next.confirmedAt && next.drivingSession?.onThisPhone) {
+        void prepareRecording(sessionRef.current, next)
+          .then(() => refreshActivities(sessionRef.current!, next.driver.id))
+          .catch(() => undefined);
+      }
       setSelection(null);
       setError("");
     } catch (cause) {
@@ -232,21 +331,47 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       throw cause;
     }
   }
-  async function finishDriving() {
+
+  async function finishDriving(options?: FinishDrivingOptions) {
     if (!sessionRef.current || !driver?.drivingSession)
       throw new Error("Refresh your vehicle details, then try again.");
+    const endedSessionId = driver.drivingSession.id;
     await stopTracking("driver_released");
+    await stopRecording();
     generation.current++;
     const next = await request<DriverContext>("driver/driving-sessions/end", {
       method: "POST",
       session: sessionRef.current.sessionToken,
-      body: { sessionId: driver.drivingSession.id },
+      body: {
+        sessionId: endedSessionId,
+        ...(options?.endOdometerKm != null
+          ? { endOdometerKm: options.endOdometerKm }
+          : {}),
+        ...(options?.endOdometerMissingPhotoReason
+          ? {
+              endOdometerMissingPhotoReason:
+                options.endOdometerMissingPhotoReason,
+            }
+          : {}),
+        ...(options?.endOdometerLowerReason
+          ? { endOdometerLowerReason: options.endOdometerLowerReason }
+          : {}),
+        ...(options?.endPhoto ? { hasEndPhoto: true } : {}),
+      },
     });
+    if (options?.endPhoto) {
+      void queueShiftPhoto(
+        endedSessionId,
+        options.endPhoto,
+        "end_odometer_photo",
+      ).catch(() => undefined);
+    }
     generation.current++;
     setDriver(next);
     setSelection(null);
     setError("");
   }
+
   async function flagVehicle() {
     if (!sessionRef.current || !selection)
       throw new Error("Choose a vehicle first.");
@@ -256,10 +381,12 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       body: { sessionId: selection.truck.activeSession?.id },
     });
   }
+
   async function reportMismatch(requestedTruckId: string | null, note: string) {
     if (!driver?.schedule || !sessionRef.current)
       throw new Error("Refresh your schedule first.");
     await stopTracking("schedule_dispute");
+    await stopRecording();
     generation.current++;
     await request("driver/schedule-mismatch", {
       method: "POST",
@@ -268,6 +395,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     });
     await refresh();
   }
+
   return (
     <Context.Provider
       value={{
@@ -297,6 +425,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     </Context.Provider>
   );
 }
+
 export function useFleet() {
   const state = useContext(Context);
   if (!state) throw new Error("FleetProvider is missing.");

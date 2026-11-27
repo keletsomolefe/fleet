@@ -12,7 +12,9 @@ export const Route = createFileRoute("/admin/$section")({
     );
     const item = group?.items.find((i) => i.section === params.section);
     if (!item) throw notFound();
-    const denied = !can(context.session, item.permission);
+    const denied = Array.isArray(item.permission)
+      ? !item.permission.some((permission) => can(context.session, permission))
+      : !can(context.session, item.permission);
     if (denied) await deniedPage();
     return {
       title: item.title,

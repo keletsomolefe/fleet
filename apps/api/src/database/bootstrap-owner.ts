@@ -1,22 +1,25 @@
-import { withMaintenanceDatabase } from './orm.js';
-import { User } from '../users/user.entity.js';
-import { Role, UserRole } from '../rbac/rbac.entity.js';
+import { Role, UserRole } from '../modules/identity/domain/rbac.entity.js';
+import { User } from '../modules/identity/domain/user.entity.js';
+import { acquireAdvisoryLock } from './context.js';
+import { withMaintenanceOrm } from './orm.js';
 
 const marker = 'fleet-initial-owner-v1';
 
 async function kratos<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(
-    new URL(path, process.env.KRATOS_ADMIN_URL),
-    {
-      ...options,
-      headers: { 'Content-Type': 'application/json', ...options.headers },
-      signal: AbortSignal.timeout(15_000),
-    },
-  );
-  if (!response.ok)
+  const headers = new Headers(options.headers);
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  const response = await fetch(new URL(path, process.env.KRATOS_ADMIN_URL), {
+    ...options,
+    headers,
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!response.ok) {
     throw new Error(
       `Initial owner identity operation failed (${response.status}).`,
     );
+  }
   return (response.status === 204 ? null : await response.json()) as T;
 }
 
@@ -27,27 +30,28 @@ async function kratos<T>(path: string, options: RequestInit = {}): Promise<T> {
 export async function bootstrapInitialOwner(): Promise<void> {
   const email = process.env.INITIAL_OWNER_EMAIL?.trim().toLowerCase();
   const password = process.env.INITIAL_OWNER_PASSWORD;
-  if (!email || !password || password.length < 16)
+  if (!email || !password || password.length < 16) {
     throw new Error('Initial owner credentials are missing or too short.');
+  }
 
   let created: string | undefined;
   try {
-    await withMaintenanceDatabase(async (db) => {
-      await db.transaction(async (em) => {
-        await em.query(
-          "SELECT pg_advisory_xact_lock(hashtext('fleet-initial-owner-v1'))",
-        );
-        const owner = await em.findOneOrFail(Role, { key: 'owner' });
-        if (await em.existsBy(UserRole, { role: owner.id })) {
+    await withMaintenanceOrm(async (orm) => {
+      await orm.em.fork().transactional(async (tx) => {
+        await acquireAdvisoryLock(tx, 'fleet-initial-owner-v1');
+        const owner = await tx.findOneOrFail(Role, { key: 'owner' });
+        if ((await tx.count(UserRole, { role: owner.id })) > 0) {
           console.log(
             'Owner already configured; credentials and access unchanged.',
           );
           return;
         }
-        if (await em.existsBy(User, { email }))
+        if ((await tx.count(User, { email })) > 0) {
           throw new Error(
             'Refusing to replace an existing application account.',
           );
+        }
+
         const identities = await kratos<
           Array<{
             id: string;
@@ -58,16 +62,15 @@ export async function bootstrapInitialOwner(): Promise<void> {
         let identity = identities.find(
           (item) => item.traits.email.toLowerCase() === email,
         );
-        if (identity && identity.metadata_admin?.bootstrap !== marker)
+        if (identity && identity.metadata_admin?.bootstrap !== marker) {
           throw new Error('Refusing to adopt an unrelated identity.');
+        }
         if (!identity) {
-          identity = await kratos<
-            {
-              id: string;
-              metadata_admin?: { bootstrap?: string };
-              traits: { email: string; name: { first: string; last: string } };
-            }
-          >('admin/identities', {
+          identity = await kratos<{
+            id: string;
+            metadata_admin?: { bootstrap?: string };
+            traits: { email: string; name: { first: string; last: string } };
+          }>('admin/identities', {
             method: 'POST',
             body: JSON.stringify({
               schema_id: 'fleet-user-v1',
@@ -92,28 +95,29 @@ export async function bootstrapInitialOwner(): Promise<void> {
               ],
             }),
           });
-          created = identity!.id;
+          created = identity.id;
         }
-        const ownerIdentity = identity as { id: string; traits: { name: { first: string; last: string } } };
-        const user = await em.save(
-          em.create(User, {
-            kratosIdentityId: ownerIdentity.id,
-            email,
-            firstName: ownerIdentity.traits.name.first,
-            lastName: ownerIdentity.traits.name.last,
-            isActive: true,
-            createdById: null,
-          }),
-        );
-        await em.insert(UserRole, { user: user.id, role: owner.id });
+
+        const user = tx.create(User, {
+          kratosIdentityId: identity.id,
+          email,
+          firstName: identity.traits.name.first,
+          lastName: identity.traits.name.last,
+          isActive: true,
+          createdBy: null,
+          lastLoginAt: null,
+        });
+        await tx.persist(user).flush();
+        await tx.insert(UserRole, { user: user.id, role: owner.id });
         console.log('Initial Fleet owner configured.');
       });
     });
   } catch (error) {
-    if (created)
+    if (created) {
       await kratos(`admin/identities/${created}`, { method: 'DELETE' }).catch(
         () => undefined,
       );
+    }
     throw error;
   }
 }

@@ -1,6 +1,8 @@
 import { Migration } from '@mikro-orm/migrations';
 
 export class Migration20261123160000_service_job_reference_sequence extends Migration {
+  override name = 'Migration20261123160000_service_job_reference_sequence';
+
   override up(): void {
     this.addSql(`DO $$
       DECLARE
@@ -13,5 +15,9 @@ export class Migration20261123160000_service_job_reference_sequence extends Migr
           EXECUTE format('CREATE SEQUENCE app.service_job_reference_seq START WITH %s', next_reference);
         END IF;
       END $$;`);
+  }
+
+  override down(): void {
+    this.addSql(`DROP SEQUENCE IF EXISTS "app"."service_job_reference_seq";`);
   }
 }

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { PageError } from "@/components/page-error";
 import { PageHeader, BackLink } from "@/components/page-header";
+import { DetailPageSkeleton } from "@/components/page-skeletons";
 import { ServiceProviderForm } from "@/components/service-provider-form";
 import { JobStatusBadge, ServiceTypeBadge } from "@/components/service-job-bits";
 import { EmptyState } from "@/components/empty-state";
@@ -16,6 +17,19 @@ import {
 } from "@/lib/service-jobs";
 
 export const Route = createFileRoute("/admin/providers/$providerId")({
+  loader: async ({ context, params }) => {
+    if (!can(context.session, "service_providers.read")) return;
+    await Promise.allSettled([
+      context.queryClient.ensureQueryData({
+        queryKey: [
+          ...adminOperationsKey(context.session.user.id),
+          "provider",
+          params.providerId,
+        ],
+        queryFn: () => getProvider(params.providerId),
+      }),
+    ]);
+  },
   component: Page,
 });
 function Page() {
@@ -30,9 +44,14 @@ function Page() {
   if (error) return <PageError message={error.message} />;
   if (isPending)
     return (
-      <p role="status" className="text-sm text-muted-foreground">
-        Loading service provider…
-      </p>
+      <>
+        <PageHeader
+          back={<BackLink to="/admin/providers">Service providers</BackLink>}
+          title="Service provider"
+          group="Operations"
+        />
+        <DetailPageSkeleton columns={2} />
+      </>
     );
   if (!data) return <PageError message="Service provider not found." />;
   if (!writable)
