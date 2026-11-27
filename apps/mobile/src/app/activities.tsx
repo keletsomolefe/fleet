@@ -5,8 +5,8 @@ import { useRouter } from "expo-router";
 import * as Crypto from "expo-crypto";
 import {
   Button,
-  Chip,
   Copy,
+  DetailSheet,
   Field,
   Heading,
   Notice,
@@ -48,6 +48,13 @@ const unitNames: Record<string, string> = {
   m3: "Cubic metres",
   pallet: "Pallets",
   item: "Items",
+};
+
+const outcomeLabels: Record<Data["outcome"], string> = {
+  completed: "Delivered",
+  partial: "Part delivered",
+  failed: "Could not deliver",
+  cancelled: "Cancelled",
 };
 
 const expenseCategoryLabels: Record<RoadExpenseCategory, string> = {
@@ -211,6 +218,14 @@ export default function Activities() {
     null,
   );
   const [pickupSheetOpen, setPickupSheetOpen] = useState(false);
+  const [showDeliveredPickups, setShowDeliveredPickups] = useState(false);
+  const [unitSheetOpen, setUnitSheetOpen] = useState(false);
+  const [outcomeSheetOpen, setOutcomeSheetOpen] = useState(false);
+  const [expenseCatSheetOpen, setExpenseCatSheetOpen] = useState(false);
+  const [viewingRecord, setViewingRecord] = useState<{
+    rec: LocalRecord;
+    data: Data;
+  } | null>(null);
   const [photo, setPhoto] = useState<CapturedPhoto | null>(null);
   const [localError, setLocalError] = useState("");
   const [savedNotice, setSavedNotice] = useState("");
@@ -400,51 +415,101 @@ export default function Activities() {
   const parsedRecords = records
     .map((r) => {
       try {
-        return { id: r.id, data: JSON.parse(r.data) as Data };
+        return { id: r.id, rec: r, data: JSON.parse(r.data) as Data };
       } catch {
         return null;
       }
     })
-    .filter((x): x is { id: string; data: Data } => Boolean(x));
+    .filter((x): x is { id: string; rec: LocalRecord; data: Data } =>
+      Boolean(x),
+    );
 
   const deliveryCountByPickup = new Map<string, number>();
+  const deliveredQtyByPickup = new Map<string, number>();
   for (const item of parsedRecords) {
-    if (item.data.kind === "delivery" && item.data.runId) {
-      deliveryCountByPickup.set(
-        item.data.runId,
-        (deliveryCountByPickup.get(item.data.runId) ?? 0) + 1,
-      );
+    if (
+      item.data.kind === "delivery" &&
+      item.data.runId &&
+      item.rec.review !== "void"
+    ) {
+      const isEditingSame = form?.recordId === item.id;
+      if (!isEditingSame) {
+        deliveryCountByPickup.set(
+          item.data.runId,
+          (deliveryCountByPickup.get(item.data.runId) ?? 0) + 1,
+        );
+        const qtyNum = Number(item.data.quantity);
+        if (Number.isFinite(qtyNum) && qtyNum > 0) {
+          deliveredQtyByPickup.set(
+            item.data.runId,
+            (deliveredQtyByPickup.get(item.data.runId) ?? 0) + qtyNum,
+          );
+        }
+      }
     }
   }
 
   const parsedCollections = parsedRecords
-    .filter((x) => x.data.kind === "collection")
-    .map((x) => ({
-      ...x,
-      deliveryCount: deliveryCountByPickup.get(x.id) ?? 0,
-    }))
+    .filter((x) => x.data.kind === "collection" && x.rec.review !== "void")
+    .map((x) => {
+      const deliveryCount = deliveryCountByPickup.get(x.id) ?? 0;
+      const deliveredQty = deliveredQtyByPickup.get(x.id) ?? 0;
+      const collectedQty = Number(x.data.quantity);
+      const remainingQty =
+        Number.isFinite(collectedQty) && collectedQty > 0
+          ? Math.max(0, Math.round((collectedQty - deliveredQty) * 100) / 100)
+          : null;
+      return {
+        ...x,
+        deliveryCount,
+        deliveredQty: Math.round(deliveredQty * 100) / 100,
+        collectedQty:
+          Number.isFinite(collectedQty) && collectedQty > 0
+            ? collectedQty
+            : null,
+        remainingQty,
+      };
+    })
     .sort((a, b) => {
       const aDone = a.deliveryCount > 0 ? 1 : 0;
       const bDone = b.deliveryCount > 0 ? 1 : 0;
       if (aDone !== bDone) return aDone - bDone;
       return b.data.occurredAt.localeCompare(a.data.occurredAt);
     })
-    .slice(0, 15);
+    .slice(0, 20);
+
+  const openPickups = parsedCollections.filter((c) => c.deliveryCount === 0);
+  const deliveredPickups = parsedCollections.filter((c) => c.deliveryCount > 0);
+  const visiblePickups =
+    showDeliveredPickups || openPickups.length === 0
+      ? parsedCollections
+      : openPickups;
 
   const linkedPickup = form?.data.runId
     ? parsedCollections.find((col) => col.id === form.data.runId) ?? null
     : null;
 
-  const pickupOptions: PickerOption[] = parsedCollections.map((col) => {
-    const qty = col.data.quantity ? `${col.data.quantity} ${col.data.unit}` : col.data.unit;
+  const pickupOptions: PickerOption[] = visiblePickups.map((col) => {
+    const qty = col.data.quantity
+      ? `${col.data.quantity} ${col.data.unit}`
+      : col.data.unit;
     const product = col.data.product.name || "Load";
     const site = col.data.origin.name || "Pickup site";
     const customer = col.data.customer.name;
     const timeLabel = formatShortTime(col.data.occurredAt);
     const ticket = col.data.waybillNumber?.trim();
+    const balance =
+      col.deliveryCount > 0 && col.collectedQty !== null
+        ? `${col.deliveredQty} / ${col.collectedQty} ${col.data.unit} delivered${
+            col.remainingQty && col.remainingQty > 0
+              ? ` · ${col.remainingQty} left`
+              : ""
+          }`
+        : "";
     const metaParts = [
       timeLabel,
       ticket ? `Ticket ${ticket}` : "",
+      balance,
     ].filter(Boolean);
     return {
       id: col.id,
@@ -462,7 +527,69 @@ export default function Activities() {
     };
   });
 
-  function linkPickupToForm(col: { id: string; data: Data }) {
+  function canEditRecord(rec: LocalRecord): boolean {
+    if (!context) return false;
+    if (rec.review === "validated" || rec.review === "void") return false;
+    if (!rec.acknowledged_at) return true;
+    if (rec.review === "clarification") return true;
+    return rec.context_id === context.id;
+  }
+
+  const formWarnings: string[] = [];
+  if (form) {
+    const d = form.data;
+    if (
+      d.arrivedAt &&
+      d.departedAt &&
+      Date.parse(d.departedAt) < Date.parse(d.arrivedAt)
+    ) {
+      formWarnings.push(
+        "Departure time is earlier than arrival time. Tap Mark left again if needed.",
+      );
+    }
+    if (d.kind === "delivery" && linkedPickup) {
+      if (linkedPickup.deliveryCount > 0) {
+        formWarnings.push(
+          `This pickup already has ${linkedPickup.deliveryCount} delivery logged (${linkedPickup.deliveredQty} ${linkedPickup.data.unit}). Only link again for a split drop-off.`,
+        );
+      }
+      const enteredQty = Number(d.quantity);
+      if (
+        Number.isFinite(enteredQty) &&
+        enteredQty > 0 &&
+        linkedPickup.collectedQty !== null
+      ) {
+        const available =
+          linkedPickup.remainingQty ?? linkedPickup.collectedQty;
+        if (enteredQty > available) {
+          formWarnings.push(
+            `Delivered quantity (${enteredQty} ${d.unit}) is more than the remaining collected load (${available} ${linkedPickup.data.unit}). Double-check the linked pickup.`,
+          );
+        }
+      }
+      const productMismatch =
+        linkedPickup.data.product.name &&
+        d.product.name &&
+        linkedPickup.data.product.name.toLowerCase() !==
+          d.product.name.toLowerCase();
+      const customerMismatch =
+        linkedPickup.data.customer.name &&
+        d.customer.name &&
+        linkedPickup.data.customer.name.toLowerCase() !==
+          d.customer.name.toLowerCase();
+      if (productMismatch || customerMismatch) {
+        formWarnings.push(
+          "Customer or product differs from the linked pickup. Confirm you linked the right load.",
+        );
+      }
+    }
+  }
+
+  function linkPickupToForm(col: (typeof parsedCollections)[number]) {
+    const suggestedQty =
+      col.deliveryCount > 0 && col.remainingQty && col.remainingQty > 0
+        ? String(col.remainingQty)
+        : col.data.quantity;
     updateForm((d) => ({
       ...d,
       runId: col.id,
@@ -472,7 +599,7 @@ export default function Activities() {
       collectedQuantity: col.data.quantity ?? d.collectedQuantity,
       quantity:
         !d.quantity || (d.collectedQuantity && d.quantity === d.collectedQuantity)
-          ? col.data.quantity
+          ? suggestedQty
           : d.quantity,
       unit: col.data.unit || d.unit,
     }));
@@ -550,7 +677,43 @@ export default function Activities() {
 
       {!form ? (
         <>
-          {/* 1. Assigned Dispatches at Top */}
+          {/* 1. Active Load on Truck (undelivered pickups) */}
+          {openPickups.length > 0 && (
+            <View style={styles.group}>
+              <Copy>
+                Active load on truck ({openPickups.length})
+              </Copy>
+              {openPickups.slice(0, 3).map((col) => (
+                <View key={col.id} style={styles.card}>
+                  <Copy>
+                    {`${col.data.quantity ?? "?"} ${col.data.unit} ${col.data.product.name || "Load"}`}
+                  </Copy>
+                  <Copy small>
+                    {[
+                      col.data.origin.name || "Pickup site",
+                      col.data.customer.name,
+                      formatShortTime(col.data.occurredAt),
+                      col.data.waybillNumber?.trim()
+                        ? `Ticket ${col.data.waybillNumber.trim()}`
+                        : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </Copy>
+                  <View style={{ paddingTop: 4 }}>
+                    <Button
+                      disabled={!context}
+                      onPress={() => startDeliveryFromPickup(col)}
+                    >
+                      Log delivery for this load
+                    </Button>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* 2. Assigned Dispatches */}
           {jobs.length > 0 && (
             <View style={styles.group}>
               <Copy>Assigned dispatches ({jobs.length})</Copy>
@@ -642,14 +805,19 @@ export default function Activities() {
                   d = null;
                 }
                 if (!d) return null;
+                const editable = canEditRecord(rec);
                 const syncBadge = rec.blocked_reason
                   ? `Issue: ${rec.blocked_reason}`
                   : rec.acknowledged_at
                     ? rec.review === "validated"
-                      ? "Validated"
-                      : rec.review === "clarification"
-                        ? "Office asked for clarification"
-                        : "Synced"
+                      ? "Validated · Locked"
+                      : rec.review === "void"
+                        ? "Void · Locked"
+                        : rec.review === "clarification"
+                          ? "Clarification requested"
+                          : editable
+                            ? "Synced"
+                            : "Synced · Locked"
                     : "Saved offline";
                 return (
                   <View key={rec.id} style={styles.card}>
@@ -672,21 +840,33 @@ export default function Activities() {
                             : d.vendorName || "Road expense"}
                     </Copy>
                     <Copy small>
-                      {syncBadge} · {new Date(d.occurredAt).toLocaleString()}
+                      {syncBadge} · {formatShortTime(d.occurredAt)}
                     </Copy>
                     <View style={{ flexDirection: "row", gap: 8, paddingTop: 4 }}>
-                      <Button
-                        fill
-                        secondary
-                        disabled={!context}
-                        onPress={() => {
-                          setPhoto(null);
-                          setForm({ recordId: rec.id, data: d! });
-                        }}
-                      >
-                        Edit entry
-                      </Button>
+                      {editable ? (
+                        <Button
+                          fill
+                          secondary
+                          onPress={() => {
+                            setPhoto(null);
+                            setForm({ recordId: rec.id, data: d! });
+                          }}
+                        >
+                          Edit entry
+                        </Button>
+                      ) : (
+                        <Button
+                          fill
+                          secondary
+                          onPress={() =>
+                            setViewingRecord({ rec, data: d! })
+                          }
+                        >
+                          View details
+                        </Button>
+                      )}
                       {d.kind === "collection" &&
+                        rec.review !== "void" &&
                         (deliveryCountByPickup.get(rec.id) ?? 0) === 0 && (
                           <Button
                             fill
@@ -786,11 +966,29 @@ export default function Activities() {
                   <PickerSheet
                     visible={pickupSheetOpen}
                     title="Link recent pickup"
-                    subtitle="Pick a load to auto-fill customer, product, site and quantity."
+                    subtitle={
+                      showDeliveredPickups || openPickups.length === 0
+                        ? "Showing open and already-delivered pickups."
+                        : "Showing open loads waiting for delivery."
+                    }
                     options={pickupOptions}
                     selectedId={form.data.runId}
                     placeholder="Search by site, customer, product or ticket…"
                     emptyMessage="No matching recent pickups."
+                    footer={
+                      deliveredPickups.length > 0 && openPickups.length > 0 ? (
+                        <Button
+                          secondary
+                          onPress={() =>
+                            setShowDeliveredPickups((prev) => !prev)
+                          }
+                        >
+                          {showDeliveredPickups
+                            ? "Hide already-delivered pickups"
+                            : `Show already-delivered pickups (${deliveredPickups.length})`}
+                        </Button>
+                      ) : undefined
+                    }
                     onSelect={(opt) => {
                       const col = parsedCollections.find((c) => c.id === opt.id);
                       if (col) linkPickupToForm(col);
@@ -890,18 +1088,26 @@ export default function Activities() {
                 }
               />
 
-              <Copy small>Unit</Copy>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                {catalogue.units.map((u) => (
-                  <Chip
-                    key={u}
-                    selected={form.data.unit === u}
-                    onPress={() => updateForm((d) => ({ ...d, unit: u }))}
-                  >
-                    {unitNames[u] ?? u}
-                  </Chip>
-                ))}
-              </View>
+              <SelectField
+                label="Unit"
+                value={unitNames[form.data.unit] ?? form.data.unit}
+                placeholder="Select unit"
+                onPress={() => setUnitSheetOpen(true)}
+              />
+              <PickerSheet
+                visible={unitSheetOpen}
+                title="Select unit"
+                searchable={false}
+                options={catalogue.units.map((u) => ({
+                  id: u,
+                  label: unitNames[u] ?? u,
+                }))}
+                selectedId={form.data.unit}
+                onSelect={(opt) =>
+                  updateForm((d) => ({ ...d, unit: opt.id }))
+                }
+                onClose={() => setUnitSheetOpen(false)}
+              />
 
               <Field
                 label="Waybill / POD / Weighbridge ticket # (optional)"
@@ -945,27 +1151,31 @@ export default function Activities() {
 
               {form.data.kind === "delivery" && (
                 <>
-                  <Copy small>Delivery outcome</Copy>
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                    {(
-                      [
-                        ["completed", "Delivered"],
-                        ["partial", "Part delivered"],
-                        ["failed", "Could not deliver"],
-                        ["cancelled", "Cancelled"],
-                      ] as const
-                    ).map(([val, label]) => (
-                      <Chip
-                        key={val}
-                        selected={form.data.outcome === val}
-                        onPress={() =>
-                          updateForm((d) => ({ ...d, outcome: val }))
-                        }
-                      >
-                        {label}
-                      </Chip>
-                    ))}
-                  </View>
+                  <SelectField
+                    label="Delivery outcome"
+                    value={outcomeLabels[form.data.outcome]}
+                    placeholder="Select delivery outcome"
+                    onPress={() => setOutcomeSheetOpen(true)}
+                  />
+                  <PickerSheet
+                    visible={outcomeSheetOpen}
+                    title="Delivery outcome"
+                    searchable={false}
+                    options={(
+                      Object.keys(outcomeLabels) as Data["outcome"][]
+                    ).map((val) => ({
+                      id: val,
+                      label: outcomeLabels[val],
+                    }))}
+                    selectedId={form.data.outcome}
+                    onSelect={(opt) =>
+                      updateForm((d) => ({
+                        ...d,
+                        outcome: opt.id as Data["outcome"],
+                      }))
+                    }
+                    onClose={() => setOutcomeSheetOpen(false)}
+                  />
                 </>
               )}
             </>
@@ -1011,22 +1221,33 @@ export default function Activities() {
 
           {form.data.kind === "expense" && (
             <>
-              <Copy small>Expense category</Copy>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                {(Object.keys(expenseCategoryLabels) as RoadExpenseCategory[]).map(
-                  (cat) => (
-                    <Chip
-                      key={cat}
-                      selected={form.data.expenseCategory === cat}
-                      onPress={() =>
-                        updateForm((d) => ({ ...d, expenseCategory: cat }))
-                      }
-                    >
-                      {expenseCategoryLabels[cat]}
-                    </Chip>
-                  ),
-                )}
-              </View>
+              <SelectField
+                label="Expense category"
+                value={
+                  expenseCategoryLabels[form.data.expenseCategory ?? "other"]
+                }
+                placeholder="Select expense category"
+                onPress={() => setExpenseCatSheetOpen(true)}
+              />
+              <PickerSheet
+                visible={expenseCatSheetOpen}
+                title="Expense category"
+                searchable={false}
+                options={(
+                  Object.keys(expenseCategoryLabels) as RoadExpenseCategory[]
+                ).map((cat) => ({
+                  id: cat,
+                  label: expenseCategoryLabels[cat],
+                }))}
+                selectedId={form.data.expenseCategory ?? "other"}
+                onSelect={(opt) =>
+                  updateForm((d) => ({
+                    ...d,
+                    expenseCategory: opt.id as RoadExpenseCategory,
+                  }))
+                }
+                onClose={() => setExpenseCatSheetOpen(false)}
+              />
               <Field
                 label="Amount paid (Rand)"
                 keyboardType="decimal-pad"
@@ -1112,6 +1333,10 @@ export default function Activities() {
             onChangeText={(note) => updateForm((d) => ({ ...d, note }))}
           />
 
+          {formWarnings.map((warning) => (
+            <Notice key={warning} title="Please double-check" message={warning} />
+          ))}
+
           <Button
             loading={action.busy}
             disabled={!context}
@@ -1133,6 +1358,127 @@ export default function Activities() {
           </Button>
         </View>
       )}
+
+      <DetailSheet
+        visible={Boolean(viewingRecord)}
+        title={
+          viewingRecord
+            ? viewingRecord.data.kind === "collection"
+              ? "Pickup details"
+              : viewingRecord.data.kind === "delivery"
+                ? "Delivery details"
+                : viewingRecord.data.kind === "fuel"
+                  ? "Fuel details"
+                  : "Road expense details"
+            : ""
+        }
+        subtitle={
+          viewingRecord
+            ? `${
+                viewingRecord.rec.review === "validated"
+                  ? "Validated by office"
+                  : viewingRecord.rec.review === "void"
+                    ? "Voided by office"
+                    : "Previous shift record"
+              } · Read-only`
+            : undefined
+        }
+        onClose={() => setViewingRecord(null)}
+      >
+        {viewingRecord && (
+          <>
+            {(viewingRecord.data.kind === "collection" ||
+              viewingRecord.data.kind === "delivery") && (
+              <>
+                <Copy>
+                  {`${viewingRecord.data.quantity ?? "?"} ${
+                    unitNames[viewingRecord.data.unit] ?? viewingRecord.data.unit
+                  } ${viewingRecord.data.product.name || ""}`}
+                </Copy>
+                {!!viewingRecord.data.customer.name && (
+                  <Copy small>Customer: {viewingRecord.data.customer.name}</Copy>
+                )}
+                {!!viewingRecord.data.origin.name && (
+                  <Copy small>Pickup site: {viewingRecord.data.origin.name}</Copy>
+                )}
+                {viewingRecord.data.kind === "delivery" &&
+                  !!viewingRecord.data.destination.name && (
+                    <Copy small>
+                      Delivery site: {viewingRecord.data.destination.name}
+                    </Copy>
+                  )}
+                {!!viewingRecord.data.waybillNumber && (
+                  <Copy small>
+                    Ticket / POD: {viewingRecord.data.waybillNumber}
+                  </Copy>
+                )}
+                {viewingRecord.data.kind === "delivery" && (
+                  <Copy small>
+                    Outcome: {outcomeLabels[viewingRecord.data.outcome]}
+                  </Copy>
+                )}
+              </>
+            )}
+            {viewingRecord.data.kind === "fuel" && (
+              <>
+                <Copy>
+                  {`${viewingRecord.data.fuelLitres ?? "?"} L${
+                    viewingRecord.data.fuelTotalCost
+                      ? ` · R${viewingRecord.data.fuelTotalCost}`
+                      : ""
+                  }`}
+                </Copy>
+                {!!viewingRecord.data.fuelStation && (
+                  <Copy small>Station: {viewingRecord.data.fuelStation}</Copy>
+                )}
+                {!!viewingRecord.data.receiptNumber && (
+                  <Copy small>Receipt: {viewingRecord.data.receiptNumber}</Copy>
+                )}
+              </>
+            )}
+            {viewingRecord.data.kind === "expense" && (
+              <>
+                <Copy>
+                  {`${
+                    expenseCategoryLabels[
+                      viewingRecord.data.expenseCategory ?? "other"
+                    ]
+                  } · R${viewingRecord.data.expenseAmount ?? "?"}`}
+                </Copy>
+                {!!viewingRecord.data.vendorName && (
+                  <Copy small>Vendor: {viewingRecord.data.vendorName}</Copy>
+                )}
+                {!!viewingRecord.data.receiptNumber && (
+                  <Copy small>Receipt: {viewingRecord.data.receiptNumber}</Copy>
+                )}
+              </>
+            )}
+            {!!viewingRecord.data.odometerKm && (
+              <Copy small>Odometer: {viewingRecord.data.odometerKm} km</Copy>
+            )}
+            {!!viewingRecord.data.note && (
+              <Copy small>Note: {viewingRecord.data.note}</Copy>
+            )}
+            <Copy small>
+              Recorded: {new Date(viewingRecord.data.occurredAt).toLocaleString()}
+            </Copy>
+            <View
+              style={{
+                backgroundColor: colors.bg,
+                borderRadius: 8,
+                padding: 12,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}
+            >
+              <Copy small>
+                This record is locked on the driver app. Contact the office if a
+                correction is needed.
+              </Copy>
+            </View>
+          </>
+        )}
+      </DetailSheet>
     </Screen>
   );
 }

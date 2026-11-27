@@ -58,6 +58,26 @@ describe('Transport activity domain rules', () => {
       recordTruckId: 't1',
     });
     expect(flags).toContain('weight_variance_alert');
+    expect(flags).toContain('unlinked_delivery');
+    expect(() => assertCanValidateRecord(flags)).not.toThrow();
+  });
+
+  it('flags departure timestamps earlier than arrival without blocking validation', () => {
+    const flags = evaluateActivityFlags({
+      recordId: '55555555-5555-4555-8555-555555555555',
+      data: {
+        ...baseDelivery,
+        arrivedAt: '2026-11-25T10:15:00.000Z',
+        departedAt: '2026-11-25T10:00:00.000Z',
+      },
+      occurredAt: new Date(baseDelivery.occurredAt),
+      sessionStartedAt: new Date('2026-11-25T06:00:00.000Z'),
+      sessionEndedAt: null,
+      hasCustomerProductLink: true,
+      recordDriverId: 'd1',
+      recordTruckId: 't1',
+    });
+    expect(flags).toContain('departure_before_arrival');
     expect(() => assertCanValidateRecord(flags)).not.toThrow();
   });
 

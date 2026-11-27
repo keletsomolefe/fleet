@@ -431,6 +431,8 @@ export function PickerSheet({
   allowCustom = false,
   customLabel = "Use",
   searchable = true,
+  onSearchChange,
+  footer,
   onSelect,
   onCustom,
   onClear,
@@ -446,6 +448,8 @@ export function PickerSheet({
   allowCustom?: boolean;
   customLabel?: string;
   searchable?: boolean;
+  onSearchChange?: (query: string) => void;
+  footer?: ReactNode;
   onSelect: (option: PickerOption) => void;
   onCustom?: (text: string) => void;
   onClear?: () => void;
@@ -454,19 +458,26 @@ export function PickerSheet({
   const [query, setQuery] = useState("");
   const trimmed = query.trim();
   const needle = trimmed.toLowerCase();
-  const filtered = needle
-    ? options.filter((opt) =>
-        `${opt.label} ${opt.subtitle ?? ""} ${opt.meta ?? ""} ${opt.searchText ?? ""}`
-          .toLowerCase()
-          .includes(needle),
-      )
-    : options;
+  const filtered =
+    !onSearchChange && needle
+      ? options.filter((opt) =>
+          `${opt.label} ${opt.subtitle ?? ""} ${opt.meta ?? ""} ${opt.searchText ?? ""}`
+            .toLowerCase()
+            .includes(needle),
+        )
+      : options;
   const exactMatch =
     !!trimmed &&
     options.some((opt) => opt.label.trim().toLowerCase() === needle);
 
+  function updateQuery(next: string) {
+    setQuery(next);
+    onSearchChange?.(next);
+  }
+
   function close() {
     setQuery("");
+    onSearchChange?.("");
     onClose();
   }
 
@@ -572,7 +583,7 @@ export function PickerSheet({
             >
               <TextInput
                 value={query}
-                onChangeText={setQuery}
+                onChangeText={updateQuery}
                 placeholder={placeholder}
                 placeholderTextColor={colors.muted}
                 autoCorrect={false}
@@ -750,9 +761,123 @@ export function PickerSheet({
                 );
               })
             )}
+            {footer && (
+              <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
+                {footer}
+              </View>
+            )}
           </ScrollView>
         </SafeAreaView>
       </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+export function DetailSheet({
+  visible,
+  title,
+  subtitle,
+  children,
+  onClose,
+}: {
+  visible: boolean;
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+  onClose: () => void;
+}) {
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <View style={{ flex: 1, justifyContent: "flex-end" }}>
+        <Pressable
+          accessibilityLabel="Close details"
+          onPress={onClose}
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: "rgba(11, 11, 11, 0.42)" },
+          ]}
+        />
+        <SafeAreaView
+          edges={["bottom"]}
+          style={{
+            maxHeight: "82%",
+            backgroundColor: colors.surface,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            overflow: "hidden",
+          }}
+        >
+          <View style={{ alignItems: "center", paddingTop: 10, paddingBottom: 4 }}>
+            <View
+              style={{
+                width: 36,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: colors.border,
+              }}
+            />
+          </View>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 20,
+              paddingTop: 6,
+              paddingBottom: 12,
+              borderBottomWidth: 1,
+              borderColor: colors.border,
+              gap: 12,
+            }}
+          >
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text
+                style={[
+                  styles.text,
+                  {
+                    fontSize: 16,
+                    lineHeight: 22,
+                    fontFamily: "Montserrat_600SemiBold",
+                  },
+                ]}
+              >
+                {title}
+              </Text>
+              {!!subtitle && <Copy small>{subtitle}</Copy>}
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onClose}
+              style={({ pressed }) => ({
+                paddingVertical: 8,
+                paddingHorizontal: 10,
+                borderRadius: 8,
+                opacity: pressed ? 0.6 : 1,
+              })}
+            >
+              <Text
+                style={[
+                  styles.text,
+                  { fontFamily: "Montserrat_600SemiBold", color: colors.muted },
+                ]}
+              >
+                Close
+              </Text>
+            </Pressable>
+          </View>
+          <ScrollView
+            contentContainerStyle={{ padding: 20, gap: 12 }}
+            keyboardShouldPersistTaps="handled"
+          >
+            {children}
+          </ScrollView>
+        </SafeAreaView>
+      </View>
     </Modal>
   );
 }
@@ -762,12 +887,14 @@ export function SelectField({
   value,
   placeholder,
   hint,
+  disabled = false,
   onPress,
 }: {
   label: string;
   value?: string | null;
   placeholder: string;
   hint?: string;
+  disabled?: boolean;
   onPress: () => void;
 }) {
   const hasValue = Boolean(value && value.trim());
@@ -776,13 +903,16 @@ export function SelectField({
       <Text style={[styles.small, { color: colors.ink }]}>{label}</Text>
       <Pressable
         accessibilityRole="button"
+        accessibilityState={{ disabled }}
         accessibilityLabel={`${label}${hasValue ? `: ${value}` : ""}`}
+        disabled={disabled}
         onPress={onPress}
         style={({ pressed }) => ({
           minHeight: 48,
           paddingHorizontal: 14,
           paddingVertical: 12,
           backgroundColor: pressed ? colors.bg : colors.surface,
+          opacity: disabled ? 0.5 : 1,
           borderWidth: 1,
           borderColor: colors.border,
           borderRadius: 8,

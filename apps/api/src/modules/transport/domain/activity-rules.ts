@@ -76,6 +76,14 @@ export function evaluateActivityFlags(
     flags.add('outside_confirmed_session');
   }
 
+  if (
+    data.arrivedAt &&
+    data.departedAt &&
+    Date.parse(data.departedAt) < Date.parse(data.arrivedAt)
+  ) {
+    flags.add('departure_before_arrival');
+  }
+
   if (data.kind === 'fuel') {
     if (!data.fuelLitres) flags.add('missing_fuel_litres');
     if (!data.fuelTotalCost) flags.add('missing_fuel_price');
@@ -132,6 +140,9 @@ export function evaluateActivityFlags(
 
   // Linked collection <-> delivery consistency and weight variance check
   if (data.kind === 'delivery') {
+    if (!data.runId) {
+      flags.add('unlinked_delivery');
+    }
     let effectiveCollected = data.collectedQuantity;
     let collectedUnit = data.unit;
 

@@ -9,8 +9,9 @@ import {
   Field,
   Heading,
   Notice,
+  PickerSheet,
   Screen,
-  TruckCard,
+  SelectField,
   styles,
   useAction,
 } from "@/components/ui";
@@ -93,6 +94,10 @@ export default function Schedules() {
   );
   const [driverQuery, setDriverQuery] = useState("");
   const [truckQuery, setTruckQuery] = useState("");
+  const [driverSheetOpen, setDriverSheetOpen] = useState(false);
+  const [truckSheetOpen, setTruckSheetOpen] = useState(false);
+  const [selectedDriverLabel, setSelectedDriverLabel] = useState("");
+  const [selectedTruckLabel, setSelectedTruckLabel] = useState("");
   const load = useCallback(async () => {
     try {
       const result = await request<{ items: Entry[] }>(
@@ -267,56 +272,77 @@ export default function Schedules() {
         </>
       ) : (
         <>
-          <Field
-            label="Search drivers"
-            value={driverQuery}
-            editable={!busy}
-            onChangeText={(v) => {
-              setDriverQuery(v);
-              form.setFieldValue("driver", "");
+          <SelectField
+            label="Driver"
+            value={
+              selectedDriverLabel ||
+              (() => {
+                const match = options.drivers.find((d) => d.id === driver);
+                return match ? `${match.name} · ${match.identifier}` : "";
+              })()
+            }
+            placeholder="Select a driver"
+            disabled={busy}
+            onPress={() => setDriverSheetOpen(true)}
+          />
+          <PickerSheet
+            visible={driverSheetOpen}
+            title="Select driver"
+            options={options.drivers.map((d) => ({
+              id: d.id,
+              label: d.name,
+              subtitle: d.identifier,
+            }))}
+            selectedId={driver}
+            placeholder="Search drivers…"
+            emptyMessage="No matching drivers."
+            onSearchChange={setDriverQuery}
+            onSelect={(opt) => {
+              form.setFieldValue("driver", opt.id);
+              setSelectedDriverLabel(
+                opt.subtitle ? `${opt.label} · ${opt.subtitle}` : opt.label,
+              );
               setConflicts([]);
             }}
+            onClose={() => setDriverSheetOpen(false)}
           />
-          <Copy>Driver</Copy>
-          {options.drivers.map((d) => (
-            <Button
-              key={d.id}
-              secondary={driver !== d.id}
-              disabled={busy}
-              onPress={() => {
-                form.setFieldValue("driver", d.id);
-                setConflicts([]);
-              }}
-            >
-              {`${d.name} · ${d.identifier}`}
-            </Button>
-          ))}
-          <Field
-            label="Search vehicles"
-            value={truckQuery}
-            editable={!busy}
-            onChangeText={(v) => {
-              setTruckQuery(v);
-              form.setFieldValue("truck", "");
+          <SelectField
+            label="Vehicle"
+            value={
+              selectedTruckLabel ||
+              (() => {
+                const match = options.trucks.find((t) => t.id === truck);
+                return match
+                  ? `${match.registration} · ${match.identifier}`
+                  : "";
+              })()
+            }
+            placeholder="Select a vehicle"
+            disabled={busy}
+            onPress={() => setTruckSheetOpen(true)}
+          />
+          <PickerSheet
+            visible={truckSheetOpen}
+            title="Select vehicle"
+            options={options.trucks.map((t) => ({
+              id: t.id,
+              label: t.registration,
+              subtitle: `${t.identifier} · ${[t.make, t.model].filter(Boolean).join(" ")}`,
+            }))}
+            selectedId={truck}
+            placeholder="Search vehicles…"
+            emptyMessage="No matching vehicles."
+            onSearchChange={setTruckQuery}
+            onSelect={(opt) => {
+              form.setFieldValue("truck", opt.id);
+              const match = options.trucks.find((t) => t.id === opt.id);
+              setSelectedTruckLabel(
+                match ? `${match.registration} · ${match.identifier}` : opt.label,
+              );
               setConflicts([]);
             }}
+            onClose={() => setTruckSheetOpen(false)}
           />
-          <Copy>Vehicle</Copy>
-          {options.trucks.map((t) => (
-            <TruckCard
-              key={t.id}
-              truck={t}
-              selected={truck === t.id}
-              onPress={
-                busy
-                  ? undefined
-                  : () => {
-                      form.setFieldValue("truck", t.id);
-                      setConflicts([]);
-                    }
-              }
-            />
-          ))}
           <Copy>Repeat on</Copy>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(

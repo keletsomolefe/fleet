@@ -10,7 +10,9 @@ import {
   Field,
   Heading,
   Notice,
+  PickerSheet,
   Screen,
+  SelectField,
   TruckCard,
   styles,
   useAction,
@@ -77,7 +79,9 @@ export default function Issues() {
   const [items, setItems] = useState<DriverIssue[]>([]),
     [error, setError] = useState(""),
     [sent, setSent] = useState<ReportResult | null>(null),
-    [submission, setSubmission] = useState<Submission | null>(null);
+    [submission, setSubmission] = useState<Submission | null>(null),
+    [categorySheetOpen, setCategorySheetOpen] = useState(false),
+    [serviceSheetOpen, setServiceSheetOpen] = useState(false);
   const truck = driver?.truck ?? driver?.schedule?.truck ?? null;
   const load = useCallback(async () => {
     try {
@@ -226,20 +230,27 @@ export default function Issues() {
       ) : (
         <>
           {truck && <TruckCard truck={truck} meta={driver?.truck ? "Driving now" : "Scheduled"} />}
-          <Copy>Issue type</Copy>
-          <View style={styles.group}>
-            {(Object.keys(issueLabels) as IssueCategory[]).map((value) => (
-              <Button
-                key={value}
-                secondary={category !== value}
-                selected={category === value}
-                disabled={action.busy || !!submission}
-                onPress={() => form.setFieldValue("category", value)}
-              >
-                {issueLabels[value]}
-              </Button>
-            ))}
-          </View>
+          <SelectField
+            label="Issue type"
+            value={issueLabels[category]}
+            placeholder="Select issue type"
+            disabled={action.busy || !!submission}
+            onPress={() => setCategorySheetOpen(true)}
+          />
+          <PickerSheet
+            visible={categorySheetOpen}
+            title="Issue type"
+            searchable={false}
+            options={(Object.keys(issueLabels) as IssueCategory[]).map((value) => ({
+              id: value,
+              label: issueLabels[value],
+            }))}
+            selectedId={category}
+            onSelect={(opt) =>
+              form.setFieldValue("category", opt.id as IssueCategory)
+            }
+            onClose={() => setCategorySheetOpen(false)}
+          />
           {category === "vehicle" && !truck && (
             <Notice
               title="Vehicle not confirmed"
@@ -248,23 +259,28 @@ export default function Issues() {
           )}
           {category === "vehicle" && (
             <>
-              <Copy>What kind of help?</Copy>
-              <View style={styles.group}>
-                {serviceTypes.map((value) => (
-                  <Button
-                    key={value}
-                    secondary={serviceType !== value}
-                    selected={serviceType === value}
-                    disabled={action.busy || !!submission}
-                    onPress={() => form.setFieldValue("serviceType", value)}
-                  >
-                    {serviceTypeLabels[value]}
-                  </Button>
-                ))}
-              </View>
-              <Copy small>
-                We will alert service providers if they are available.
-              </Copy>
+              <SelectField
+                label="What kind of help?"
+                value={serviceTypeLabels[serviceType]}
+                placeholder="Select type of assistance"
+                hint="We will alert service providers if they are available."
+                disabled={action.busy || !!submission}
+                onPress={() => setServiceSheetOpen(true)}
+              />
+              <PickerSheet
+                visible={serviceSheetOpen}
+                title="What kind of help?"
+                searchable={false}
+                options={serviceTypes.map((value) => ({
+                  id: value,
+                  label: serviceTypeLabels[value],
+                }))}
+                selectedId={serviceType}
+                onSelect={(opt) =>
+                  form.setFieldValue("serviceType", opt.id as ServiceType)
+                }
+                onClose={() => setServiceSheetOpen(false)}
+              />
             </>
           )}
           <form.Field name="description">

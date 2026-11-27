@@ -626,6 +626,11 @@ export class ActivityService {
                 'This activity belongs to another driver or vehicle.',
               );
             }
+            if (current.review === 'validated' || current.review === 'void') {
+              throw new ConflictError(
+                'This activity has been reviewed by the office and can no longer be edited.',
+              );
+            }
           }
 
           await this.validateCatalogueRefs(tx, data);
