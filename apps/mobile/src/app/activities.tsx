@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import * as Crypto from "expo-crypto";
 import {
   Button,
+  Chip,
   Copy,
   DetailSheet,
   Field,
@@ -135,6 +136,276 @@ function formatShortTime(iso: string): string {
   if (dayDiff === 0) return `Today, ${time}`;
   if (dayDiff === 1) return `Yesterday, ${time}`;
   return `${date.toLocaleDateString([], { day: "numeric", month: "short" })}, ${time}`;
+}
+
+function formatClock(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatDurationMinutes(startMs: number, endMs: number): string {
+  const mins = Math.max(0, Math.round((endMs - startMs) / 60_000));
+  if (mins < 60) return `${mins} min`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
+}
+
+function nudgeTimestamp(current: string | null, deltaMinutes: number): string {
+  const now = Date.now();
+  const base = current ? Date.parse(current) : now;
+  const safeBase = Number.isFinite(base) ? base : now;
+  const next = Math.min(now, safeBase + deltaMinutes * 60_000);
+  return new Date(next).toISOString();
+}
+
+function stampDepartureAfter(arrivedAt: string | null): string {
+  const now = Date.now();
+  const arrivedMs = arrivedAt ? Date.parse(arrivedAt) : NaN;
+  if (arrivedAt && Number.isFinite(arrivedMs) && now < arrivedMs) {
+    return arrivedAt;
+  }
+  return new Date(now).toISOString();
+}
+
+function SiteTimeCard({
+  arrivedAt,
+  departedAt,
+  onChange,
+}: {
+  arrivedAt: string | null;
+  departedAt: string | null;
+  onChange: (next: { arrivedAt: string | null; departedAt: string | null }) => void;
+}) {
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [draftArrived, setDraftArrived] = useState<string | null>(arrivedAt);
+  const [draftDeparted, setDraftDeparted] = useState<string | null>(departedAt);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  const onSite = Boolean(arrivedAt && !departedAt);
+
+  useEffect(() => {
+    if (!onSite) return;
+    const id = setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, [onSite]);
+
+  function openAdjust(presetManual = false) {
+    if (presetManual && !arrivedAt && !departedAt) {
+      const now = Date.now();
+      setDraftArrived(new Date(now - 15 * 60_000).toISOString());
+      setDraftDeparted(new Date(now).toISOString());
+    } else {
+      setDraftArrived(arrivedAt);
+      setDraftDeparted(departedAt);
+    }
+    setSheetOpen(true);
+  }
+
+  const invalidOrder =
+    Boolean(draftArrived && draftDeparted) &&
+    Date.parse(draftDeparted!) < Date.parse(draftArrived!);
+
+  const arrivedMs = arrivedAt ? Date.parse(arrivedAt) : NaN;
+  const departedMs = departedAt ? Date.parse(departedAt) : NaN;
+
+  return (
+    <>
+      <View
+        style={{
+          backgroundColor: colors.bg,
+          borderRadius: 10,
+          borderWidth: 1,
+          borderColor: colors.border,
+          padding: 12,
+          gap: 8,
+        }}
+      >
+        {!arrivedAt && !departedAt ? (
+          <>
+            <Copy small>Site time (optional)</Copy>
+            <Copy small>
+              Tap when you arrive at the gate or weighbridge.
+            </Copy>
+            <View style={{ flexDirection: "row", gap: 8, paddingTop: 2 }}>
+              <Button
+                fill
+                onPress={() => {
+                  const now = Date.now();
+                  setNowMs(now);
+                  onChange({
+                    arrivedAt: new Date(now).toISOString(),
+                    departedAt: null,
+                  });
+                }}
+              >
+                Arrived at site
+              </Button>
+              <Button
+                fill
+                secondary
+                onPress={() => openAdjust(true)}
+              >
+                Set manually
+              </Button>
+            </View>
+          </>
+        ) : onSite ? (
+          <>
+            <Copy small>On site</Copy>
+            <Copy>
+              {`Arrived ${formatClock(arrivedAt!)} · ${
+                Number.isFinite(arrivedMs)
+                  ? `${formatDurationMinutes(arrivedMs, nowMs)} on site`
+                  : "active"
+              }`}
+            </Copy>
+            <Copy small>
+              Tap Left site when rolling out, or Save activity to stamp departure automatically.
+            </Copy>
+            <View style={{ flexDirection: "row", gap: 8, paddingTop: 2 }}>
+              <Button
+                fill
+                onPress={() =>
+                  onChange({
+                    arrivedAt,
+                    departedAt: stampDepartureAfter(arrivedAt),
+                  })
+                }
+              >
+                Left site
+              </Button>
+              <Button
+                fill
+                secondary
+                onPress={() => openAdjust(false)}
+              >
+                Adjust
+              </Button>
+            </View>
+          </>
+        ) : (
+          <>
+            <Copy small>Site time recorded</Copy>
+            <Copy>
+              {arrivedAt && departedAt
+                ? `Arrived ${formatClock(arrivedAt)} → Left ${formatClock(departedAt)}${
+                    Number.isFinite(arrivedMs) &&
+                    Number.isFinite(departedMs) &&
+                    departedMs >= arrivedMs
+                      ? ` (${formatDurationMinutes(arrivedMs, departedMs)})`
+                      : ""
+                  }`
+                : departedAt
+                  ? `Left ${formatClock(departedAt)}`
+                  : `Arrived ${formatClock(arrivedAt!)}`}
+            </Copy>
+            <View style={{ paddingTop: 2 }}>
+              <Button secondary onPress={() => openAdjust(false)}>
+                Adjust times
+              </Button>
+            </View>
+          </>
+        )}
+      </View>
+
+      <DetailSheet
+        visible={sheetOpen}
+        title="Adjust site times"
+        subtitle="Nudge arrival or departure if you logged after leaving."
+        onClose={() => setSheetOpen(false)}
+      >
+        <View style={{ gap: 6 }}>
+          <Copy small>Arrival time</Copy>
+          <Copy>{draftArrived ? formatShortTime(draftArrived) : "Not set"}</Copy>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+            {[
+              [-30, "-30m"],
+              [-15, "-15m"],
+              [-5, "-5m"],
+              [5, "+5m"],
+            ].map(([mins, label]) => (
+              <Chip
+                key={`arr-${label}`}
+                onPress={() =>
+                  setDraftArrived((cur) => nudgeTimestamp(cur, mins as number))
+                }
+              >
+                {label as string}
+              </Chip>
+            ))}
+            <Chip onPress={() => setDraftArrived(new Date().toISOString())}>
+              Now
+            </Chip>
+          </View>
+        </View>
+
+        <View style={{ gap: 6 }}>
+          <Copy small>Departure time</Copy>
+          <Copy>
+            {draftDeparted ? formatShortTime(draftDeparted) : "Still on site"}
+          </Copy>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+            {[
+              [-30, "-30m"],
+              [-15, "-15m"],
+              [-5, "-5m"],
+              [5, "+5m"],
+            ].map(([mins, label]) => (
+              <Chip
+                key={`dep-${label}`}
+                onPress={() =>
+                  setDraftDeparted((cur) => nudgeTimestamp(cur, mins as number))
+                }
+              >
+                {label as string}
+              </Chip>
+            ))}
+            <Chip onPress={() => setDraftDeparted(new Date().toISOString())}>
+              Now
+            </Chip>
+            {draftDeparted && (
+              <Chip onPress={() => setDraftDeparted(null)}>Still on site</Chip>
+            )}
+          </View>
+        </View>
+
+        {invalidOrder && (
+          <Notice
+            title="Check times"
+            message="Departure time cannot be earlier than arrival time."
+          />
+        )}
+
+        <View style={{ gap: 8, paddingTop: 4 }}>
+          <Button
+            disabled={invalidOrder}
+            onPress={() => {
+              onChange({
+                arrivedAt: draftArrived,
+                departedAt: draftDeparted,
+              });
+              setSheetOpen(false);
+            }}
+          >
+            Save times
+          </Button>
+          {(draftArrived || draftDeparted) && (
+            <Button
+              secondary
+              onPress={() => {
+                onChange({ arrivedAt: null, departedAt: null });
+                setSheetOpen(false);
+              }}
+            >
+              Clear site times
+            </Button>
+          )}
+        </View>
+      </DetailSheet>
+    </>
+  );
 }
 
 function Choose({
@@ -389,10 +660,24 @@ export default function Activities() {
             ? "weighbridge_ticket"
             : "pod";
 
+    const nowIso = new Date().toISOString();
+    const autoDepartedAt =
+      (d.kind === "collection" || d.kind === "delivery") &&
+      d.arrivedAt &&
+      !d.departedAt
+        ? Date.parse(nowIso) >= Date.parse(d.arrivedAt)
+          ? nowIso
+          : d.arrivedAt
+        : d.departedAt;
+
     await saveActivity(
       context.id,
       form.recordId,
-      { ...d, occurredAt: d.occurredAt || new Date().toISOString() },
+      {
+        ...d,
+        departedAt: autoDepartedAt,
+        occurredAt: d.occurredAt || nowIso,
+      },
       photo ? { file: photo, kind: attachmentKind } : null,
     );
     const q = await activityOutbox();
@@ -1118,36 +1403,13 @@ export default function Activities() {
                 }
               />
 
-              <View style={{ flexDirection: "row", gap: 8 }}>
-                <Button
-                  fill
-                  secondary
-                  onPress={() =>
-                    updateForm((d) => ({
-                      ...d,
-                      arrivedAt: new Date().toISOString(),
-                    }))
-                  }
-                >
-                  {form.data.arrivedAt
-                    ? `Arrived ${new Date(form.data.arrivedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-                    : "Mark arrival"}
-                </Button>
-                <Button
-                  fill
-                  secondary
-                  onPress={() =>
-                    updateForm((d) => ({
-                      ...d,
-                      departedAt: new Date().toISOString(),
-                    }))
-                  }
-                >
-                  {form.data.departedAt
-                    ? `Left ${new Date(form.data.departedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-                    : "Mark left"}
-                </Button>
-              </View>
+              <SiteTimeCard
+                arrivedAt={form.data.arrivedAt}
+                departedAt={form.data.departedAt}
+                onChange={({ arrivedAt, departedAt }) =>
+                  updateForm((d) => ({ ...d, arrivedAt, departedAt }))
+                }
+              />
 
               {form.data.kind === "delivery" && (
                 <>
@@ -1415,6 +1677,21 @@ export default function Activities() {
                 {viewingRecord.data.kind === "delivery" && (
                   <Copy small>
                     Outcome: {outcomeLabels[viewingRecord.data.outcome]}
+                  </Copy>
+                )}
+                {(viewingRecord.data.arrivedAt ||
+                  viewingRecord.data.departedAt) && (
+                  <Copy small>
+                    Site time:{" "}
+                    {viewingRecord.data.arrivedAt &&
+                    viewingRecord.data.departedAt
+                      ? `${formatClock(viewingRecord.data.arrivedAt)} → ${formatClock(viewingRecord.data.departedAt)} (${formatDurationMinutes(
+                          Date.parse(viewingRecord.data.arrivedAt),
+                          Date.parse(viewingRecord.data.departedAt),
+                        )})`
+                      : viewingRecord.data.arrivedAt
+                        ? `Arrived ${formatClock(viewingRecord.data.arrivedAt)}`
+                        : `Left ${formatClock(viewingRecord.data.departedAt!)}`}
                   </Copy>
                 )}
               </>
