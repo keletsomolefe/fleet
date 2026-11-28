@@ -1,9 +1,9 @@
 import { useRouter } from "expo-router";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import {
   ActivityIndicator,
+  Keyboard,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -13,7 +13,15 @@ import {
   View,
   type TextInputProps,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetScrollView,
+  BottomSheetTextInput,
+  BottomSheetView,
+  type BottomSheetBackdropProps,
+} from "@gorhom/bottom-sheet";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { useNetworkState } from "expo-network";
 import { useFleet } from "@/state/fleet";
@@ -68,6 +76,11 @@ const icons = {
   alert: require("../../assets/icons/triangle-alert.svg"),
   info: require("../../assets/icons/info.svg"),
   check: require("../../assets/icons/check.svg"),
+  checkWhite: require("../../assets/icons/check-white.svg"),
+  chevronDown: require("../../assets/icons/chevron-down.svg"),
+  chevronRight: require("../../assets/icons/chevron-right.svg"),
+  close: require("../../assets/icons/close.svg"),
+  search: require("../../assets/icons/search.svg"),
 };
 export function Icon({
   name,
@@ -410,6 +423,128 @@ export function Chip({
     </Pressable>
   );
 }
+const APP_SHEET_RADIUS = 28;
+
+function SheetBackdrop(props: BottomSheetBackdropProps) {
+  return (
+    <BottomSheetBackdrop
+      disappearsOnIndex={-1}
+      appearsOnIndex={0}
+      pressBehavior="close"
+      opacity={0.5}
+      {...props}
+    />
+  );
+}
+
+function AppSheetHandle() {
+  return (
+    <View style={{ alignItems: "center", paddingTop: 10, paddingBottom: 6 }}>
+      <View
+        style={{
+          width: 40,
+          height: 4,
+          borderRadius: 2,
+          backgroundColor: "#DFE4EC",
+        }}
+      />
+    </View>
+  );
+}
+
+function useSheetVisibility(
+  ref: RefObject<BottomSheetModal | null>,
+  visible: boolean,
+): RefObject<boolean> {
+  const hasPresented = useRef(false);
+  const dismissRequestedRef = useRef(false);
+
+  useEffect(() => {
+    if (visible) {
+      if (!hasPresented.current) {
+        hasPresented.current = true;
+        dismissRequestedRef.current = false;
+        ref.current?.present();
+      }
+    } else if (hasPresented.current) {
+      hasPresented.current = false;
+      dismissRequestedRef.current = true;
+      ref.current?.dismiss();
+    }
+  }, [ref, visible]);
+
+  return dismissRequestedRef;
+}
+
+export function AppSheet({
+  visible,
+  onClose,
+  onDismiss,
+  snapPoints,
+  dynamic,
+  maxDynamicContentSize,
+  children,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onDismiss?: () => void;
+  snapPoints?: (string | number)[];
+  dynamic?: boolean;
+  maxDynamicContentSize?: number;
+  children: ReactNode;
+}) {
+  const insets = useSafeAreaInsets();
+  const ref = useRef<BottomSheetModal>(null);
+  const dismissRequestedRef = useSheetVisibility(ref, visible);
+  const isDynamic = dynamic ?? !snapPoints?.length;
+  const bottomPadding = insets.bottom + 20;
+
+  return (
+    <BottomSheetModal
+      ref={ref}
+      index={0}
+      snapPoints={snapPoints}
+      enableDynamicSizing={isDynamic}
+      maxDynamicContentSize={maxDynamicContentSize}
+      enablePanDownToClose
+      backdropComponent={SheetBackdrop}
+      handleComponent={AppSheetHandle}
+      backgroundStyle={{
+        backgroundColor: colors.surface,
+        borderTopLeftRadius: APP_SHEET_RADIUS,
+        borderTopRightRadius: APP_SHEET_RADIUS,
+        shadowColor: "#000000",
+        shadowOffset: { width: 0, height: -8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 24,
+        elevation: 8,
+      }}
+      topInset={insets.top}
+      keyboardBehavior="interactive"
+      keyboardBlurBehavior="restore"
+      android_keyboardInputMode="adjustResize"
+      onDismiss={() => {
+        onDismiss?.();
+        if (dismissRequestedRef.current) {
+          dismissRequestedRef.current = false;
+          return;
+        }
+        onClose();
+      }}
+    >
+      {isDynamic ? (
+        <BottomSheetView style={{ paddingBottom: bottomPadding }}>
+          {children}
+        </BottomSheetView>
+      ) : (
+        <View style={{ flex: 1, paddingBottom: bottomPadding }}>
+          {children}
+        </View>
+      )}
+    </BottomSheetModal>
+  );
+}
+
 export interface PickerOption {
   id: string;
   label: string;
@@ -475,301 +610,304 @@ export function PickerSheet({
     onSearchChange?.(next);
   }
 
-  function close() {
+  function resetSearch() {
     setQuery("");
     onSearchChange?.("");
+  }
+
+  function handleClose() {
+    Keyboard.dismiss();
+    resetSearch();
     onClose();
   }
 
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={close}
-    >
-      <KeyboardAvoidingView
-        style={{ flex: 1, justifyContent: "flex-end" }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+  const listContent = (
+    <>
+      {onClear && !!selectedId && (
         <Pressable
-          accessibilityLabel="Close picker"
-          onPress={close}
-          style={[
-            StyleSheet.absoluteFill,
-            { backgroundColor: "rgba(11, 11, 11, 0.42)" },
-          ]}
-        />
-        <SafeAreaView
-          edges={["bottom"]}
-          style={{
-            maxHeight: "82%",
-            backgroundColor: colors.surface,
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-            overflow: "hidden",
+          accessibilityRole="button"
+          onPress={() => {
+            onClear();
+            handleClose();
           }}
+          style={({ pressed }) => ({
+            minHeight: 48,
+            paddingHorizontal: 14,
+            paddingVertical: 12,
+            marginHorizontal: 12,
+            marginBottom: 4,
+            borderRadius: 12,
+            backgroundColor: pressed ? colors.bg : colors.surface,
+            justifyContent: "center",
+          })}
         >
-          <View
-            style={{
-              alignItems: "center",
-              paddingTop: 10,
-              paddingBottom: 4,
-            }}
+          <Text
+            style={[
+              styles.text,
+              { color: colors.danger, fontFamily: "Montserrat_600SemiBold" },
+            ]}
           >
-            <View
-              style={{
-                width: 36,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor: colors.border,
-              }}
-            />
-          </View>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingHorizontal: 20,
-              paddingTop: 6,
-              paddingBottom: 12,
-              borderBottomWidth: 1,
-              borderColor: colors.border,
-              gap: 12,
-            }}
-          >
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text
-                style={[
-                  styles.text,
-                  { fontSize: 16, lineHeight: 22, fontFamily: "Montserrat_600SemiBold" },
-                ]}
-              >
-                {title}
-              </Text>
-              {!!subtitle && <Copy small>{subtitle}</Copy>}
-            </View>
+            Clear selection
+          </Text>
+        </Pressable>
+      )}
+
+      {allowCustom && onCustom && !!trimmed && !exactMatch && (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            onCustom(trimmed);
+            handleClose();
+          }}
+          style={({ pressed }) => ({
+            minHeight: 56,
+            paddingHorizontal: 14,
+            paddingVertical: 12,
+            marginHorizontal: 12,
+            marginBottom: 6,
+            borderRadius: 12,
+            backgroundColor: pressed ? "#ececec" : colors.bg,
+            justifyContent: "center",
+            gap: 2,
+          })}
+        >
+          <Text style={[styles.text, { fontFamily: "Montserrat_600SemiBold" }]}>
+            + {customLabel} &ldquo;{trimmed}&rdquo;
+          </Text>
+          <Copy small>Enter a new value not in the list</Copy>
+        </Pressable>
+      )}
+
+      {filtered.length === 0 ? (
+        <View style={{ padding: 28, alignItems: "center" }}>
+          <Copy small center>
+            {emptyMessage}
+          </Copy>
+        </View>
+      ) : (
+        filtered.map((opt) => {
+          const isSelected = !!selectedId && opt.id === selectedId;
+          return (
             <Pressable
+              key={opt.id}
               accessibilityRole="button"
-              onPress={close}
+              accessibilityState={{ selected: isSelected }}
+              onPress={() => {
+                onSelect(opt);
+                handleClose();
+              }}
               style={({ pressed }) => ({
-                paddingVertical: 8,
-                paddingHorizontal: 10,
-                borderRadius: 8,
-                opacity: pressed ? 0.6 : 1,
+                minHeight: 56,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                marginHorizontal: 12,
+                marginVertical: 2,
+                borderRadius: 12,
+                backgroundColor: isSelected
+                  ? "rgba(11, 11, 11, 0.06)"
+                  : pressed
+                    ? colors.bg
+                    : colors.surface,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
               })}
             >
-              <Text
-                style={[
-                  styles.text,
-                  { fontFamily: "Montserrat_600SemiBold", color: colors.muted },
-                ]}
-              >
-                Close
-              </Text>
+              <View style={{ flex: 1, gap: 3 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 8,
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.text,
+                      {
+                        fontFamily: "Montserrat_600SemiBold",
+                        flexShrink: 1,
+                      },
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                  {!!opt.badge && (
+                    <View
+                      style={{
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
+                        borderRadius: 99,
+                        backgroundColor:
+                          opt.badgeTone === "primary"
+                            ? colors.ink
+                            : colors.border,
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.small,
+                          {
+                            fontSize: 11,
+                            lineHeight: 15,
+                            fontFamily: "Montserrat_600SemiBold",
+                            color:
+                              opt.badgeTone === "primary"
+                                ? colors.surface
+                                : colors.muted,
+                          },
+                        ]}
+                      >
+                        {opt.badge}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                {!!opt.subtitle && (
+                  <Text style={[styles.small, { color: colors.ink }]}>
+                    {opt.subtitle}
+                  </Text>
+                )}
+                {!!opt.meta && <Copy small>{opt.meta}</Copy>}
+              </View>
+              {isSelected ? (
+                <View
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 11,
+                    backgroundColor: colors.ink,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Icon name="checkWhite" size={13} />
+                </View>
+              ) : (
+                <Icon name="chevronRight" size={18} />
+              )}
             </Pressable>
-          </View>
+          );
+        })
+      )}
+      {footer && (
+        <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>{footer}</View>
+      )}
+    </>
+  );
 
-          {searchable && (
-            <View
+  return (
+    <AppSheet
+      visible={visible}
+      onClose={handleClose}
+      onDismiss={resetSearch}
+      snapPoints={searchable ? ["85%"] : undefined}
+      dynamic={!searchable}
+      maxDynamicContentSize={searchable ? undefined : 560}
+    >
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 20,
+          paddingTop: 4,
+          paddingBottom: 12,
+          gap: 12,
+        }}
+      >
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text
+            style={[
+              styles.text,
+              {
+                fontSize: 18,
+                lineHeight: 24,
+                fontFamily: "Montserrat_600SemiBold",
+              },
+            ]}
+          >
+            {title}
+          </Text>
+          {!!subtitle && <Copy small>{subtitle}</Copy>}
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          hitSlop={8}
+          onPress={handleClose}
+          style={({ pressed }) => ({
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: pressed ? colors.border : colors.bg,
+            alignItems: "center",
+            justifyContent: "center",
+          })}
+        >
+          <Icon name="close" size={18} />
+        </Pressable>
+      </View>
+
+      {searchable && (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+            marginHorizontal: 16,
+            marginBottom: 10,
+            paddingHorizontal: 14,
+            height: 48,
+            backgroundColor: colors.bg,
+            borderRadius: 14,
+          }}
+        >
+          <Icon name="search" size={18} />
+          <BottomSheetTextInput
+            value={query}
+            onChangeText={updateQuery}
+            placeholder={placeholder}
+            placeholderTextColor={colors.muted}
+            autoCorrect={false}
+            returnKeyType="search"
+            onSubmitEditing={Keyboard.dismiss}
+            style={[styles.text, { flex: 1, padding: 0 }]}
+          />
+          {query.length > 0 && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Clear search"
+              hitSlop={8}
+              onPress={() => updateQuery("")}
               style={{
-                paddingHorizontal: 20,
-                paddingVertical: 12,
-                borderBottomWidth: 1,
-                borderColor: colors.border,
-                backgroundColor: colors.bg,
+                width: 24,
+                height: 24,
+                borderRadius: 12,
+                backgroundColor: colors.border,
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              <TextInput
-                value={query}
-                onChangeText={updateQuery}
-                placeholder={placeholder}
-                placeholderTextColor={colors.muted}
-                autoCorrect={false}
-                returnKeyType="done"
-                style={[
-                  styles.text,
-                  {
-                    minHeight: 44,
-                    paddingHorizontal: 14,
-                    paddingVertical: 10,
-                    backgroundColor: colors.surface,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    borderRadius: 10,
-                  },
-                ]}
-              />
-            </View>
+              <Icon name="close" size={12} />
+            </Pressable>
           )}
+        </View>
+      )}
 
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingBottom: 12 }}
-          >
-            {onClear && !!selectedId && (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => {
-                  onClear();
-                  close();
-                }}
-                style={({ pressed }) => ({
-                  minHeight: 48,
-                  paddingHorizontal: 20,
-                  paddingVertical: 12,
-                  borderBottomWidth: 1,
-                  borderColor: colors.border,
-                  backgroundColor: pressed ? colors.bg : colors.surface,
-                  justifyContent: "center",
-                })}
-              >
-                <Text
-                  style={[
-                    styles.text,
-                    { color: colors.danger, fontFamily: "Montserrat_600SemiBold" },
-                  ]}
-                >
-                  Clear selection
-                </Text>
-              </Pressable>
-            )}
-
-            {allowCustom && onCustom && !!trimmed && !exactMatch && (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => {
-                  onCustom(trimmed);
-                  close();
-                }}
-                style={({ pressed }) => ({
-                  minHeight: 54,
-                  paddingHorizontal: 20,
-                  paddingVertical: 12,
-                  borderBottomWidth: 1,
-                  borderColor: colors.border,
-                  backgroundColor: pressed ? colors.bg : "#fafafa",
-                  justifyContent: "center",
-                  gap: 2,
-                })}
-              >
-                <Text
-                  style={[
-                    styles.text,
-                    { fontFamily: "Montserrat_600SemiBold" },
-                  ]}
-                >
-                  + {customLabel} &ldquo;{trimmed}&rdquo;
-                </Text>
-                <Copy small>Enter a new value not in the list</Copy>
-              </Pressable>
-            )}
-
-            {filtered.length === 0 ? (
-              <View style={{ padding: 24, alignItems: "center" }}>
-                <Copy small center>
-                  {emptyMessage}
-                </Copy>
-              </View>
-            ) : (
-              filtered.map((opt) => {
-                const isSelected = !!selectedId && opt.id === selectedId;
-                return (
-                  <Pressable
-                    key={opt.id}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: isSelected }}
-                    onPress={() => {
-                      onSelect(opt);
-                      close();
-                    }}
-                    style={({ pressed }) => ({
-                      minHeight: 54,
-                      paddingHorizontal: 20,
-                      paddingVertical: 12,
-                      borderBottomWidth: 1,
-                      borderColor: colors.border,
-                      backgroundColor:
-                        pressed || isSelected ? colors.bg : colors.surface,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 12,
-                    })}
-                  >
-                    <View style={{ flex: 1, gap: 3 }}>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          flexWrap: "wrap",
-                          gap: 8,
-                        }}
-                      >
-                        <Text
-                          style={[
-                            styles.text,
-                            {
-                              fontFamily: "Montserrat_600SemiBold",
-                              flexShrink: 1,
-                            },
-                          ]}
-                        >
-                          {opt.label}
-                        </Text>
-                        {!!opt.badge && (
-                          <View
-                            style={{
-                              paddingHorizontal: 8,
-                              paddingVertical: 2,
-                              borderRadius: 99,
-                              backgroundColor:
-                                opt.badgeTone === "primary"
-                                  ? colors.ink
-                                  : colors.border,
-                            }}
-                          >
-                            <Text
-                              style={[
-                                styles.small,
-                                {
-                                  fontSize: 11,
-                                  lineHeight: 15,
-                                  fontFamily: "Montserrat_600SemiBold",
-                                  color:
-                                    opt.badgeTone === "primary"
-                                      ? colors.surface
-                                      : colors.muted,
-                                },
-                              ]}
-                            >
-                              {opt.badge}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                      {!!opt.subtitle && (
-                        <Text style={[styles.small, { color: colors.ink }]}>
-                          {opt.subtitle}
-                        </Text>
-                      )}
-                      {!!opt.meta && <Copy small>{opt.meta}</Copy>}
-                    </View>
-                    {isSelected && <Icon name="check" size={18} />}
-                  </Pressable>
-                );
-              })
-            )}
-            {footer && (
-              <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
-                {footer}
-              </View>
-            )}
-          </ScrollView>
-        </SafeAreaView>
-      </KeyboardAvoidingView>
-    </Modal>
+      {searchable ? (
+        <BottomSheetScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 12 }}
+        >
+          {listContent}
+        </BottomSheetScrollView>
+      ) : (
+        <View style={{ paddingBottom: 4 }}>{listContent}</View>
+      )}
+    </AppSheet>
   );
 }
 
@@ -787,98 +925,64 @@ export function DetailSheet({
   onClose: () => void;
 }) {
   return (
-    <Modal
+    <AppSheet
       visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
+      onClose={onClose}
+      dynamic
+      maxDynamicContentSize={640}
     >
-      <View style={{ flex: 1, justifyContent: "flex-end" }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 20,
+          paddingTop: 4,
+          paddingBottom: 12,
+          borderBottomWidth: 1,
+          borderColor: colors.border,
+          gap: 12,
+        }}
+      >
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text
+            style={[
+              styles.text,
+              {
+                fontSize: 18,
+                lineHeight: 24,
+                fontFamily: "Montserrat_600SemiBold",
+              },
+            ]}
+          >
+            {title}
+          </Text>
+          {!!subtitle && <Copy small>{subtitle}</Copy>}
+        </View>
         <Pressable
-          accessibilityLabel="Close details"
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          hitSlop={8}
           onPress={onClose}
-          style={[
-            StyleSheet.absoluteFill,
-            { backgroundColor: "rgba(11, 11, 11, 0.42)" },
-          ]}
-        />
-        <SafeAreaView
-          edges={["bottom"]}
-          style={{
-            maxHeight: "82%",
-            backgroundColor: colors.surface,
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-            overflow: "hidden",
-          }}
+          style={({ pressed }) => ({
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: pressed ? colors.border : colors.bg,
+            alignItems: "center",
+            justifyContent: "center",
+          })}
         >
-          <View style={{ alignItems: "center", paddingTop: 10, paddingBottom: 4 }}>
-            <View
-              style={{
-                width: 36,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor: colors.border,
-              }}
-            />
-          </View>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingHorizontal: 20,
-              paddingTop: 6,
-              paddingBottom: 12,
-              borderBottomWidth: 1,
-              borderColor: colors.border,
-              gap: 12,
-            }}
-          >
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text
-                style={[
-                  styles.text,
-                  {
-                    fontSize: 16,
-                    lineHeight: 22,
-                    fontFamily: "Montserrat_600SemiBold",
-                  },
-                ]}
-              >
-                {title}
-              </Text>
-              {!!subtitle && <Copy small>{subtitle}</Copy>}
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              onPress={onClose}
-              style={({ pressed }) => ({
-                paddingVertical: 8,
-                paddingHorizontal: 10,
-                borderRadius: 8,
-                opacity: pressed ? 0.6 : 1,
-              })}
-            >
-              <Text
-                style={[
-                  styles.text,
-                  { fontFamily: "Montserrat_600SemiBold", color: colors.muted },
-                ]}
-              >
-                Close
-              </Text>
-            </Pressable>
-          </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 20, gap: 12 }}
-            keyboardShouldPersistTaps="handled"
-          >
-            {children}
-          </ScrollView>
-        </SafeAreaView>
+          <Icon name="close" size={18} />
+        </Pressable>
       </View>
-    </Modal>
+      <BottomSheetScrollView
+        contentContainerStyle={{ padding: 20, gap: 12 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        {children}
+      </BottomSheetScrollView>
+    </AppSheet>
   );
 }
 
@@ -934,12 +1038,7 @@ export function SelectField({
         >
           {hasValue ? value : placeholder}
         </Text>
-        <Text
-          accessible={false}
-          style={[styles.small, { fontSize: 14, color: colors.muted }]}
-        >
-          ▾
-        </Text>
+        <Icon name="chevronDown" size={20} />
       </Pressable>
       {!!hint && <Copy small>{hint}</Copy>}
     </View>

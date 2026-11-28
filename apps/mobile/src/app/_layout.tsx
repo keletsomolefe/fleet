@@ -8,6 +8,8 @@ import {
   Montserrat_500Medium,
   Montserrat_600SemiBold,
 } from "@expo-google-fonts/montserrat";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { FleetProvider, useFleet } from "@/state/fleet";
 import { colors } from "@/components/ui";
@@ -96,10 +98,14 @@ export default function Layout() {
   }, [error]);
   if (!loaded) return null;
   return (
-    <SafeAreaProvider>
-      <FleetProvider>
-        <Routes />
-      </FleetProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <BottomSheetModalProvider>
+          <FleetProvider>
+            <Routes />
+          </FleetProvider>
+        </BottomSheetModalProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
